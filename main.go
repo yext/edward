@@ -1,57 +1,52 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/codegangsta/cli"
 )
 
-var groups []ServiceGroupConfig
-var services []ServiceConfig
-
-type ServiceConfigFile struct {
-	Services []ServiceConfig
-	Groups   []ServiceGroupConfig
-}
-
-// ServiceGroupConfig is a group of services that can be managed together
-type ServiceGroupConfig struct {
-	// A name for this group, used to identify it in commands
-	Name string
-	// Paths to child service config files
-	ServicePaths []string
-	// Full services contained within this group
-	Services []*ServiceConfig
-}
-
-// ServiceConfig represents a service that can be managed by Edward
-type ServiceConfig struct {
-	// Service name, used to identify in commands
-	Name string
-	// Optional path to service. If nil, uses cwd
-	Path *string
-	// Commands for managing the service
-	Commands struct {
-		// Command to build
-		Build string
-		// Command to launch
-		Launch string
-	}
-	// Service state properties that can be obtained from logs
-	Properties struct {
-		// Regex to detect a line indicating the service has started successfully
-		Started string
-		// Custom properties, mapping a property name to a regex
-		Custom map[string]string
-	}
-}
+var groups map[string]*ServiceGroupConfig
+var services map[string]*ServiceConfig
 
 func loadConfig() {
 	// TODO: Load configuration from the config file and populate the service and groups variables
+
+	groups = make(map[string]*ServiceGroupConfig)
+	services = make(map[string]*ServiceConfig)
+
+	pathStr := "/Users/yext/alpha"
+
+	services["admin2"] = &ServiceConfig{
+		Name: "admin2",
+		Path: &pathStr,
+		Commands: struct {
+			Build  string
+			Launch string
+		}{
+			Build:  "python tools/icbm/build.py :admin2_dev",
+			Launch: "thirdparty/play/play test src/com/yext/admin2",
+		},
+		Properties: struct {
+			Started string
+			Custom  map[string]string
+		}{
+			Started: "started",
+		},
+	}
 }
 
 func list(c *cli.Context) {
-	println("List services")
+	println("Services and groups")
+	println("Groups:")
+	for name, _ := range groups {
+		println("\t", name)
+	}
+	println("Services:")
+	for name, _ := range services {
+		println("\t", name)
+	}
 }
 
 func generate(c *cli.Context) {
@@ -67,18 +62,47 @@ func messages(c *cli.Context) {
 }
 
 func start(c *cli.Context) {
-	println("Start")
+	name := c.Args()[0]
+	if _, ok := groups[name]; ok {
+		println("Will start all services in this group")
+		// TODO: Iterate over services and start
+		return
+	}
+	if val, ok := services[name]; ok {
+		println("Starting service", name)
+		err := val.Start()
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+	println("Unknown group or service", name)
 }
 
 func stop(c *cli.Context) {
-	println("Stop")
+
+	name := c.Args()[0]
+	if _, ok := groups[name]; ok {
+		println("Will stop all services in this group")
+		// TODO: Iterate over services and start
+		return
+	}
+	if val, ok := services[name]; ok {
+		println("Stopping service", name)
+		err := val.Stop()
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+	println("Unknown group or service", name)
 }
 
 func restart(c *cli.Context) {
 	println("Restart")
 }
 
-func log(c *cli.Context) {
+func doLog(c *cli.Context) {
 	println("Log")
 }
 
@@ -89,7 +113,6 @@ func main() {
 	app.Usage = "Manage local microservices"
 	app.Before = func(c *cli.Context) error {
 		loadConfig()
-		println("Before")
 		return nil
 	}
 	app.Commands = []cli.Command{
@@ -131,7 +154,7 @@ func main() {
 		{
 			Name:   "log",
 			Usage:  "Tail the log for a service",
-			Action: log,
+			Action: doLog,
 		},
 	}
 
