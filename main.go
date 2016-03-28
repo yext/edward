@@ -16,7 +16,7 @@ func loadConfig() {
 	groups = make(map[string]*ServiceGroupConfig)
 	services = make(map[string]*ServiceConfig)
 
-	pathStr := "/Users/yext/alpha"
+	pathStr := "$ALPHA"
 
 	services["admin2"] = &ServiceConfig{
 		Name: "admin2",

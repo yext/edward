@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"io/ioutil"
 	"log"
 	"os"
@@ -55,6 +56,11 @@ type ServiceConfig struct {
 
 func (sc *ServiceConfig) Start() error {
 	command := sc.GetCommand()
+
+	if command.Pid != 0 {
+		return errors.New(sc.Name + " is currently running")
+	}
+
 	err := command.BuildSync()
 	if err != nil {
 		return nil
@@ -65,7 +71,10 @@ func (sc *ServiceConfig) Start() error {
 
 func (sc *ServiceConfig) Stop() error {
 	command := sc.GetCommand()
-	// TODO: Check that the service isn't running
+
+	if command.Pid == 0 {
+		return errors.New(sc.Name + " is not running")
+	}
 
 	pgid, err := syscall.Getpgid(command.Pid)
 	if err != nil {
@@ -73,6 +82,7 @@ func (sc *ServiceConfig) Stop() error {
 	}
 	syscall.Kill(-pgid, syscall.SIGINT)
 
+	command.clearPid()
 	return nil
 }
 
@@ -172,6 +182,11 @@ func (s *ServiceConfig) makeScript(command string, logPath string) string {
 	return buffer.String()
 }
 
+func (sc *ServiceCommand) clearPid() {
+	sc.Pid = 0
+	os.Remove("./" + sc.Service.Name + ".pid")
+}
+
 func (s *ServiceConfig) GetCommand() *ServiceCommand {
 
 	dir, err := os.Getwd()
@@ -203,6 +218,17 @@ func (s *ServiceConfig) GetCommand() *ServiceCommand {
 			log.Fatal(err)
 		}
 		command.Pid = pid
+
+		// TODO: Check this PID is actually live
+		process, err := os.FindProcess(int(pid))
+		if err != nil {
+			command.clearPid()
+		} else {
+			err := process.Signal(syscall.Signal(0))
+			if err != nil {
+				command.clearPid()
+			}
+		}
 	}
 	// TODO: Set status
 
