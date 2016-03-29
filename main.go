@@ -32,6 +32,27 @@ func playService(name string) *ServiceConfig {
 	}
 }
 
+func goService(name string, goPackage string) *ServiceConfig {
+	pathStr := "$ALPHA"
+	return &ServiceConfig{
+		Name: name,
+		Path: &pathStr,
+		Commands: struct {
+			Build  string
+			Launch string
+		}{
+			Build:  "go install " + goPackage,
+			Launch: name,
+		},
+		Properties: struct {
+			Started string
+			Custom  map[string]string
+		}{
+			Started: "started",
+		},
+	}
+}
+
 func loadConfig() {
 	// TODO: Load configuration from the config file and populate the service and groups variables
 
@@ -42,12 +63,28 @@ func loadConfig() {
 	services["users"] = playService("users")
 	services["storm"] = playService("storm")
 
+	services["sites-staging"] = goService("sites-staging", "yext/pages/sites/sites-staging")
+	services["sites-storm"] = goService("sites-storm", "yext/pages/sites/sites-storm")
+	services["sites-cog"] = goService("sites-cog", "yext/pages/sites/sites-cog")
+
 	groups["base"] = &ServiceGroupConfig{
 		Name: "base",
 		Services: []*ServiceConfig{
 			services["admin2"],
 			services["users"],
 			services["storm"],
+		},
+	}
+
+	groups["pages"] = &ServiceGroupConfig{
+		Name: "base",
+		Services: []*ServiceConfig{
+			services["admin2"],
+			services["users"],
+			services["storm"],
+			services["sites-staging"],
+			services["sites-storm"],
+			services["sites-cog"],
 		},
 	}
 }

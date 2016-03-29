@@ -36,30 +36,33 @@ type ServiceGroupConfig struct {
 }
 
 func (sg ServiceGroupConfig) Start() error {
+	println("Starting Service:", sg.Name)
 	for _, service := range sg.Services {
 		err := service.Start()
 		if err != nil {
-			return err
+			log.Println(err)
 		}
 	}
 	return nil
 }
 
 func (sg ServiceGroupConfig) Stop() error {
+	println("Stopping Service:", sg.Name)
 	for _, service := range sg.Services {
 		err := service.Stop()
 		if err != nil {
-			return err
+			log.Println(err)
 		}
 	}
 	return nil
 }
 
 func (sg ServiceGroupConfig) Restart() error {
+	println("Restarting Service:", sg.Name)
 	for _, service := range sg.Services {
 		err := service.Restart()
 		if err != nil {
-			return err
+			log.Println(err)
 		}
 	}
 	return nil
@@ -88,6 +91,7 @@ type ServiceConfig struct {
 }
 
 func (sc ServiceConfig) Start() error {
+	println("Starting service:", sc.Name)
 	command := sc.GetCommand()
 
 	if command.Pid != 0 {
@@ -103,6 +107,7 @@ func (sc ServiceConfig) Start() error {
 }
 
 func (sc ServiceConfig) Stop() error {
+	println("Stopping service:", sc.Name)
 	command := sc.GetCommand()
 
 	if command.Pid == 0 {
@@ -120,6 +125,15 @@ func (sc ServiceConfig) Stop() error {
 }
 
 func (sc ServiceConfig) Restart() error {
+	println("Restarting service:", sc.Name)
+	err := sc.Stop()
+	if err != nil {
+		return err
+	}
+	err = sc.Start()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -154,7 +168,7 @@ func (sc *ServiceCommand) createScript(content string) (*os.File, error) {
 
 func (sc *ServiceCommand) BuildSync() error {
 
-	println("Building...")
+	println("Building ", sc.Service.Name, "...")
 
 	file, err := sc.createScript(sc.Scripts.Build)
 	// Build the project and wait for completion
@@ -174,7 +188,7 @@ func (sc *ServiceCommand) BuildSync() error {
 
 func (sc *ServiceCommand) StartAsync() {
 
-	println("Launching...")
+	println("Launching ", sc.Service.Name, "...")
 
 	// Start the project and get the PID
 	file, err := sc.createScript(sc.Scripts.Launch)
