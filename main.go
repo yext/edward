@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"os"
 
@@ -10,23 +11,17 @@ import (
 var groups map[string]*ServiceGroupConfig
 var services map[string]*ServiceConfig
 
-func loadConfig() {
-	// TODO: Load configuration from the config file and populate the service and groups variables
-
-	groups = make(map[string]*ServiceGroupConfig)
-	services = make(map[string]*ServiceConfig)
-
+func playService(name string) *ServiceConfig {
 	pathStr := "$ALPHA"
-
-	services["admin2"] = &ServiceConfig{
-		Name: "admin2",
+	return &ServiceConfig{
+		Name: name,
 		Path: &pathStr,
 		Commands: struct {
 			Build  string
 			Launch string
 		}{
-			Build:  "python tools/icbm/build.py :admin2_dev",
-			Launch: "thirdparty/play/play test src/com/yext/admin2",
+			Build:  "python tools/icbm/build.py :" + name + "_dev",
+			Launch: "thirdparty/play/play test src/com/yext/" + name,
 		},
 		Properties: struct {
 			Started string
@@ -35,6 +30,36 @@ func loadConfig() {
 			Started: "started",
 		},
 	}
+}
+
+func loadConfig() {
+	// TODO: Load configuration from the config file and populate the service and groups variables
+
+	groups = make(map[string]*ServiceGroupConfig)
+	services = make(map[string]*ServiceConfig)
+
+	services["admin2"] = playService("admin2")
+	services["users"] = playService("users")
+	services["storm"] = playService("storm")
+
+	groups["base"] = &ServiceGroupConfig{
+		Name: "base",
+		Services: []*ServiceConfig{
+			services["admin2"],
+			services["users"],
+			services["storm"],
+		},
+	}
+}
+
+func getServiceOrGroup(name string) (ServiceOrGroup, error) {
+	if group, ok := groups[name]; ok {
+		return group, nil
+	}
+	if service, ok := services[name]; ok {
+		return service, nil
+	}
+	return nil, errors.New("Service or group not found")
 }
 
 func list(c *cli.Context) {
@@ -63,43 +88,38 @@ func messages(c *cli.Context) {
 
 func start(c *cli.Context) {
 	name := c.Args()[0]
-	if _, ok := groups[name]; ok {
-		println("Will start all services in this group")
-		// TODO: Iterate over services and start
-		return
+	s, err := getServiceOrGroup(name)
+	if err != nil {
+		log.Fatal(err)
 	}
-	if val, ok := services[name]; ok {
-		println("Starting service", name)
-		err := val.Start()
-		if err != nil {
-			log.Fatal(err)
-		}
-		return
+	err = s.Start()
+	if err != nil {
+		log.Fatal(err)
 	}
-	println("Unknown group or service", name)
 }
 
 func stop(c *cli.Context) {
-
 	name := c.Args()[0]
-	if _, ok := groups[name]; ok {
-		println("Will stop all services in this group")
-		// TODO: Iterate over services and start
-		return
+	s, err := getServiceOrGroup(name)
+	if err != nil {
+		log.Fatal(err)
 	}
-	if val, ok := services[name]; ok {
-		println("Stopping service", name)
-		err := val.Stop()
-		if err != nil {
-			log.Fatal(err)
-		}
-		return
+	err = s.Stop()
+	if err != nil {
+		log.Fatal(err)
 	}
-	println("Unknown group or service", name)
 }
 
 func restart(c *cli.Context) {
-	println("Restart")
+	name := c.Args()[0]
+	s, err := getServiceOrGroup(name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = s.Restart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func doLog(c *cli.Context) {

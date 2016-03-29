@@ -11,6 +11,9 @@ import (
 	"syscall"
 )
 
+var _ ServiceOrGroup = ServiceGroupConfig{}
+var _ ServiceOrGroup = ServiceConfig{}
+
 type ServiceOrGroup interface {
 	Start() error
 	Stop() error
@@ -30,6 +33,36 @@ type ServiceGroupConfig struct {
 	ServicePaths []string
 	// Full services contained within this group
 	Services []*ServiceConfig
+}
+
+func (sg ServiceGroupConfig) Start() error {
+	for _, service := range sg.Services {
+		err := service.Start()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (sg ServiceGroupConfig) Stop() error {
+	for _, service := range sg.Services {
+		err := service.Stop()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (sg ServiceGroupConfig) Restart() error {
+	for _, service := range sg.Services {
+		err := service.Restart()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // ServiceConfig represents a service that can be managed by Edward
@@ -54,7 +87,7 @@ type ServiceConfig struct {
 	}
 }
 
-func (sc *ServiceConfig) Start() error {
+func (sc ServiceConfig) Start() error {
 	command := sc.GetCommand()
 
 	if command.Pid != 0 {
@@ -69,7 +102,7 @@ func (sc *ServiceConfig) Start() error {
 	return nil
 }
 
-func (sc *ServiceConfig) Stop() error {
+func (sc ServiceConfig) Stop() error {
 	command := sc.GetCommand()
 
 	if command.Pid == 0 {
@@ -83,6 +116,10 @@ func (sc *ServiceConfig) Stop() error {
 	syscall.Kill(-pgid, syscall.SIGINT)
 
 	command.clearPid()
+	return nil
+}
+
+func (sc ServiceConfig) Restart() error {
 	return nil
 }
 
