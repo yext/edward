@@ -11,6 +11,21 @@ import (
 var groups map[string]*ServiceGroupConfig
 var services map[string]*ServiceConfig
 
+func thirdPartyService(name string, command string) *ServiceConfig {
+	pathStr := "$ALPHA"
+	return &ServiceConfig{
+		Name: name,
+		Path: &pathStr,
+		Commands: struct {
+			Build  string
+			Launch string
+		}{
+			Build:  "",
+			Launch: command,
+		},
+	}
+}
+
 func playService(name string) *ServiceConfig {
 	pathStr := "$ALPHA"
 	return &ServiceConfig{
@@ -21,7 +36,28 @@ func playService(name string) *ServiceConfig {
 			Launch string
 		}{
 			Build:  "python tools/icbm/build.py :" + name + "_dev",
-			Launch: "thirdparty/play/play test src/com/yext/" + name,
+			Launch: "YEXT_RABBITMQ=localhost thirdparty/play/play test src/com/yext/" + name,
+		},
+		Properties: struct {
+			Started string
+			Custom  map[string]string
+		}{
+			Started: "started",
+		},
+	}
+}
+
+func javaService(name string) *ServiceConfig {
+	pathStr := "$ALPHA"
+	return &ServiceConfig{
+		Name: name,
+		Path: &pathStr,
+		Commands: struct {
+			Build  string
+			Launch string
+		}{
+			Build:  "python tools/icbm/build.py :" + name,
+			Launch: "YEXT_RABBITMQ=localhost src/com/yext/" + name,
 		},
 		Properties: struct {
 			Started string
@@ -42,7 +78,7 @@ func goService(name string, goPackage string) *ServiceConfig {
 			Launch string
 		}{
 			Build:  "go install " + goPackage,
-			Launch: name,
+			Launch: "YEXT_RABBITMQ=localhost " + name,
 		},
 		Properties: struct {
 			Started string
@@ -59,29 +95,46 @@ func loadConfig() {
 	groups = make(map[string]*ServiceGroupConfig)
 	services = make(map[string]*ServiceConfig)
 
+	services["rabbitmq"] = thirdPartyService("rabbitmq", "sudo rabbitmq-server")
+	// TODO: haproxy actually needs a kill -9 to effectively die
+	services["haproxy"] = thirdPartyService("haproxy", "sudo $ALPHA/tools/bin/haproxy_localhost.sh")
+
 	services["admin2"] = playService("admin2")
 	services["users"] = playService("users")
 	services["storm"] = playService("storm")
+	services["ProfileServer"] = javaService("ProfileServer")
 
 	services["sites-staging"] = goService("sites-staging", "yext/pages/sites/sites-staging")
 	services["sites-storm"] = goService("sites-storm", "yext/pages/sites/sites-storm")
 	services["sites-cog"] = goService("sites-cog", "yext/pages/sites/sites-cog")
 
+	groups["thirdparty"] = &ServiceGroupConfig{
+		Name: "thirdparty",
+		Services: []*ServiceConfig{
+			services["rabbitmq"],
+			services["haproxy"],
+		},
+	}
+
 	groups["base"] = &ServiceGroupConfig{
 		Name: "base",
+		Groups: []*ServiceGroupConfig{
+			groups["thirdparty"],
+		},
 		Services: []*ServiceConfig{
 			services["admin2"],
 			services["users"],
 			services["storm"],
+			services["ProfileServer"],
 		},
 	}
 
 	groups["pages"] = &ServiceGroupConfig{
-		Name: "base",
+		Name: "pages",
+		Groups: []*ServiceGroupConfig{
+			groups["base"],
+		},
 		Services: []*ServiceConfig{
-			services["admin2"],
-			services["users"],
-			services["storm"],
 			services["sites-staging"],
 			services["sites-storm"],
 			services["sites-cog"],
@@ -129,6 +182,10 @@ func start(c *cli.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	err = s.Build()
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = s.Start()
 	if err != nil {
 		log.Fatal(err)
@@ -153,7 +210,15 @@ func restart(c *cli.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = s.Restart()
+	err = s.Stop()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = s.Build()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = s.Start()
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -15,9 +15,9 @@ var _ ServiceOrGroup = ServiceGroupConfig{}
 var _ ServiceOrGroup = ServiceConfig{}
 
 type ServiceOrGroup interface {
+	Build() error
 	Start() error
 	Stop() error
-	Restart() error
 }
 
 type ServiceConfigFile struct {
@@ -33,34 +33,58 @@ type ServiceGroupConfig struct {
 	ServicePaths []string
 	// Full services contained within this group
 	Services []*ServiceConfig
+	// Groups on which this group depends
+	Groups []*ServiceGroupConfig
 }
 
-func (sg ServiceGroupConfig) Start() error {
-	println("Starting Service:", sg.Name)
-	for _, service := range sg.Services {
-		err := service.Start()
+func (sg ServiceGroupConfig) Build() error {
+	println("Building group: ", sg.Name)
+	for _, group := range sg.Groups {
+		err := group.Build()
 		if err != nil {
-			log.Println(err)
+			return err
+		}
+	}
+	for _, service := range sg.Services {
+		err := service.Build()
+		if err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
+func (sg ServiceGroupConfig) Start() error {
+	println("Starting group:", sg.Name)
+	for _, group := range sg.Groups {
+		err := group.Start()
+		if err != nil {
+			// Always fail if any services in a dependant group failed
+			return err
+		}
+	}
+	var outErr error = nil
+	for _, service := range sg.Services {
+		err := service.Start()
+		if err != nil {
+			outErr = err
+			log.Println(err)
+		}
+	}
+	return outErr
+}
+
 func (sg ServiceGroupConfig) Stop() error {
-	println("Stopping Service:", sg.Name)
+	println("Stopping group:", sg.Name)
+	// TODO: Do this in reverse
 	for _, service := range sg.Services {
 		err := service.Stop()
 		if err != nil {
 			log.Println(err)
 		}
 	}
-	return nil
-}
-
-func (sg ServiceGroupConfig) Restart() error {
-	println("Restarting Service:", sg.Name)
-	for _, service := range sg.Services {
-		err := service.Restart()
+	for _, group := range sg.Groups {
+		err := group.Stop()
 		if err != nil {
 			log.Println(err)
 		}
@@ -90,6 +114,17 @@ type ServiceConfig struct {
 	}
 }
 
+func (sc ServiceConfig) Build() error {
+	println("Building service:", sc.Name)
+	command := sc.GetCommand()
+
+	if command.Pid != 0 {
+		return errors.New(sc.Name + " is currently running")
+	}
+
+	return command.BuildSync()
+}
+
 func (sc ServiceConfig) Start() error {
 	println("Starting service:", sc.Name)
 	command := sc.GetCommand()
@@ -98,12 +133,7 @@ func (sc ServiceConfig) Start() error {
 		return errors.New(sc.Name + " is currently running")
 	}
 
-	err := command.BuildSync()
-	if err != nil {
-		return nil
-	}
-	command.StartAsync()
-	return nil
+	return command.StartAsync()
 }
 
 func (sc ServiceConfig) Stop() error {
@@ -121,19 +151,6 @@ func (sc ServiceConfig) Stop() error {
 	syscall.Kill(-pgid, syscall.SIGINT)
 
 	command.clearPid()
-	return nil
-}
-
-func (sc ServiceConfig) Restart() error {
-	println("Restarting service:", sc.Name)
-	err := sc.Stop()
-	if err != nil {
-		return err
-	}
-	err = sc.Start()
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -173,27 +190,27 @@ func (sc *ServiceCommand) BuildSync() error {
 	file, err := sc.createScript(sc.Scripts.Build)
 	// Build the project and wait for completion
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer os.Remove(file.Name())
 
 	cmd := exec.Command(file.Name())
 	err = cmd.Run()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	return nil
 }
 
-func (sc *ServiceCommand) StartAsync() {
+func (sc *ServiceCommand) StartAsync() error {
 
 	println("Launching ", sc.Service.Name, "...")
 
 	// Start the project and get the PID
 	file, err := sc.createScript(sc.Scripts.Launch)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	//defer os.Remove(file.Name())
 
@@ -201,7 +218,7 @@ func (sc *ServiceCommand) StartAsync() {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	err = cmd.Start()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// TODO: Wait until process is live
@@ -212,18 +229,21 @@ func (sc *ServiceCommand) StartAsync() {
 	pidStr := strconv.Itoa(pid)
 	f, err := os.Create(sc.Service.Name + ".pid")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	f.WriteString(pidStr)
 	f.Close()
+	return nil
 }
 
 func (s *ServiceConfig) makeScript(command string, logPath string) string {
 	var buffer bytes.Buffer
 	buffer.WriteString("#!/bin/bash\n")
-	buffer.WriteString("cd ")
-	buffer.WriteString(*s.Path)
-	buffer.WriteString("\n")
+	if s.Path != nil {
+		buffer.WriteString("cd ")
+		buffer.WriteString(*s.Path)
+		buffer.WriteString("\n")
+	}
 	buffer.WriteString(command)
 	buffer.WriteString(" > ")
 	buffer.WriteString(logPath + ".log")
