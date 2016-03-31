@@ -11,17 +11,20 @@ import (
 var groups map[string]*ServiceGroupConfig
 var services map[string]*ServiceConfig
 
-func thirdPartyService(name string, command string) *ServiceConfig {
+func thirdPartyService(name string, startCommand string, stopCommand string, started string) *ServiceConfig {
 	pathStr := "$ALPHA"
 	return &ServiceConfig{
 		Name: name,
 		Path: &pathStr,
-		Commands: struct {
-			Build  string
-			Launch string
+		Commands: ServiceConfigCommands{
+			Launch: startCommand,
+			Stop:   stopCommand,
+		},
+		Properties: struct {
+			Started string
+			Custom  map[string]string
 		}{
-			Build:  "",
-			Launch: command,
+			Started: started,
 		},
 	}
 }
@@ -31,10 +34,7 @@ func playService(name string) *ServiceConfig {
 	return &ServiceConfig{
 		Name: name,
 		Path: &pathStr,
-		Commands: struct {
-			Build  string
-			Launch string
-		}{
+		Commands: ServiceConfigCommands{
 			Build:  "python tools/icbm/build.py :" + name + "_dev",
 			Launch: "YEXT_RABBITMQ=localhost thirdparty/play/play test src/com/yext/" + name,
 		},
@@ -42,7 +42,7 @@ func playService(name string) *ServiceConfig {
 			Started string
 			Custom  map[string]string
 		}{
-			Started: "started",
+			Started: "Server is up and running",
 		},
 	}
 }
@@ -52,18 +52,15 @@ func javaService(name string) *ServiceConfig {
 	return &ServiceConfig{
 		Name: name,
 		Path: &pathStr,
-		Commands: struct {
-			Build  string
-			Launch string
-		}{
+		Commands: ServiceConfigCommands{
 			Build:  "python tools/icbm/build.py :" + name,
-			Launch: "YEXT_RABBITMQ=localhost src/com/yext/" + name,
+			Launch: "YEXT_RABBITMQ=localhost YEXT_SITE=office JVM_ARGS='-Xmx3G' build/" + name + "/" + name,
 		},
 		Properties: struct {
 			Started string
 			Custom  map[string]string
 		}{
-			Started: "started",
+			Started: "Listening",
 		},
 	}
 }
@@ -73,10 +70,7 @@ func goService(name string, goPackage string) *ServiceConfig {
 	return &ServiceConfig{
 		Name: name,
 		Path: &pathStr,
-		Commands: struct {
-			Build  string
-			Launch string
-		}{
+		Commands: ServiceConfigCommands{
 			Build:  "go install " + goPackage,
 			Launch: "YEXT_RABBITMQ=localhost " + name,
 		},
@@ -84,7 +78,7 @@ func goService(name string, goPackage string) *ServiceConfig {
 			Started string
 			Custom  map[string]string
 		}{
-			Started: "started",
+			Started: "Listening",
 		},
 	}
 }
@@ -95,9 +89,10 @@ func loadConfig() {
 	groups = make(map[string]*ServiceGroupConfig)
 	services = make(map[string]*ServiceConfig)
 
-	services["rabbitmq"] = thirdPartyService("rabbitmq", "sudo rabbitmq-server")
+	services["rabbitmq"] = thirdPartyService("rabbitmq", "sudo rabbitmq-server", "sudo rabbitmqctl stop", "completed")
 	// TODO: haproxy actually needs a kill -9 to effectively die
-	services["haproxy"] = thirdPartyService("haproxy", "sudo $ALPHA/tools/bin/haproxy_localhost.sh")
+	// TODO: haproxy also doesn't have an effective start output
+	services["haproxy"] = thirdPartyService("haproxy", "sudo $ALPHA/tools/bin/haproxy_localhost.sh", "", "backend")
 
 	services["admin2"] = playService("admin2")
 	services["users"] = playService("users")

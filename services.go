@@ -7,8 +7,13 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
+	"strings"
+	"sync"
 	"syscall"
+
+	"github.com/hpcloud/tail"
 )
 
 var _ ServiceOrGroup = ServiceGroupConfig{}
@@ -67,8 +72,7 @@ func (sg ServiceGroupConfig) Start() error {
 	for _, service := range sg.Services {
 		err := service.Start()
 		if err != nil {
-			outErr = err
-			log.Println(err)
+			return err
 		}
 	}
 	return outErr
@@ -99,12 +103,7 @@ type ServiceConfig struct {
 	// Optional path to service. If nil, uses cwd
 	Path *string
 	// Commands for managing the service
-	Commands struct {
-		// Command to build
-		Build string
-		// Command to launch
-		Launch string
-	}
+	Commands ServiceConfigCommands
 	// Service state properties that can be obtained from logs
 	Properties struct {
 		// Regex to detect a line indicating the service has started successfully
@@ -112,6 +111,15 @@ type ServiceConfig struct {
 		// Custom properties, mapping a property name to a regex
 		Custom map[string]string
 	}
+}
+
+type ServiceConfigCommands struct {
+	// Command to build
+	Build string
+	// Command to launch
+	Launch string
+	// Optional command to stop
+	Stop string
 }
 
 func (sc ServiceConfig) Build() error {
@@ -140,6 +148,13 @@ func (sc ServiceConfig) Stop() error {
 	println("Stopping service:", sc.Name)
 	command := sc.GetCommand()
 
+	if command.Scripts.Stop != "" {
+		err := command.StopScript()
+		if err != nil {
+			log.Println("Stop script failed, sending kill signal")
+		}
+	}
+
 	if command.Pid == 0 {
 		return errors.New(sc.Name + " is not running")
 	}
@@ -148,7 +163,8 @@ func (sc ServiceConfig) Stop() error {
 	if err != nil {
 		return err
 	}
-	syscall.Kill(-pgid, syscall.SIGINT)
+	// TODO: Allow stronger override
+	syscall.Kill(-pgid, syscall.SIGKILL) //syscall.SIGINT)
 
 	command.clearPid()
 	return nil
@@ -161,9 +177,14 @@ type ServiceCommand struct {
 	Scripts struct {
 		Build  string
 		Launch string
+		Stop   string
 	}
-	Pid int
-	Log string
+	Pid  int
+	Logs struct {
+		Build string
+		Run   string
+		Stop  string
+	}
 
 	// TODO: Add status
 }
@@ -185,7 +206,10 @@ func (sc *ServiceCommand) createScript(content string) (*os.File, error) {
 
 func (sc *ServiceCommand) BuildSync() error {
 
-	println("Building ", sc.Service.Name, "...")
+	if sc.Scripts.Build == "" {
+		println("No need to build", sc.Service.Name)
+		return nil
+	}
 
 	file, err := sc.createScript(sc.Scripts.Build)
 	// Build the project and wait for completion
@@ -194,6 +218,8 @@ func (sc *ServiceCommand) BuildSync() error {
 	}
 	defer os.Remove(file.Name())
 
+	println("Building", sc.Service.Name, "...")
+
 	cmd := exec.Command(file.Name())
 	err = cmd.Run()
 	if err != nil {
@@ -201,6 +227,38 @@ func (sc *ServiceCommand) BuildSync() error {
 	}
 
 	return nil
+}
+
+func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
+
+	var err error = nil
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		// Read output until we get the success
+		var t *tail.Tail
+		t, err = tail.TailFile(sc.Logs.Run, tail.Config{Follow: true})
+		for line := range t.Lines {
+			println(line.Text)
+			if strings.Contains(line.Text, sc.Service.Properties.Started) {
+				println(sc.Service.Name, "started successfully!")
+				wg.Done()
+				return
+			}
+		}
+	}()
+
+	go func() {
+		// Wait until the process exists
+		command.Wait()
+		err = errors.New("Command failed!")
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	return err
 }
 
 func (sc *ServiceCommand) StartAsync() error {
@@ -221,8 +279,6 @@ func (sc *ServiceCommand) StartAsync() error {
 		return err
 	}
 
-	// TODO: Wait until process is live
-
 	pid := cmd.Process.Pid
 	println("Pid = ", pid)
 
@@ -233,10 +289,33 @@ func (sc *ServiceCommand) StartAsync() error {
 	}
 	f.WriteString(pidStr)
 	f.Close()
-	return nil
+
+	err = sc.waitUntilLive(cmd)
+	return err
+}
+
+func (sc *ServiceCommand) StopScript() error {
+
+	println("Stopping ", sc.Service.Name, "...")
+
+	// Start the project and get the PID
+	file, err := sc.createScript(sc.Scripts.Stop)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(file.Name())
+
+	cmd := exec.Command(file.Name())
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	err = cmd.Run()
+	return err
 }
 
 func (s *ServiceConfig) makeScript(command string, logPath string) string {
+	if command == "" {
+		return ""
+	}
+
 	var buffer bytes.Buffer
 	buffer.WriteString("#!/bin/bash\n")
 	if s.Path != nil {
@@ -245,11 +324,11 @@ func (s *ServiceConfig) makeScript(command string, logPath string) string {
 		buffer.WriteString("\n")
 	}
 	buffer.WriteString(command)
-	buffer.WriteString(" > ")
-	buffer.WriteString(logPath + ".log")
-	buffer.WriteString(" 2> ")
-	buffer.WriteString(logPath + "-error.log")
+	buffer.WriteString("> ")
+	buffer.WriteString(logPath)
+	buffer.WriteString(" 2>&1")
 	buffer.WriteString("\n")
+
 	return buffer.String()
 }
 
@@ -265,16 +344,31 @@ func (s *ServiceConfig) GetCommand() *ServiceCommand {
 		log.Fatal(err)
 	}
 
-	buildScript := s.makeScript(s.Commands.Build, dir+"/"+s.Name+"-build")
-	startScript := s.makeScript(s.Commands.Launch, dir+"/"+s.Name+"-run")
+	logs := struct {
+		Build string
+		Run   string
+		Stop  string
+	}{
+		Build: path.Join(dir, s.Name+"-build.log"),
+		Run:   path.Join(dir, s.Name+".log"),
+		Stop:  path.Join(dir, s.Name+"-stop.log"),
+	}
+
+	buildScript := s.makeScript(s.Commands.Build, logs.Build)
+	startScript := s.makeScript(s.Commands.Launch, logs.Run)
+	stopScript := s.makeScript(s.Commands.Stop, logs.Stop)
 	command := &ServiceCommand{
 		Service: s,
 		Scripts: struct {
 			Build  string
 			Launch string
-		}{Build: buildScript,
+			Stop   string
+		}{
+			Build:  buildScript,
 			Launch: startScript,
+			Stop:   stopScript,
 		},
+		Logs: logs,
 	}
 
 	// Retrieve the PID if available
