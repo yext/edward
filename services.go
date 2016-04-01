@@ -23,6 +23,12 @@ type ServiceOrGroup interface {
 	Build() error
 	Start() error
 	Stop() error
+	GetStatus() []ServiceStatus
+}
+
+type ServiceStatus struct {
+	Service *ServiceConfig
+	Status  string
 }
 
 type ServiceConfigFile struct {
@@ -94,6 +100,17 @@ func (sg ServiceGroupConfig) Stop() error {
 		}
 	}
 	return nil
+}
+
+func (sg ServiceGroupConfig) GetStatus() []ServiceStatus {
+	var outStatus []ServiceStatus
+	for _, service := range sg.Services {
+		outStatus = append(outStatus, service.GetStatus()...)
+	}
+	for _, group := range sg.Groups {
+		outStatus = append(outStatus, group.GetStatus()...)
+	}
+	return outStatus
 }
 
 // ServiceConfig represents a service that can be managed by Edward
@@ -170,6 +187,22 @@ func (sc ServiceConfig) Stop() error {
 
 	command.clearPid()
 	return nil
+}
+
+func (sc ServiceConfig) GetStatus() []ServiceStatus {
+	command := sc.GetCommand()
+
+	status := "STOPPED"
+	if command.Pid != 0 {
+		status = "RUNNING"
+	}
+
+	return []ServiceStatus{
+		ServiceStatus{
+			Service: &sc,
+			Status:  status,
+		},
+	}
 }
 
 type ServiceCommand struct {

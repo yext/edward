@@ -183,7 +183,15 @@ func generate(c *cli.Context) {
 }
 
 func status(c *cli.Context) {
-	println("Status")
+	name := c.Args()[0]
+	s, err := getServiceOrGroup(name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	statuses := s.GetStatus()
+	for _, status := range statuses {
+		println(status.Service.Name, ":", status.Status)
+	}
 }
 
 func messages(c *cli.Context) {
