@@ -105,12 +105,14 @@ type ServiceConfig struct {
 	// Commands for managing the service
 	Commands ServiceConfigCommands
 	// Service state properties that can be obtained from logs
-	Properties struct {
-		// Regex to detect a line indicating the service has started successfully
-		Started string
-		// Custom properties, mapping a property name to a regex
-		Custom map[string]string
-	}
+	Properties ServiceConfigProperties
+}
+
+type ServiceConfigProperties struct {
+	// Regex to detect a line indicating the service has started successfully
+	Started string
+	// Custom properties, mapping a property name to a regex
+	Custom map[string]string
 }
 
 type ServiceConfigCommands struct {
@@ -283,7 +285,7 @@ func (sc *ServiceCommand) StartAsync() error {
 	println("Pid = ", pid)
 
 	pidStr := strconv.Itoa(pid)
-	f, err := os.Create(sc.Service.Name + ".pid")
+	f, err := os.Create(sc.getPidPath())
 	if err != nil {
 		return err
 	}
@@ -334,15 +336,17 @@ func (s *ServiceConfig) makeScript(command string, logPath string) string {
 
 func (sc *ServiceCommand) clearPid() {
 	sc.Pid = 0
-	os.Remove("./" + sc.Service.Name + ".pid")
+	os.Remove(sc.getPidPath())
+}
+
+func (sc *ServiceCommand) getPidPath() string {
+	dir := EdwardConfig.PidDir
+	return path.Join(dir, sc.Service.Name+".pid")
 }
 
 func (s *ServiceConfig) GetCommand() *ServiceCommand {
 
-	dir, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
+	dir := EdwardConfig.LogDir
 
 	logs := struct {
 		Build string
@@ -372,7 +376,7 @@ func (s *ServiceConfig) GetCommand() *ServiceCommand {
 	}
 
 	// Retrieve the PID if available
-	pidFile := s.Name + ".pid"
+	pidFile := command.getPidPath()
 	if _, err := os.Stat(pidFile); err == nil {
 		dat, err := ioutil.ReadFile(pidFile)
 		if err != nil {

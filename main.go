@@ -4,9 +4,39 @@ import (
 	"errors"
 	"log"
 	"os"
+	"os/user"
+	"path"
 
 	"github.com/codegangsta/cli"
 )
+
+type EdwardConfiguration struct {
+	Dir    string
+	LogDir string
+	PidDir string
+}
+
+var EdwardConfig EdwardConfiguration = EdwardConfiguration{}
+
+func createDirIfNeeded(path string) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.MkdirAll(path, 0777)
+	}
+}
+
+func (e *EdwardConfiguration) initialize() error {
+	user, err := user.Current()
+	if err != nil {
+		return err
+	}
+	e.Dir = path.Join(user.HomeDir, ".edward")
+	e.LogDir = path.Join(e.Dir, "logs")
+	e.PidDir = path.Join(e.Dir, "pidFiles")
+	createDirIfNeeded(e.Dir)
+	createDirIfNeeded(e.LogDir)
+	createDirIfNeeded(e.PidDir)
+	return nil
+}
 
 var groups map[string]*ServiceGroupConfig
 var services map[string]*ServiceConfig
@@ -20,10 +50,7 @@ func thirdPartyService(name string, startCommand string, stopCommand string, sta
 			Launch: startCommand,
 			Stop:   stopCommand,
 		},
-		Properties: struct {
-			Started string
-			Custom  map[string]string
-		}{
+		Properties: ServiceConfigProperties{
 			Started: started,
 		},
 	}
@@ -38,10 +65,7 @@ func playService(name string) *ServiceConfig {
 			Build:  "python tools/icbm/build.py :" + name + "_dev",
 			Launch: "YEXT_RABBITMQ=localhost thirdparty/play/play test src/com/yext/" + name,
 		},
-		Properties: struct {
-			Started string
-			Custom  map[string]string
-		}{
+		Properties: ServiceConfigProperties{
 			Started: "Server is up and running",
 		},
 	}
@@ -56,10 +80,7 @@ func javaService(name string) *ServiceConfig {
 			Build:  "python tools/icbm/build.py :" + name,
 			Launch: "YEXT_RABBITMQ=localhost YEXT_SITE=office JVM_ARGS='-Xmx3G' build/" + name + "/" + name,
 		},
-		Properties: struct {
-			Started string
-			Custom  map[string]string
-		}{
+		Properties: ServiceConfigProperties{
 			Started: "Listening",
 		},
 	}
@@ -74,10 +95,7 @@ func goService(name string, goPackage string) *ServiceConfig {
 			Build:  "go install " + goPackage,
 			Launch: "YEXT_RABBITMQ=localhost " + name,
 		},
-		Properties: struct {
-			Started string
-			Custom  map[string]string
-		}{
+		Properties: ServiceConfigProperties{
 			Started: "Listening",
 		},
 	}
@@ -229,6 +247,10 @@ func main() {
 	app.Name = "Edward"
 	app.Usage = "Manage local microservices"
 	app.Before = func(c *cli.Context) error {
+		err := EdwardConfig.initialize()
+		if err != nil {
+			return err
+		}
 		loadConfig()
 		return nil
 	}
