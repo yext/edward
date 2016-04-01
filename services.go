@@ -406,11 +406,3 @@ func (s *ServiceConfig) GetCommand() *ServiceCommand {
 
 	return command
 }
-
-func (s *ServiceConfig) GetProcess() *exec.Cmd {
-	//return &exec.Cmd{
-	//	Path: "blah",
-	//	Dir:  s.Path,
-	//}
-	return &exec.Cmd{}
-}
