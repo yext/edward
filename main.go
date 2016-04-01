@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"errors"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/user"
 	"path"
+	"strings"
+	"syscall"
 
 	"github.com/codegangsta/cli"
 	"github.com/hpcloud/tail"
@@ -266,7 +270,60 @@ func doLog(c *cli.Context) {
 	log.Fatal("Service not found:", name)
 }
 
+func checkNotSudo() {
+	user, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if user.Uid == "0" {
+		log.Fatal("edward should not be run with sudo")
+	}
+}
+
+func createScriptFile(suffix string, content string) (*os.File, error) {
+	file, err := ioutil.TempFile(os.TempDir(), suffix)
+	if err != nil {
+		return nil, err
+	}
+	file.WriteString(content)
+
+	err = os.Chmod(file.Name(), 0777)
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
+}
+
+func ensureSudoAble() {
+	var buffer bytes.Buffer
+
+	buffer.WriteString("#!/bin/bash\n")
+	buffer.WriteString("sudo echo Test > /dev/null\n")
+	buffer.WriteString("ISCHILD=YES ")
+	buffer.WriteString(strings.Join(os.Args, " "))
+	buffer.WriteString("\n")
+
+	file, err := createScriptFile("sudoAbility", buffer.String())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = syscall.Exec(file.Name(), []string{file.Name()}, os.Environ())
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
+
+	checkNotSudo()
+
+	isChild := os.Getenv("ISCHILD")
+	if isChild == "" {
+		ensureSudoAble()
+		return
+	}
 
 	app := cli.NewApp()
 	app.Name = "Edward"
