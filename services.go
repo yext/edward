@@ -267,6 +267,9 @@ func (sc *ServiceCommand) StartAsync() error {
 
 	println("Launching ", sc.Service.Name, "...")
 
+	// Clear logs
+	os.Remove(sc.Logs.Run)
+
 	// Start the project and get the PID
 	file, err := sc.createScript(sc.Scripts.Launch)
 	if err != nil {

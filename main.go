@@ -8,6 +8,7 @@ import (
 	"path"
 
 	"github.com/codegangsta/cli"
+	"github.com/hpcloud/tail"
 )
 
 type EdwardConfiguration struct {
@@ -238,7 +239,23 @@ func restart(c *cli.Context) {
 }
 
 func doLog(c *cli.Context) {
-	println("Log")
+	name := c.Args()[0]
+	if _, ok := groups[name]; ok {
+		log.Fatal(errors.New("Cannot output group logs"))
+	}
+	if service, ok := services[name]; ok {
+		command := service.GetCommand()
+		runLog := command.Logs.Run
+		t, err := tail.TailFile(runLog, tail.Config{Follow: true})
+		if err != nil {
+			log.Fatal(err)
+		}
+		for line := range t.Lines {
+			println(line.Text)
+		}
+		return
+	}
+	log.Fatal("Service not found:", name)
 }
 
 func main() {
