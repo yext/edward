@@ -228,11 +228,11 @@ func start(c *cli.Context) {
 	}
 	err = s.Build()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error building ", name, ": ", err)
 	}
 	err = s.Start()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error launching ", name, ": ", err)
 	}
 }
 

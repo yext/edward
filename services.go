@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -258,6 +259,11 @@ func (sc *ServiceCommand) BuildSync() error {
 	cmd := exec.Command(file.Name())
 	err = cmd.Run()
 	if err != nil {
+		dat, errRead := ioutil.ReadFile(sc.Logs.Build)
+		if errRead != nil {
+			log.Println(err)
+		}
+		fmt.Print(string(dat))
 		return err
 	}
 
