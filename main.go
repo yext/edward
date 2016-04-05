@@ -120,6 +120,7 @@ func loadConfig() {
 	services["admin2"] = playService("admin2")
 	services["users"] = playService("users")
 	services["storm"] = playService("storm")
+	services["locationsstorm"] = playService("locationsstorm")
 	services["ProfileServer"] = javaService("ProfileServer")
 
 	services["sites-staging"] = goService("sites-staging", "yext/pages/sites/sites-staging")
@@ -134,8 +135,8 @@ func loadConfig() {
 		},
 	}
 
-	groups["base"] = &ServiceGroupConfig{
-		Name: "base",
+	groups["storm"] = &ServiceGroupConfig{
+		Name: "storm",
 		Groups: []*ServiceGroupConfig{
 			groups["thirdparty"],
 		},
@@ -143,6 +144,7 @@ func loadConfig() {
 			services["admin2"],
 			services["users"],
 			services["storm"],
+			services["locationsstorm"],
 			services["ProfileServer"],
 		},
 	}
@@ -150,7 +152,7 @@ func loadConfig() {
 	groups["pages"] = &ServiceGroupConfig{
 		Name: "pages",
 		Groups: []*ServiceGroupConfig{
-			groups["base"],
+			groups["storm"],
 		},
 		Services: []*ServiceConfig{
 			services["sites-staging"],
@@ -186,7 +188,23 @@ func generate(c *cli.Context) {
 	println("Generate config")
 }
 
+func allStatus() {
+	var statuses []ServiceStatus
+	for _, service := range services {
+		statuses = append(statuses, service.GetStatus()...)
+	}
+	for _, status := range statuses {
+		println(status.Service.Name, ":", status.Status)
+	}
+}
+
 func status(c *cli.Context) {
+
+	if len(c.Args()) == 0 {
+		allStatus()
+		return
+	}
+
 	name := c.Args()[0]
 	s, err := getServiceOrGroup(name)
 	if err != nil {
