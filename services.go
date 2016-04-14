@@ -139,21 +139,11 @@ type ServiceConfigCommands struct {
 
 func (sc ServiceConfig) Build() error {
 	command := sc.GetCommand()
-
-	if command.Pid != 0 {
-		return errors.New(sc.Name + " is currently running")
-	}
-
 	return command.BuildSync()
 }
 
 func (sc ServiceConfig) Start() error {
 	command := sc.GetCommand()
-
-	if command.Pid != 0 {
-		return errors.New(sc.Name + " is currently running")
-	}
-
 	return command.StartAsync()
 }
 
@@ -264,6 +254,11 @@ func printFile(path string) {
 func (sc *ServiceCommand) BuildSync() error {
 	printOperation("Building " + sc.Service.Name)
 
+	if sc.Pid != 0 {
+		printResult("Already running", color.FgYellow)
+		return nil
+	}
+
 	if sc.Scripts.Build == "" {
 		printResult("No build", color.FgGreen)
 		return nil
@@ -323,6 +318,10 @@ func (sc *ServiceCommand) StartAsync() error {
 
 	printOperation("Launching " + sc.Service.Name)
 
+	if sc.Pid != 0 {
+		printResult("Already running", color.FgYellow)
+		return nil
+	}
 	// Clear logs
 	os.Remove(sc.Logs.Run)
 
