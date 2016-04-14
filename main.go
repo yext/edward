@@ -127,6 +127,10 @@ func loadConfig() {
 	services["sites-storm"] = goService("sites-storm", "yext/pages/sites/sites-storm")
 	services["sites-cog"] = goService("sites-cog", "yext/pages/sites/sites-cog")
 
+	services["resellersapi"] = playService("resellersapi")
+	services["subscriptions"] = playService("subscriptions")
+	services["SalesApiServer"] = javaService("SalesApiServer")
+
 	groups["thirdparty"] = &ServiceGroupConfig{
 		Name: "thirdparty",
 		Services: []*ServiceConfig{
@@ -158,6 +162,18 @@ func loadConfig() {
 			services["sites-staging"],
 			services["sites-storm"],
 			services["sites-cog"],
+		},
+	}
+
+	groups["resellers"] = &ServiceGroupConfig{
+		Name: "resellers",
+		Groups: []*ServiceGroupConfig{
+			groups["storm"],
+		},
+		Services: []*ServiceConfig{
+			services["resellersapi"],
+			services["subscriptions"],
+			services["SalesApiServer"],
 		},
 	}
 }
