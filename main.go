@@ -233,7 +233,7 @@ func status(c *cli.Context) {
 }
 
 func messages(c *cli.Context) {
-	println("Messages")
+	log.Fatal("Unimplemented")
 }
 
 func start(c *cli.Context) {
@@ -242,10 +242,12 @@ func start(c *cli.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	println("==== Build Phase ====")
 	err = s.Build()
 	if err != nil {
 		log.Fatal("Error building ", name, ": ", err)
 	}
+	println("==== Launch Phase ====")
 	err = s.Start()
 	if err != nil {
 		log.Fatal("Error launching ", name, ": ", err)
