@@ -112,7 +112,7 @@ func loadConfig() {
 	groups = make(map[string]*ServiceGroupConfig)
 	services = make(map[string]*ServiceConfig)
 
-	services["rabbitmq"] = thirdPartyService("rabbitmq", "sudo rabbitmq-server", "sudo rabbitmqctl stop", "completed")
+	services["rabbitmq"] = thirdPartyService("rabbitmq", "rabbitmq-server", "rabbitmqctl stop", "completed")
 	// TODO: haproxy actually needs a kill -9 to effectively die
 	// TODO: haproxy also doesn't have an effective start output
 	services["haproxy"] = thirdPartyService("haproxy", "sudo $ALPHA/tools/bin/haproxy_localhost.sh", "", "backend")
