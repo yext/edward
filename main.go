@@ -178,6 +178,18 @@ func loadConfig() {
 	}
 }
 
+func getServicesOrGroups(names []string) ([]ServiceOrGroup, error) {
+	var outSG []ServiceOrGroup
+	for _, name := range names {
+		sg, err := getServiceOrGroup(name)
+		if err != nil {
+			return nil, err
+		}
+		outSG = append(outSG, sg)
+	}
+	return outSG, nil
+}
+
 func getServiceOrGroup(name string) (ServiceOrGroup, error) {
 	if group, ok := groups[name]; ok {
 		return group, nil
@@ -221,14 +233,15 @@ func status(c *cli.Context) {
 		return
 	}
 
-	name := c.Args()[0]
-	s, err := getServiceOrGroup(name)
+	sgs, err := getServicesOrGroups(c.Args())
 	if err != nil {
 		log.Fatal(err)
 	}
-	statuses := s.GetStatus()
-	for _, status := range statuses {
-		println(status.Service.Name, ":", status.Status)
+	for _, s := range sgs {
+		statuses := s.GetStatus()
+		for _, status := range statuses {
+			println(status.Service.Name, ":", status.Status)
+		}
 	}
 }
 
@@ -237,56 +250,62 @@ func messages(c *cli.Context) {
 }
 
 func start(c *cli.Context) {
-	name := c.Args()[0]
-	s, err := getServiceOrGroup(name)
+	sgs, err := getServicesOrGroups(c.Args())
 	if err != nil {
 		log.Fatal(err)
 	}
-	println("==== Build Phase ====")
-	err = s.Build()
-	if err != nil {
-		log.Fatal("Error building ", name, ": ", err)
-	}
-	println("==== Launch Phase ====")
-	err = s.Start()
-	if err != nil {
-		log.Fatal("Error launching ", name, ": ", err)
+	for _, s := range sgs {
+		println("==== Build Phase ====")
+		err = s.Build()
+		if err != nil {
+			log.Fatal("Error building ", "TODO: ADD NAME", ": ", err)
+		}
+		println("==== Launch Phase ====")
+		err = s.Start()
+		if err != nil {
+			log.Fatal("Error launching ", "TODO: ADD NAME", ": ", err)
+		}
 	}
 }
 
 func stop(c *cli.Context) {
-	name := c.Args()[0]
-	s, err := getServiceOrGroup(name)
+	sgs, err := getServicesOrGroups(c.Args())
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = s.Stop()
-	if err != nil {
-		log.Fatal(err)
+	for _, s := range sgs {
+		err = s.Stop()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
 func restart(c *cli.Context) {
-	name := c.Args()[0]
-	s, err := getServiceOrGroup(name)
+	sgs, err := getServicesOrGroups(c.Args())
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = s.Stop()
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = s.Build()
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = s.Start()
-	if err != nil {
-		log.Fatal(err)
+	for _, s := range sgs {
+		err = s.Stop()
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = s.Build()
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = s.Start()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
 func doLog(c *cli.Context) {
+	if len(c.Args()) > 1 {
+		log.Fatal(errors.New("Cannot output multiple service logs"))
+	}
 	name := c.Args()[0]
 	if _, ok := groups[name]; ok {
 		log.Fatal(errors.New("Cannot output group logs"))
