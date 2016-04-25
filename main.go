@@ -131,6 +131,13 @@ func loadConfig() {
 	services["subscriptions"] = playService("subscriptions")
 	services["SalesApiServer"] = javaService("SalesApiServer")
 
+	services["beaconserver"] = javaService("BeaconServer")
+	services["dam"] = playService("dam")
+	services["bagstorm"] = playService("bagstorm")
+
+	// TODO: Add --businessIds flags and disable category generation?
+	services["profilesearchserver"] = javaService("ProfileSearchServer")
+
 	groups["thirdparty"] = &ServiceGroupConfig{
 		Name: "thirdparty",
 		Services: []*ServiceConfig{
@@ -139,8 +146,8 @@ func loadConfig() {
 		},
 	}
 
-	groups["storm"] = &ServiceGroupConfig{
-		Name: "storm",
+	groups["stormgrp"] = &ServiceGroupConfig{
+		Name: "stormgrp",
 		Groups: []*ServiceGroupConfig{
 			groups["thirdparty"],
 		},
@@ -156,7 +163,7 @@ func loadConfig() {
 	groups["pages"] = &ServiceGroupConfig{
 		Name: "pages",
 		Groups: []*ServiceGroupConfig{
-			groups["storm"],
+			groups["stormgrp"],
 		},
 		Services: []*ServiceConfig{
 			services["sites-staging"],
@@ -174,6 +181,28 @@ func loadConfig() {
 			services["resellersapi"],
 			services["subscriptions"],
 			services["SalesApiServer"],
+		},
+	}
+
+	groups["bag"] = &ServiceGroupConfig{
+		Name: "bag",
+		Groups: []*ServiceGroupConfig{
+			groups["stormgrp"],
+		},
+		Services: []*ServiceConfig{
+			services["beaconserver"],
+			services["dam"],
+			services["bagstorm"],
+		},
+	}
+
+	groups["profilesearch"] = &ServiceGroupConfig{
+		Name: "profilesearch",
+		Groups: []*ServiceGroupConfig{
+			groups["stormgrp"],
+		},
+		Services: []*ServiceConfig{
+			services["profilesearchserver"],
 		},
 	}
 }
