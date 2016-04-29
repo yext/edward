@@ -33,17 +33,10 @@ type ServiceStatus struct {
 	Status  string
 }
 
-type ServiceConfigFile struct {
-	Services []ServiceConfig
-	Groups   []ServiceGroupConfig
-}
-
 // ServiceGroupConfig is a group of services that can be managed together
 type ServiceGroupConfig struct {
 	// A name for this group, used to identify it in commands
 	Name string
-	// Paths to child service config files
-	ServicePaths []string
 	// Full services contained within this group
 	Services []*ServiceConfig
 	// Groups on which this group depends
@@ -112,29 +105,29 @@ func (sg ServiceGroupConfig) GetStatus() []ServiceStatus {
 // ServiceConfig represents a service that can be managed by Edward
 type ServiceConfig struct {
 	// Service name, used to identify in commands
-	Name string
+	Name string `json:"name"`
 	// Optional path to service. If nil, uses cwd
-	Path *string
+	Path *string `json:"path"`
 	// Commands for managing the service
-	Commands ServiceConfigCommands
+	Commands ServiceConfigCommands `json:"commands"`
 	// Service state properties that can be obtained from logs
-	Properties ServiceConfigProperties
+	Properties ServiceConfigProperties `json:"log_properties"`
 }
 
 type ServiceConfigProperties struct {
 	// Regex to detect a line indicating the service has started successfully
-	Started string
+	Started string `json:"started"`
 	// Custom properties, mapping a property name to a regex
-	Custom map[string]string
+	Custom map[string]string `json:"-"`
 }
 
 type ServiceConfigCommands struct {
 	// Command to build
-	Build string
+	Build string `json:"build"`
 	// Command to launch
-	Launch string
+	Launch string `json:"launch"`
 	// Optional command to stop
-	Stop string
+	Stop string `json:"stop"`
 }
 
 func (sc ServiceConfig) Build() error {

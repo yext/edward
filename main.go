@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"io/ioutil"
@@ -107,7 +108,7 @@ func goService(name string, goPackage string) *ServiceConfig {
 }
 
 func loadConfig() {
-	// TODO: Load configuration from the config file and populate the service and groups variables
+	// TODO: Load configuration from the config file edward.json where available
 
 	groups = make(map[string]*ServiceGroupConfig)
 	services = make(map[string]*ServiceConfig)
@@ -242,7 +243,36 @@ func list(c *cli.Context) {
 }
 
 func generate(c *cli.Context) {
-	println("Generate config")
+
+	serviceList := []ServiceConfig{}
+	for _, val := range services {
+		serviceList = append(serviceList, *val)
+	}
+
+	groupList := []ServiceGroupConfig{}
+	for _, val := range groups {
+		groupList = append(groupList, *val)
+	}
+
+	cfg := NewConfig(serviceList, groupList)
+
+	f, err := os.Create("edward.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer f.Close()
+
+	w := bufio.NewWriter(f)
+	err = cfg.Save(w)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w.Flush()
+
+	println("Wrote to edward.json")
+
 }
 
 func allStatus() {
