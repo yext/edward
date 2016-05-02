@@ -18,14 +18,58 @@ type GroupDef struct {
 	Children []string `json:"children"`
 }
 
-func NewConfig(services []ServiceConfig, groups []ServiceGroupConfig) Config {
-	cfg := Config{
-		Env:      []string{},
-		Services: services,
-		Groups:   []GroupDef{},
+func stringSliceIntersect(slices [][]string) []string {
+	var counts map[string]int = make(map[string]int)
+	for _, s := range slices {
+		for _, v := range s {
+			counts[v] += 1
+		}
 	}
 
-	// TODO: Iterate over all services and see if any share env
+	var outSlice []string
+	for v, count := range counts {
+		if count == len(slices) {
+			outSlice = append(outSlice, v)
+		}
+	}
+	return outSlice
+}
+
+func stringSliceRemoveCommon(common []string, original []string) []string {
+	var commonMap map[string]interface{} = make(map[string]interface{})
+	for _, s := range common {
+		commonMap[s] = struct{}{}
+	}
+	var outSlice []string
+	for _, s := range original {
+		if _, ok := commonMap[s]; !ok {
+			outSlice = append(outSlice, s)
+		}
+	}
+	return outSlice
+}
+
+func NewConfig(services []ServiceConfig, groups []ServiceGroupConfig) Config {
+
+	// Find Env settings common to all services
+	var allEnvSlices [][]string
+	for _, s := range services {
+		allEnvSlices = append(allEnvSlices, s.Env)
+	}
+	env := stringSliceIntersect(allEnvSlices)
+
+	// Remove common settings from services
+	var svcs []ServiceConfig
+	for _, s := range services {
+		s.Env = stringSliceRemoveCommon(env, s.Env)
+		svcs = append(svcs, s)
+	}
+
+	cfg := Config{
+		Env:      env,
+		Services: svcs,
+		Groups:   []GroupDef{},
+	}
 
 	for _, group := range groups {
 		grp := GroupDef{

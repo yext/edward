@@ -52,6 +52,7 @@ func thirdPartyService(name string, startCommand string, stopCommand string, sta
 	return &ServiceConfig{
 		Name: name,
 		Path: &pathStr,
+		Env:  []string{"YEXT_RABBITMQ=localhost"},
 		Commands: ServiceConfigCommands{
 			Launch: startCommand,
 			Stop:   stopCommand,
