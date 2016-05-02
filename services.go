@@ -18,88 +18,9 @@ import (
 	"github.com/hpcloud/tail"
 )
 
-var _ ServiceOrGroup = ServiceGroupConfig{}
-var _ ServiceOrGroup = ServiceConfig{}
-
-type ServiceOrGroup interface {
-	Build() error
-	Start() error
-	Stop() error
-	GetStatus() []ServiceStatus
-}
-
 type ServiceStatus struct {
 	Service *ServiceConfig
 	Status  string
-}
-
-// ServiceGroupConfig is a group of services that can be managed together
-type ServiceGroupConfig struct {
-	// A name for this group, used to identify it in commands
-	Name string
-	// Full services contained within this group
-	Services []*ServiceConfig
-	// Groups on which this group depends
-	Groups []*ServiceGroupConfig
-}
-
-func (sg ServiceGroupConfig) Build() error {
-	println("Building group: ", sg.Name)
-	for _, group := range sg.Groups {
-		err := group.Build()
-		if err != nil {
-			return err
-		}
-	}
-	for _, service := range sg.Services {
-		err := service.Build()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (sg ServiceGroupConfig) Start() error {
-	println("Starting group:", sg.Name)
-	for _, group := range sg.Groups {
-		err := group.Start()
-		if err != nil {
-			// Always fail if any services in a dependant group failed
-			return err
-		}
-	}
-	var outErr error = nil
-	for _, service := range sg.Services {
-		err := service.Start()
-		if err != nil {
-			return err
-		}
-	}
-	return outErr
-}
-
-func (sg ServiceGroupConfig) Stop() error {
-	println("=== Group:", sg.Name, "===")
-	// TODO: Do this in reverse
-	for _, service := range sg.Services {
-		_ = service.Stop()
-	}
-	for _, group := range sg.Groups {
-		_ = group.Stop()
-	}
-	return nil
-}
-
-func (sg ServiceGroupConfig) GetStatus() []ServiceStatus {
-	var outStatus []ServiceStatus
-	for _, service := range sg.Services {
-		outStatus = append(outStatus, service.GetStatus()...)
-	}
-	for _, group := range sg.Groups {
-		outStatus = append(outStatus, group.GetStatus()...)
-	}
-	return outStatus
 }
 
 // ServiceConfig represents a service that can be managed by Edward
@@ -112,6 +33,10 @@ type ServiceConfig struct {
 	Commands ServiceConfigCommands `json:"commands"`
 	// Service state properties that can be obtained from logs
 	Properties ServiceConfigProperties `json:"log_properties"`
+
+	// Env holds environment variables for a service, for example: GOPATH=~/gocode/
+	// These will be added to the vars in the environment under which the Edward command was run
+	Env []string
 }
 
 type ServiceConfigProperties struct {
@@ -128,6 +53,31 @@ type ServiceConfigCommands struct {
 	Launch string `json:"launch"`
 	// Optional command to stop
 	Stop string `json:"stop"`
+}
+
+// ServiceGroupConfig is a group of services that can be managed together
+type ServiceGroupConfig struct {
+	// A name for this group, used to identify it in commands
+	Name string
+	// Full services contained within this group
+	Services []*ServiceConfig
+	// Groups on which this group depends
+	Groups []*ServiceGroupConfig
+}
+
+var _ ServiceOrGroup = ServiceGroupConfig{}
+var _ ServiceOrGroup = ServiceConfig{}
+
+type ServiceOrGroup interface {
+	GetName() string
+	Build() error
+	Start() error
+	Stop() error
+	GetStatus() []ServiceStatus
+}
+
+func (sc ServiceConfig) GetName() string {
+	return sc.Name
 }
 
 func (sc ServiceConfig) Build() error {
@@ -190,6 +140,69 @@ func (sc ServiceConfig) GetStatus() []ServiceStatus {
 	}
 }
 
+func (sg ServiceGroupConfig) GetName() string {
+	return sg.Name
+}
+
+func (sg ServiceGroupConfig) Build() error {
+	println("Building group: ", sg.Name)
+	for _, group := range sg.Groups {
+		err := group.Build()
+		if err != nil {
+			return err
+		}
+	}
+	for _, service := range sg.Services {
+		err := service.Build()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (sg ServiceGroupConfig) Start() error {
+	println("Starting group:", sg.Name)
+	for _, group := range sg.Groups {
+		err := group.Start()
+		if err != nil {
+			// Always fail if any services in a dependant group failed
+			return err
+		}
+	}
+	var outErr error = nil
+	for _, service := range sg.Services {
+		err := service.Start()
+		if err != nil {
+			return err
+		}
+	}
+	return outErr
+}
+
+func (sg ServiceGroupConfig) Stop() error {
+	println("=== Group:", sg.Name, "===")
+	// TODO: Do this in reverse
+	for _, service := range sg.Services {
+		_ = service.Stop()
+	}
+	for _, group := range sg.Groups {
+		_ = group.Stop()
+	}
+	return nil
+}
+
+func (sg ServiceGroupConfig) GetStatus() []ServiceStatus {
+	var outStatus []ServiceStatus
+	for _, service := range sg.Services {
+		outStatus = append(outStatus, service.GetStatus()...)
+	}
+	for _, group := range sg.Groups {
+		outStatus = append(outStatus, group.GetStatus()...)
+	}
+	return outStatus
+}
+
 type ServiceCommand struct {
 	// Parent service config
 	Service *ServiceConfig
@@ -205,8 +218,6 @@ type ServiceCommand struct {
 		Run   string
 		Stop  string
 	}
-
-	// TODO: Add status
 }
 
 func (sc *ServiceCommand) createScript(content string) (*os.File, error) {
@@ -225,7 +236,7 @@ func (sc *ServiceCommand) createScript(content string) (*os.File, error) {
 }
 
 func printOperation(operation string) {
-	print(operation, "...\t")
+	fmt.Printf("%-50s", operation+"...")
 }
 
 func printResult(message string, c color.Attribute) {
@@ -327,6 +338,8 @@ func (sc *ServiceCommand) StartAsync() error {
 
 	cmd := exec.Command(file.Name())
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, sc.Service.Env...)
 	err = cmd.Start()
 	if err != nil {
 		printResult("Failed", color.FgRed)
@@ -381,7 +394,7 @@ func (s *ServiceConfig) makeScript(command string, logPath string) string {
 		buffer.WriteString("\n")
 	}
 	buffer.WriteString(command)
-	buffer.WriteString("> ")
+	buffer.WriteString(" > ")
 	buffer.WriteString(logPath)
 	buffer.WriteString(" 2>&1")
 	buffer.WriteString("\n")

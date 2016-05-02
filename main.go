@@ -67,9 +67,10 @@ func playService(name string) *ServiceConfig {
 	return &ServiceConfig{
 		Name: name,
 		Path: &pathStr,
+		Env:  []string{"YEXT_RABBITMQ=localhost"},
 		Commands: ServiceConfigCommands{
 			Build:  "python tools/icbm/build.py :" + name + "_dev",
-			Launch: "YEXT_RABBITMQ=localhost thirdparty/play/play test src/com/yext/" + name,
+			Launch: "thirdparty/play/play test src/com/yext/" + name,
 		},
 		Properties: ServiceConfigProperties{
 			Started: "Server is up and running",
@@ -82,9 +83,10 @@ func javaService(name string) *ServiceConfig {
 	return &ServiceConfig{
 		Name: name,
 		Path: &pathStr,
+		Env:  []string{"YEXT_RABBITMQ=localhost", "YEXT_SITE=office"},
 		Commands: ServiceConfigCommands{
 			Build:  "python tools/icbm/build.py :" + name,
-			Launch: "YEXT_RABBITMQ=localhost YEXT_SITE=office JVM_ARGS='-Xmx3G' build/" + name + "/" + name,
+			Launch: "JVM_ARGS='-Xmx3G' build/" + name + "/" + name,
 		},
 		Properties: ServiceConfigProperties{
 			Started: "Listening",
@@ -97,9 +99,10 @@ func goService(name string, goPackage string) *ServiceConfig {
 	return &ServiceConfig{
 		Name: name,
 		Path: &pathStr,
+		Env:  []string{"YEXT_RABBITMQ=localhost"},
 		Commands: ServiceConfigCommands{
 			Build:  "go install " + goPackage,
-			Launch: "YEXT_RABBITMQ=localhost " + name,
+			Launch: name,
 		},
 		Properties: ServiceConfigProperties{
 			Started: "Listening",
@@ -317,12 +320,12 @@ func start(c *cli.Context) {
 		println("==== Build Phase ====")
 		err = s.Build()
 		if err != nil {
-			log.Fatal("Error building ", "TODO: ADD NAME", ": ", err)
+			log.Fatal("Error building ", s.GetName(), ": ", err)
 		}
 		println("==== Launch Phase ====")
 		err = s.Start()
 		if err != nil {
-			log.Fatal("Error launching ", "TODO: ADD NAME", ": ", err)
+			log.Fatal("Error launching ", s.GetName(), ": ", err)
 		}
 	}
 }
