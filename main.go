@@ -111,10 +111,24 @@ func goService(name string, goPackage string) *ServiceConfig {
 }
 
 func loadConfig() {
-	// TODO: Load configuration from the config file edward.json where available
-
 	groups = make(map[string]*ServiceGroupConfig)
 	services = make(map[string]*ServiceConfig)
+
+	if _, err := os.Stat("edward.json"); err == nil {
+		println("Loading configuration from edward.json")
+		r, err := os.Open("edward.json")
+		if err != nil {
+			log.Fatal(err)
+		}
+		config, err := LoadConfig(r)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		services = config.ServiceMap
+		groups = config.GroupMap
+		return
+	}
 
 	services["rabbitmq"] = thirdPartyService("rabbitmq", "rabbitmq-server", "rabbitmqctl stop", "completed")
 	// TODO: haproxy actually needs a kill -9 to effectively die
