@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"io/ioutil"
@@ -9,6 +8,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -63,61 +63,42 @@ func thirdPartyService(name string, startCommand string, stopCommand string, sta
 	}
 }
 
-func playService(name string) *ServiceConfig {
-	pathStr := "$ALPHA"
-	return &ServiceConfig{
-		Name: name,
-		Path: &pathStr,
-		Env:  []string{"YEXT_RABBITMQ=localhost"},
-		Commands: ServiceConfigCommands{
-			Build:  "python tools/icbm/build.py :" + name + "_dev",
-			Launch: "thirdparty/play/play test src/com/yext/" + name,
-		},
-		Properties: ServiceConfigProperties{
-			Started: "Server is up and running",
-		},
+func getAlpha() string {
+	for _, env := range os.Environ() {
+		pair := strings.Split(env, "=")
+		if pair[0] == "ALPHA" {
+			return pair[1]
+		}
+	}
+	return ""
+}
+
+func addFoundServices() {
+	foundServices, _, err := generateServices(getAlpha())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, s := range foundServices {
+		if _, found := services[s.Name]; !found {
+			services[s.Name] = s
+		}
 	}
 }
 
-func javaService(name string) *ServiceConfig {
-	pathStr := "$ALPHA"
-	return &ServiceConfig{
-		Name: name,
-		Path: &pathStr,
-		Env:  []string{"YEXT_RABBITMQ=localhost", "YEXT_SITE=office"},
-		Commands: ServiceConfigCommands{
-			Build:  "python tools/icbm/build.py :" + name,
-			Launch: "JVM_ARGS='-Xmx3G' build/" + name + "/" + name,
-		},
-		Properties: ServiceConfigProperties{
-			Started: "Listening",
-		},
-	}
-}
-
-func goService(name string, goPackage string) *ServiceConfig {
-	pathStr := "$ALPHA"
-	return &ServiceConfig{
-		Name: name,
-		Path: &pathStr,
-		Env:  []string{"YEXT_RABBITMQ=localhost"},
-		Commands: ServiceConfigCommands{
-			Build:  "go install " + goPackage,
-			Launch: name,
-		},
-		Properties: ServiceConfigProperties{
-			Started: "Listening",
-		},
-	}
+func getConfigPath() string {
+	return filepath.Join(EdwardConfig.Dir, "edward.json")
 }
 
 func loadConfig() {
 	groups = make(map[string]*ServiceGroupConfig)
 	services = make(map[string]*ServiceConfig)
 
-	if _, err := os.Stat("edward.json"); err == nil {
-		println("Loading configuration from edward.json")
-		r, err := os.Open("edward.json")
+	configPath := getConfigPath()
+
+	if _, err := os.Stat(configPath); err == nil {
+		println("Loading configuration from", configPath)
+		r, err := os.Open(configPath)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -129,101 +110,11 @@ func loadConfig() {
 		services = config.ServiceMap
 		groups = config.GroupMap
 		return
+	} else {
+		addFoundServices()
+		applyHardCodedServicesAndGroups()
 	}
 
-	services["rabbitmq"] = thirdPartyService("rabbitmq", "rabbitmq-server", "rabbitmqctl stop", "completed")
-	// TODO: haproxy actually needs a kill -9 to effectively die
-	// TODO: haproxy also doesn't have an effective start output
-	services["haproxy"] = thirdPartyService("haproxy", "sudo $ALPHA/tools/bin/haproxy_localhost.sh", "", "backend")
-
-	services["admin2"] = playService("admin2")
-	services["users"] = playService("users")
-	services["storm"] = playService("storm")
-	services["locationsstorm"] = playService("locationsstorm")
-	services["ProfileServer"] = javaService("ProfileServer")
-
-	services["sites-staging"] = goService("sites-staging", "yext/pages/sites/sites-staging")
-	services["sites-storm"] = goService("sites-storm", "yext/pages/sites/sites-storm")
-	services["sites-cog"] = goService("sites-cog", "yext/pages/sites/sites-cog")
-
-	services["resellersapi"] = playService("resellersapi")
-	services["subscriptions"] = playService("subscriptions")
-	services["SalesApiServer"] = javaService("SalesApiServer")
-
-	services["beaconserver"] = javaService("BeaconServer")
-	services["dam"] = playService("dam")
-	services["bagstorm"] = playService("bagstorm")
-
-	// TODO: Add --businessIds flags and disable category generation?
-	services["profilesearchserver"] = javaService("ProfileSearchServer")
-
-	groups["thirdparty"] = &ServiceGroupConfig{
-		Name: "thirdparty",
-		Services: []*ServiceConfig{
-			services["rabbitmq"],
-			services["haproxy"],
-		},
-	}
-
-	groups["stormgrp"] = &ServiceGroupConfig{
-		Name: "stormgrp",
-		Groups: []*ServiceGroupConfig{
-			groups["thirdparty"],
-		},
-		Services: []*ServiceConfig{
-			services["admin2"],
-			services["users"],
-			services["storm"],
-			services["locationsstorm"],
-			services["ProfileServer"],
-		},
-	}
-
-	groups["pages"] = &ServiceGroupConfig{
-		Name: "pages",
-		Groups: []*ServiceGroupConfig{
-			groups["stormgrp"],
-		},
-		Services: []*ServiceConfig{
-			services["sites-staging"],
-			services["sites-storm"],
-			services["sites-cog"],
-		},
-	}
-
-	groups["resellers"] = &ServiceGroupConfig{
-		Name: "resellers",
-		Groups: []*ServiceGroupConfig{
-			groups["storm"],
-		},
-		Services: []*ServiceConfig{
-			services["resellersapi"],
-			services["subscriptions"],
-			services["SalesApiServer"],
-		},
-	}
-
-	groups["bag"] = &ServiceGroupConfig{
-		Name: "bag",
-		Groups: []*ServiceGroupConfig{
-			groups["stormgrp"],
-		},
-		Services: []*ServiceConfig{
-			services["beaconserver"],
-			services["dam"],
-			services["bagstorm"],
-		},
-	}
-
-	groups["profilesearch"] = &ServiceGroupConfig{
-		Name: "profilesearch",
-		Groups: []*ServiceGroupConfig{
-			groups["stormgrp"],
-		},
-		Services: []*ServiceConfig{
-			services["profilesearchserver"],
-		},
-	}
 }
 
 func getServicesOrGroups(names []string) ([]ServiceOrGroup, error) {
@@ -262,34 +153,15 @@ func list(c *cli.Context) {
 
 func generate(c *cli.Context) {
 
-	serviceList := []ServiceConfig{}
-	for _, val := range services {
-		serviceList = append(serviceList, *val)
-	}
+	// Add any new services to the config as appropriate
+	addFoundServices()
 
-	groupList := []ServiceGroupConfig{}
-	for _, val := range groups {
-		groupList = append(groupList, *val)
-	}
+	configPath := getConfigPath()
 
-	cfg := NewConfig(serviceList, groupList)
-
-	f, err := os.Create("edward.json")
-	if err != nil {
+	if err := generateConfigFile(configPath); err != nil {
 		log.Fatal(err)
 	}
-
-	defer f.Close()
-
-	w := bufio.NewWriter(f)
-	err = cfg.Save(w)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	w.Flush()
-
-	println("Wrote to edward.json")
+	println("Wrote to", configPath)
 
 }
 

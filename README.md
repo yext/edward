@@ -43,13 +43,13 @@ Remember that you will need to rename again if you previously changed the name o
        --help, -h		show help
        --version, -v	print the version
 
-At the time of writing, the generate and messages commands are not implemented.
+At the time of writing, the messages command is not implemented, and may be dropped from the design.
 
-## Running Pages
+## Running Services and Groups
 
-This prototype includes hard-coded configuration for third party tools, a basic Storm setup, and Pages.
+This prototype detects Play, Java and Go projects under $ALPHA, and contains some hard-coded groups to get you started.
 
-The *pages* group has been provided to collect all the services that make up Pages, including *sites-staging*, *sites-cog*, *sites-storm* and other services on which they depend.
+For example, the *pages* group has been provided to collect all the services that make up Pages, including *sites-staging*, *sites-cog*, *sites-storm* and other services on which they depend.
 
 To start the services necessary for running Pages locally:
 
@@ -66,6 +66,18 @@ If you want to view the logs for this run of sites-cog, for example, you can cal
     edward-prototype.git log sites-cog
     
 Note that you can only do this for a single service, `log pages`, for example, will cause an error.
+
+## Generating and Modifying service/group configuration
+
+The `generate` command will create a JSON file defining the detected services and hard-coded groups.
+
+    edward-prototype.git generate
+
+This file will currently be generated at the path: *~/.edward/edward.json*
+
+If this file exists when you run the Edward Prototype command, the config will be used to load services and groups. Feel free to add new groups to your config as you see fit!
+
+Running `generate` when a config file already exists will attempt to autodetect any new services and add them to this config.
 
 ## sudo
 

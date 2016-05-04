@@ -6,9 +6,10 @@ import (
 )
 
 type Config struct {
-	Env        []string                       `json:"env"`
-	Services   []ServiceConfig                `json:"services"`
-	Groups     []GroupDef                     `json:"groups"`
+	Env      []string        `json:"env"`
+	Groups   []GroupDef      `json:"groups"`
+	Services []ServiceConfig `json:"services"`
+
 	ServiceMap map[string]*ServiceConfig      `json:"-"`
 	GroupMap   map[string]*ServiceGroupConfig `json:"-"`
 }
@@ -82,7 +83,9 @@ func NewConfig(services []ServiceConfig, groups []ServiceGroupConfig) Config {
 			}
 		}
 		for _, cs := range group.Services {
-			grp.Children = append(grp.Children, cs.Name)
+			if cs != nil {
+				grp.Children = append(grp.Children, cs.Name)
+			}
 		}
 		cfg.Groups = append(cfg.Groups, grp)
 	}
