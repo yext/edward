@@ -171,7 +171,9 @@ func allStatus() {
 		statuses = append(statuses, service.GetStatus()...)
 	}
 	for _, status := range statuses {
-		println(status.Service.Name, ":", status.Status)
+		if status.Status != "STOPPED" {
+			println(status.Service.Name, ":", status.Status)
+		}
 	}
 }
 
