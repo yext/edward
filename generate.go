@@ -295,6 +295,7 @@ func applyHardCodedServicesAndGroups() {
 			services["sites-staging"],
 			services["sites-storm"],
 			services["sites-cog"],
+			services["sites-admin"],
 			services["sites-hook"],
 		},
 	}
