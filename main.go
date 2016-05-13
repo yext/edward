@@ -140,7 +140,7 @@ func getServiceOrGroup(name string) (ServiceOrGroup, error) {
 	return nil, errors.New("Service or group not found")
 }
 
-func list(c *cli.Context) {
+func list(c *cli.Context) error {
 
 	var groupNames []string
 	var serviceNames []string
@@ -163,9 +163,11 @@ func list(c *cli.Context) {
 	for _, name := range serviceNames {
 		println("\t", name)
 	}
+
+	return nil
 }
 
-func generate(c *cli.Context) {
+func generate(c *cli.Context) error {
 
 	// Add any new services to the config as appropriate
 	addFoundServices()
@@ -173,10 +175,11 @@ func generate(c *cli.Context) {
 	configPath := getConfigPath()
 
 	if err := generateConfigFile(configPath); err != nil {
-		log.Fatal(err)
+		return err
 	}
 	println("Wrote to", configPath)
 
+	return nil
 }
 
 func allStatus() {
@@ -191,16 +194,16 @@ func allStatus() {
 	}
 }
 
-func status(c *cli.Context) {
+func status(c *cli.Context) error {
 
 	if len(c.Args()) == 0 {
 		allStatus()
-		return
+		return nil
 	}
 
 	sgs, err := getServicesOrGroups(c.Args())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	for _, s := range sgs {
 		statuses := s.GetStatus()
@@ -208,86 +211,90 @@ func status(c *cli.Context) {
 			println(status.Service.Name, ":", status.Status)
 		}
 	}
+	return nil
 }
 
-func messages(c *cli.Context) {
-	log.Fatal("Unimplemented")
+func messages(c *cli.Context) error {
+	return errors.New("Unimplemented")
 }
 
-func start(c *cli.Context) {
+func start(c *cli.Context) error {
 	sgs, err := getServicesOrGroups(c.Args())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	for _, s := range sgs {
 		println("==== Build Phase ====")
 		err = s.Build()
 		if err != nil {
-			log.Fatal("Error building ", s.GetName(), ": ", err)
+			return errors.New("Error building " + s.GetName() + ": " + err.Error())
 		}
 		println("==== Launch Phase ====")
 		err = s.Start()
 		if err != nil {
-			log.Fatal("Error launching ", s.GetName(), ": ", err)
+			return errors.New("Error launching " + s.GetName() + ": " + err.Error())
 		}
 	}
+	return nil
 }
 
-func stop(c *cli.Context) {
+func stop(c *cli.Context) error {
 	sgs, err := getServicesOrGroups(c.Args())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	for _, s := range sgs {
 		err = s.Stop()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
+	return nil
 }
 
-func restart(c *cli.Context) {
+func restart(c *cli.Context) error {
 	sgs, err := getServicesOrGroups(c.Args())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	for _, s := range sgs {
 		err = s.Stop()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		err = s.Build()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		err = s.Start()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
+	return nil
 }
 
-func doLog(c *cli.Context) {
+func doLog(c *cli.Context) error {
 	if len(c.Args()) > 1 {
-		log.Fatal(errors.New("Cannot output multiple service logs"))
+		return errors.New("Cannot output multiple service logs")
 	}
 	name := c.Args()[0]
 	if _, ok := groups[name]; ok {
-		log.Fatal(errors.New("Cannot output group logs"))
+		return errors.New("Cannot output group logs")
 	}
 	if service, ok := services[name]; ok {
 		command := service.GetCommand()
 		runLog := command.Logs.Run
 		t, err := tail.TailFile(runLog, tail.Config{Follow: true})
 		if err != nil {
-			log.Fatal(err)
+			return nil
 		}
 		for line := range t.Lines {
 			println(line.Text)
 		}
-		return
+		return nil
 	}
-	log.Fatal("Service not found:", name)
+	return errors.New("Service not found: " + name)
 }
 
 func checkNotSudo() {
@@ -400,5 +407,8 @@ func main() {
 		},
 	}
 
-	app.Run(os.Args)
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
