@@ -9,6 +9,7 @@ import (
 	"os/user"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"syscall"
 
@@ -140,13 +141,26 @@ func getServiceOrGroup(name string) (ServiceOrGroup, error) {
 }
 
 func list(c *cli.Context) {
+
+	var groupNames []string
+	var serviceNames []string
+	for name, _ := range groups {
+		groupNames = append(groupNames, name)
+	}
+	for name, _ := range services {
+		serviceNames = append(serviceNames, name)
+	}
+
+	sort.Strings(groupNames)
+	sort.Strings(serviceNames)
+
 	println("Services and groups")
 	println("Groups:")
-	for name, _ := range groups {
+	for _, name := range groupNames {
 		println("\t", name)
 	}
 	println("Services:")
-	for name, _ := range services {
+	for _, name := range serviceNames {
 		println("\t", name)
 	}
 }
