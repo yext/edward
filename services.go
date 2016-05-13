@@ -226,6 +226,7 @@ func (sc *ServiceCommand) createScript(content string) (*os.File, error) {
 		return nil, err
 	}
 	file.WriteString(content)
+	file.Close()
 
 	err = os.Chmod(file.Name(), 0777)
 	if err != nil {
