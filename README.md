@@ -6,6 +6,8 @@ Full proposal document at: https://docs.google.com/a/yext.com/document/d/16Y8qWT
 
 ## Installation
 
+Edward uses the vendor folder, and as such, Go 1.6 is recommended.
+
     go get stash.office.yext.com/scm/~telliott/edward-prototype.git
 
 This will download and install the tool as 'edward-prototype.git' in your go bin directory. The .git suffix is an unfortunate side effect of using Stash, but there is no harm in renaming the executable if you wish.
