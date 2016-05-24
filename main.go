@@ -18,9 +18,10 @@ import (
 )
 
 type EdwardConfiguration struct {
-	Dir    string
-	LogDir string
-	PidDir string
+	Dir       string
+	LogDir    string
+	PidDir    string
+	ScriptDir string
 }
 
 var EdwardConfig EdwardConfiguration = EdwardConfiguration{}
@@ -39,9 +40,11 @@ func (e *EdwardConfiguration) initialize() error {
 	e.Dir = path.Join(user.HomeDir, ".edward")
 	e.LogDir = path.Join(e.Dir, "logs")
 	e.PidDir = path.Join(e.Dir, "pidFiles")
+	e.ScriptDir = path.Join(e.Dir, "scriptFiles")
 	createDirIfNeeded(e.Dir)
 	createDirIfNeeded(e.LogDir)
 	createDirIfNeeded(e.PidDir)
+	createDirIfNeeded(e.ScriptDir)
 	return nil
 }
 

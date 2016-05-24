@@ -112,7 +112,8 @@ func (sc ServiceConfig) Stop() error {
 	// TODO: Allow stronger override
 	syscall.Kill(-pgid, syscall.SIGKILL) //syscall.SIGINT)
 
-	command.clearPid()
+	// Remove leftover files
+	command.clearState()
 
 	if scriptErr == nil {
 		printResult("OK", color.FgGreen)
@@ -220,8 +221,8 @@ type ServiceCommand struct {
 	}
 }
 
-func (sc *ServiceCommand) createScript(content string) (*os.File, error) {
-	file, err := ioutil.TempFile(os.TempDir(), sc.Service.Name)
+func (sc *ServiceCommand) createScript(content string, scriptType string) (*os.File, error) {
+	file, err := os.Create(path.Join(EdwardConfig.ScriptDir, sc.Service.Name+"-"+scriptType))
 	if err != nil {
 		return nil, err
 	}
@@ -234,6 +235,10 @@ func (sc *ServiceCommand) createScript(content string) (*os.File, error) {
 	}
 
 	return file, nil
+}
+
+func (sc *ServiceCommand) deleteScript(scriptType string) error {
+	return os.Remove(path.Join(EdwardConfig.ScriptDir, sc.Service.Name+"-"+scriptType))
 }
 
 func printOperation(operation string) {
@@ -269,12 +274,12 @@ func (sc *ServiceCommand) BuildSync() error {
 		return nil
 	}
 
-	file, err := sc.createScript(sc.Scripts.Build)
+	file, err := sc.createScript(sc.Scripts.Build, "Build")
 	// Build the project and wait for completion
 	if err != nil {
 		return err
 	}
-	defer os.Remove(file.Name())
+	defer sc.deleteScript("Build")
 
 	cmd := exec.Command(file.Name())
 	err = cmd.Run()
@@ -331,7 +336,7 @@ func (sc *ServiceCommand) StartAsync() error {
 	os.Remove(sc.Logs.Run)
 
 	// Start the project and get the PID
-	file, err := sc.createScript(sc.Scripts.Launch)
+	file, err := sc.createScript(sc.Scripts.Launch, "Launch")
 	if err != nil {
 		return err
 	}
@@ -370,7 +375,7 @@ func (sc *ServiceCommand) StartAsync() error {
 func (sc *ServiceCommand) StopScript() error {
 
 	// Start the project and get the PID
-	file, err := sc.createScript(sc.Scripts.Stop)
+	file, err := sc.createScript(sc.Scripts.Stop, "Stop")
 	if err != nil {
 		return err
 	}
@@ -406,6 +411,13 @@ func (s *ServiceConfig) makeScript(command string, logPath string) string {
 func (sc *ServiceCommand) clearPid() {
 	sc.Pid = 0
 	os.Remove(sc.getPidPath())
+}
+
+func (sc *ServiceCommand) clearState() {
+	sc.clearPid()
+	sc.deleteScript("Stop")
+	sc.deleteScript("Launch")
+	sc.deleteScript("Build")
 }
 
 func (sc *ServiceCommand) getPidPath() string {
@@ -460,11 +472,11 @@ func (s *ServiceConfig) GetCommand() *ServiceCommand {
 		// TODO: Check this PID is actually live
 		process, err := os.FindProcess(int(pid))
 		if err != nil {
-			command.clearPid()
+			command.clearState()
 		} else {
 			err := process.Signal(syscall.Signal(0))
 			if err != nil {
-				command.clearPid()
+				command.clearState()
 			}
 		}
 	}
