@@ -250,7 +250,6 @@ func allServices() []ServiceOrGroup {
 }
 
 func stop(c *cli.Context) error {
-
 	var sgs []ServiceOrGroup
 	var err error
 	if len(c.Args()) == 0 {
@@ -355,8 +354,7 @@ func ensureSudoAble() {
 	}
 }
 
-func main() {
-
+func prepareForSudo() {
 	checkNotSudo()
 
 	isChild := os.Getenv("ISCHILD")
@@ -364,11 +362,19 @@ func main() {
 		ensureSudoAble()
 		return
 	}
+}
+
+func main() {
 
 	app := cli.NewApp()
 	app.Name = "Edward"
 	app.Usage = "Manage local microservices"
 	app.Before = func(c *cli.Context) error {
+		command := c.Args().First()
+		if command == "start" || command == "stop" || command == "restart" {
+			prepareForSudo()
+		}
+
 		err := EdwardConfig.initialize()
 		if err != nil {
 			return err
