@@ -263,6 +263,7 @@ func applyHardCodedServicesAndGroups() {
 	// TODO: haproxy actually needs a kill -9 to effectively die
 	// TODO: haproxy also doesn't have an effective start output
 	services["haproxy"] = thirdPartyService("haproxy", "sudo $ALPHA/tools/bin/haproxy_localhost.sh", "", "backend")
+	services["haproxy"].RequiresSudo = true
 
 	groups["thirdparty"] = &ServiceGroupConfig{
 		Name: "thirdparty",

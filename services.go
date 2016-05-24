@@ -29,6 +29,8 @@ type ServiceConfig struct {
 	Name string `json:"name"`
 	// Optional path to service. If nil, uses cwd
 	Path *string `json:"path"`
+	// Does this service require sudo privileges?
+	RequiresSudo bool `json:"requiresSudo,omitempty"`
 	// Commands for managing the service
 	Commands ServiceConfigCommands `json:"commands"`
 	// Service state properties that can be obtained from logs
