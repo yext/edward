@@ -241,16 +241,28 @@ func start(c *cli.Context) error {
 	return nil
 }
 
-func stop(c *cli.Context) error {
-	sgs, err := getServicesOrGroups(c.Args())
-	if err != nil {
-		return err
+func allServices() []ServiceOrGroup {
+	var as []ServiceOrGroup
+	for _, service := range services {
+		as = append(as, service)
 	}
-	for _, s := range sgs {
-		err = s.Stop()
+	return as
+}
+
+func stop(c *cli.Context) error {
+
+	var sgs []ServiceOrGroup
+	var err error
+	if len(c.Args()) == 0 {
+		sgs = allServices()
+	} else {
+		sgs, err = getServicesOrGroups(c.Args())
 		if err != nil {
 			return err
 		}
+	}
+	for _, s := range sgs {
+		_ = s.Stop()
 	}
 	return nil
 }
@@ -261,10 +273,7 @@ func restart(c *cli.Context) error {
 		return err
 	}
 	for _, s := range sgs {
-		err = s.Stop()
-		if err != nil {
-			return err
-		}
+		_ = s.Stop()
 		err = s.Build()
 		if err != nil {
 			return err
