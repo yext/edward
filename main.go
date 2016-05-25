@@ -419,9 +419,10 @@ func main() {
 			Action: restart,
 		},
 		{
-			Name:   "log",
-			Usage:  "Tail the log for a service",
-			Action: doLog,
+			Name:    "log",
+			Aliases: []string{"tail"},
+			Usage:   "Tail the log for a service",
+			Action:  doLog,
 		},
 	}
 
