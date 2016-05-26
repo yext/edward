@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"os/user"
 	"path"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/hpcloud/tail"
+	"github.com/yext/errgo"
 )
 
 type EdwardConfiguration struct {
@@ -364,6 +366,50 @@ func prepareForSudo() {
 	}
 }
 
+func RemoveContents(dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		err = os.RemoveAll(filepath.Join(dir, name))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func refreshForReboot() error {
+	rebootFile := path.Join(EdwardConfig.Dir, ".lastreboot")
+
+	rebootMarker, _ := ioutil.ReadFile(rebootFile)
+
+	command := exec.Command("last", "-1", "reboot")
+	output, err := command.CombinedOutput()
+	if err != nil {
+		return errgo.Mask(err)
+	}
+
+	if string(output) != string(rebootMarker) {
+		err = RemoveContents(EdwardConfig.PidDir)
+		if err != nil {
+			return errgo.Mask(err)
+		}
+		err = ioutil.WriteFile(rebootFile, output, os.ModePerm)
+		if err != nil {
+			return errgo.Mask(err)
+		}
+	}
+
+	return nil
+}
+
 func main() {
 
 	app := cli.NewApp()
@@ -376,6 +422,10 @@ func main() {
 		}
 
 		err := EdwardConfig.initialize()
+		if err != nil {
+			return err
+		}
+		err = refreshForReboot()
 		if err != nil {
 			return err
 		}
