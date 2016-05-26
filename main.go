@@ -93,7 +93,8 @@ func addFoundServices() {
 }
 
 func getConfigPath() string {
-	return filepath.Join(EdwardConfig.Dir, "edward.json")
+	wd, _ := os.Getwd()
+	return filepath.Join(wd, "edward.json")
 }
 
 func loadConfig() {
