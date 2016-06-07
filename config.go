@@ -3,12 +3,20 @@ package main
 import (
 	"encoding/json"
 	"io"
+	"os"
+	"path/filepath"
+
+	"github.com/yext/errgo"
 )
 
 type Config struct {
-	Env      []string        `json:"env"`
-	Groups   []GroupDef      `json:"groups"`
-	Services []ServiceConfig `json:"services"`
+	workingDir string          `json:"-"`
+	Imports    []string        `json:"imports"`
+	Env        []string        `json:"env"`
+	Groups     []GroupDef      `json:"groups"`
+	Services   []ServiceConfig `json:"services"`
+
+	ImportedConfigs map[string]*Config `json:"-"`
 
 	ServiceMap map[string]*ServiceConfig      `json:"-"`
 	GroupMap   map[string]*ServiceGroupConfig `json:"-"`
@@ -19,35 +27,38 @@ type GroupDef struct {
 	Children []string `json:"children"`
 }
 
-func stringSliceIntersect(slices [][]string) []string {
-	var counts map[string]int = make(map[string]int)
-	for _, s := range slices {
-		for _, v := range s {
-			counts[v] += 1
-		}
-	}
-
-	var outSlice []string
-	for v, count := range counts {
-		if count == len(slices) {
-			outSlice = append(outSlice, v)
-		}
-	}
-	return outSlice
+func LoadConfig(reader io.Reader) (Config, error) {
+	outCfg, err := LoadConfigWithDir(reader, "")
+	return outCfg, errgo.Mask(err)
 }
 
-func stringSliceRemoveCommon(common []string, original []string) []string {
-	var commonMap map[string]interface{} = make(map[string]interface{})
-	for _, s := range common {
-		commonMap[s] = struct{}{}
+// Reader from os.Open
+func LoadConfigWithDir(reader io.Reader, workingDir string) (Config, error) {
+	var config Config
+	dec := json.NewDecoder(reader)
+	err := dec.Decode(&config)
+
+	if err != nil {
+		return Config{}, errgo.Mask(err)
 	}
-	var outSlice []string
-	for _, s := range original {
-		if _, ok := commonMap[s]; !ok {
-			outSlice = append(outSlice, s)
-		}
+
+	config.workingDir = workingDir
+	config.initMaps()
+
+	err = config.loadImports()
+	if err != nil {
+		return Config{}, errgo.Mask(err)
 	}
-	return outSlice
+	return config, nil
+}
+
+func (c Config) Save(writer io.Writer) error {
+	content, err := json.MarshalIndent(c, "", "    ")
+	if err != nil {
+		return err
+	}
+	_, err = writer.Write(content)
+	return err
 }
 
 func NewConfig(services []ServiceConfig, groups []ServiceGroupConfig) Config {
@@ -93,6 +104,48 @@ func NewConfig(services []ServiceConfig, groups []ServiceGroupConfig) Config {
 	return cfg
 }
 
+func (c *Config) loadImports() error {
+	for _, i := range c.Imports {
+		var cPath string
+		if filepath.IsAbs(i) {
+			cPath = i
+		} else {
+			cPath = filepath.Join(c.workingDir, i)
+		}
+
+		r, err := os.Open(cPath)
+		if err != nil {
+			return errgo.Mask(err)
+		}
+		cfg, err := LoadConfigWithDir(r, filepath.Dir(cPath))
+		if err != nil {
+			return errgo.Mask(err)
+		}
+
+		err = c.mergeConfig(cfg)
+		if err != nil {
+			return errgo.Mask(err)
+		}
+	}
+	return nil
+}
+
+func (c *Config) mergeConfig(second Config) error {
+	for name, service := range second.ServiceMap {
+		if _, ok := c.ServiceMap[name]; ok {
+			return errgo.New("Service name already exists: " + name)
+		}
+		c.ServiceMap[name] = service
+	}
+	for name, group := range second.GroupMap {
+		if _, ok := c.GroupMap[name]; ok {
+			return errgo.New("Group name already exists: " + name)
+		}
+		c.GroupMap[name] = group
+	}
+	return nil
+}
+
 func (c *Config) initMaps() {
 	var services map[string]*ServiceConfig = make(map[string]*ServiceConfig)
 	for _, s := range c.Services {
@@ -106,7 +159,7 @@ func (c *Config) initMaps() {
 	// First pass: Services
 	for _, g := range c.Groups {
 
-		childServices := []*ServiceConfig{}
+		var childServices []*ServiceConfig
 
 		for _, name := range g.Children {
 			if s, ok := services[name]; ok {
@@ -136,22 +189,33 @@ func (c *Config) initMaps() {
 	c.GroupMap = groups
 }
 
-// Reader from os.Open
-func LoadConfig(reader io.Reader) (Config, error) {
-	var config Config
-	dec := json.NewDecoder(reader)
-	err := dec.Decode(&config)
+func stringSliceIntersect(slices [][]string) []string {
+	var counts map[string]int = make(map[string]int)
+	for _, s := range slices {
+		for _, v := range s {
+			counts[v] += 1
+		}
+	}
 
-	config.initMaps()
-
-	return config, err
+	var outSlice []string
+	for v, count := range counts {
+		if count == len(slices) {
+			outSlice = append(outSlice, v)
+		}
+	}
+	return outSlice
 }
 
-func (c Config) Save(writer io.Writer) error {
-	content, err := json.MarshalIndent(c, "", "    ")
-	if err != nil {
-		return err
+func stringSliceRemoveCommon(common []string, original []string) []string {
+	var commonMap map[string]interface{} = make(map[string]interface{})
+	for _, s := range common {
+		commonMap[s] = struct{}{}
 	}
-	_, err = writer.Write(content)
-	return err
+	var outSlice []string
+	for _, s := range original {
+		if _, ok := commonMap[s]; !ok {
+			outSlice = append(outSlice, s)
+		}
+	}
+	return outSlice
 }

@@ -1,0 +1,27 @@
+{
+	"imports": [
+		"imports1/import1.json",
+		"imports2/import2.json"
+	],
+	"services": [
+		{
+			"name": "service1",
+			"path": ".",
+			"requiresSudo": true,
+			"commands": {
+				"build": "buildCmd",
+				"launch": "launchCmd",
+				"stop": "stopCmd"
+			},
+			"log_properties": {
+				"started": "startedProperty"
+			}
+		}
+	],
+	"groups": [
+		{
+			"name": "group1",
+			"children": ["service1"]
+		}
+	]
+}

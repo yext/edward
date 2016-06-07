@@ -1,0 +1,23 @@
+{
+	"services": [
+		{
+			"name": "service3",
+			"path": ".",
+			"requiresSudo": true,
+			"commands": {
+				"build": "buildCmd",
+				"launch": "launchCmd",
+				"stop": "stopCmd"
+			},
+			"log_properties": {
+				"started": "startedProperty"
+			}
+		}
+	],
+	"groups": [
+		{
+			"name": "group3",
+			"children": ["service3"]
+		}
+	]
+}
