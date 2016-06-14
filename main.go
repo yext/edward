@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -92,9 +93,41 @@ func addFoundServices() {
 	}
 }
 
+// getConfigPath identifies the location of edward.json, if any exists
 func getConfigPath() string {
-	wd, _ := os.Getwd()
-	return filepath.Join(wd, "edward.json")
+	var pathOptions []string
+
+	// Config file in current working directory
+	wd, err := os.Getwd()
+	if err == nil {
+		pathOptions = append(pathOptions, filepath.Join(wd, "edward.json"))
+	}
+
+	// Config file at root of working dir's git repo, if any
+	gitRoot, err := gitRoot()
+	if err == nil {
+		pathOptions = append(pathOptions, filepath.Join(gitRoot, "edward.json"))
+
+	}
+
+	// Config file in Edward Config dir
+	pathOptions = append(pathOptions, filepath.Join(EdwardConfig.Dir, "edward.json"))
+
+	for _, path := range pathOptions {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+
+	return ""
+}
+
+func gitRoot() (string, error) {
+	output, err := exec.Command("git", "rev-parse", "--show-toplevel").CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("%v\n%v", string(output), err)
+	}
+	return strings.TrimSpace(string(output)), nil
 }
 
 func loadConfig() {
@@ -103,7 +136,7 @@ func loadConfig() {
 
 	configPath := getConfigPath()
 
-	if _, err := os.Stat(configPath); err == nil {
+	if configPath != "" {
 		println("Loading configuration from", configPath)
 		r, err := os.Open(configPath)
 		if err != nil {
@@ -179,6 +212,12 @@ func generate(c *cli.Context) error {
 	addFoundServices()
 
 	configPath := getConfigPath()
+	if configPath == "" {
+		wd, err := os.Getwd()
+		if err == nil {
+			configPath = filepath.Join(wd, "edward.json")
+		}
+	}
 
 	if err := generateConfigFile(configPath); err != nil {
 		return err
