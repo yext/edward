@@ -95,6 +95,11 @@ func addFoundServices() {
 
 // getConfigPath identifies the location of edward.json, if any exists
 func getConfigPath() string {
+
+	if flags.config != "" {
+		return flags.config
+	}
+
 	var pathOptions []string
 
 	// Config file in current working directory
@@ -130,31 +135,35 @@ func gitRoot() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-func loadConfig() {
+func initEmptyConfig() {
 	groups = make(map[string]*ServiceGroupConfig)
 	services = make(map[string]*ServiceConfig)
+}
+
+func loadConfig() error {
+	initEmptyConfig()
 
 	configPath := getConfigPath()
-
 	if configPath != "" {
 		println("Loading configuration from", configPath)
 		r, err := os.Open(configPath)
 		if err != nil {
-			log.Fatal(err)
+			return errgo.Mask(err)
 		}
 		config, err := LoadConfig(r)
 		if err != nil {
-			log.Fatal(err)
+			return errgo.Mask(err)
 		}
 
 		services = config.ServiceMap
 		groups = config.GroupMap
-		return
+		return nil
 	} else {
 		addFoundServices()
 		applyHardCodedServicesAndGroups()
 	}
 
+	return nil
 }
 
 func getServicesOrGroups(names []string) ([]ServiceOrGroup, error) {
@@ -450,6 +459,10 @@ func refreshForReboot() error {
 	return nil
 }
 
+var flags = struct {
+	config string
+}{}
+
 func main() {
 
 	app := cli.NewApp()
@@ -463,14 +476,30 @@ func main() {
 
 		err := EdwardConfig.initialize()
 		if err != nil {
-			return err
+			return errgo.Mask(err)
 		}
 		err = refreshForReboot()
 		if err != nil {
-			return err
+			return errgo.Mask(err)
 		}
-		loadConfig()
+
+		if command != "generate" {
+			err = loadConfig()
+			if err != nil {
+				return errgo.Mask(err)
+			}
+		} else {
+			initEmptyConfig()
+		}
+
 		return nil
+	}
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:        "config, c",
+			Usage:       "Use service configuration file at `PATH`",
+			Destination: &(flags.config),
+		},
 	}
 	app.Commands = []cli.Command{
 		{
