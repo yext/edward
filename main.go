@@ -435,22 +435,17 @@ func RemoveContents(dir string) error {
 }
 
 func refreshForReboot() error {
-	rebootFile := path.Join(EdwardConfig.Dir, ".lastreboot")
-
-	rebootMarker, _ := ioutil.ReadFile(rebootFile)
-
-	command := exec.Command("last", "-1", "reboot")
-	output, err := command.CombinedOutput()
+	rebooted, err := hasRebooted(EdwardConfig.Dir)
 	if err != nil {
 		return errgo.Mask(err)
 	}
 
-	if string(output) != string(rebootMarker) {
+	if rebooted {
 		err = RemoveContents(EdwardConfig.PidDir)
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		err = ioutil.WriteFile(rebootFile, output, os.ModePerm)
+		err = setRebootMarker(EdwardConfig.Dir)
 		if err != nil {
 			return errgo.Mask(err)
 		}
