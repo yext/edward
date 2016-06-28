@@ -102,6 +102,9 @@ func getConfigPath() string {
 
 	var pathOptions []string
 
+	// Config file in Edward Config dir
+	pathOptions = append(pathOptions, filepath.Join(EdwardConfig.Dir, "edward.json"))
+
 	// Config file in current working directory
 	wd, err := os.Getwd()
 	if err == nil {
@@ -114,9 +117,6 @@ func getConfigPath() string {
 		pathOptions = append(pathOptions, filepath.Join(gitRoot, "edward.json"))
 
 	}
-
-	// Config file in Edward Config dir
-	pathOptions = append(pathOptions, filepath.Join(EdwardConfig.Dir, "edward.json"))
 
 	for _, path := range pathOptions {
 		if _, err := os.Stat(path); err == nil {
