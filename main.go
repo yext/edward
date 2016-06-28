@@ -160,7 +160,6 @@ func loadConfig() error {
 		return nil
 	} else {
 		addFoundServices()
-		applyHardCodedServicesAndGroups()
 	}
 
 	return nil
