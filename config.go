@@ -5,18 +5,19 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/yext/errgo"
 )
 
 type Config struct {
-	workingDir string          `json:"-"`
-	Imports    []string        `json:"imports"`
-	Env        []string        `json:"env"`
-	Groups     []GroupDef      `json:"groups"`
-	Services   []ServiceConfig `json:"services"`
-
-	ImportedConfigs map[string]*Config `json:"-"`
+	workingDir       string          `json:"-"`
+	Imports          []string        `json:"imports"`
+	ImportedGroups   []GroupDef      `json:"-"`
+	ImportedServices []ServiceConfig `json:"-"`
+	Env              []string        `json:"env"`
+	Groups           []GroupDef      `json:"groups"`
+	Services         []ServiceConfig `json:"services"`
 
 	ServiceMap map[string]*ServiceConfig      `json:"-"`
 	GroupMap   map[string]*ServiceGroupConfig `json:"-"`
@@ -32,8 +33,17 @@ func LoadConfig(reader io.Reader) (Config, error) {
 	return outCfg, errgo.Mask(err)
 }
 
-// Reader from os.Open
 func LoadConfigWithDir(reader io.Reader, workingDir string) (Config, error) {
+	config, err := LoadConfigContents(reader, workingDir)
+	if err != nil {
+		return Config{}, errgo.Mask(err)
+	}
+	err = config.initMaps()
+	return config, errgo.Mask(err)
+}
+
+// Reader from os.Open
+func LoadConfigContents(reader io.Reader, workingDir string) (Config, error) {
 	var config Config
 	dec := json.NewDecoder(reader)
 	err := dec.Decode(&config)
@@ -43,12 +53,12 @@ func LoadConfigWithDir(reader io.Reader, workingDir string) (Config, error) {
 	}
 
 	config.workingDir = workingDir
-	config.initMaps()
 
 	err = config.loadImports()
 	if err != nil {
 		return Config{}, errgo.Mask(err)
 	}
+
 	return config, nil
 }
 
@@ -117,12 +127,12 @@ func (c *Config) loadImports() error {
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		cfg, err := LoadConfigWithDir(r, filepath.Dir(cPath))
+		cfg, err := LoadConfigContents(r, filepath.Dir(cPath))
 		if err != nil {
 			return errgo.Mask(err)
 		}
 
-		err = c.mergeConfig(cfg)
+		err = c.importConfig(cfg)
 		if err != nil {
 			return errgo.Mask(err)
 		}
@@ -130,40 +140,40 @@ func (c *Config) loadImports() error {
 	return nil
 }
 
-func (c *Config) mergeConfig(second Config) error {
-	for name, service := range second.ServiceMap {
-		if _, ok := c.ServiceMap[name]; ok {
-			return errgo.New("Service name already exists: " + name)
-		}
-		c.ServiceMap[name] = service
+func (c *Config) importConfig(second Config) error {
+	for _, service := range second.Services {
+		c.ImportedServices = append(c.ImportedServices, service)
 	}
-	for name, group := range second.GroupMap {
-		if _, ok := c.GroupMap[name]; ok {
-			return errgo.New("Group name already exists: " + name)
-		}
-		c.GroupMap[name] = group
+	for _, group := range second.Groups {
+		c.ImportedGroups = append(c.ImportedGroups, group)
 	}
 	return nil
 }
 
-func (c *Config) initMaps() {
+func (c *Config) initMaps() error {
 	var services map[string]*ServiceConfig = make(map[string]*ServiceConfig)
-	for _, s := range c.Services {
+	for _, s := range append(c.Services, c.ImportedServices...) {
 		sc := s
 		sc.Env = append(sc.Env, c.Env...)
+		if _, exists := services[s.Name]; exists {
+			return errgo.New("Service name already exists: " + s.Name)
+		}
 		services[s.Name] = &sc
 	}
 	c.ServiceMap = services
 
 	var groups map[string]*ServiceGroupConfig = make(map[string]*ServiceGroupConfig)
 	// First pass: Services
-	for _, g := range c.Groups {
+	var orphanNames map[string]struct{} = make(map[string]struct{})
+	for _, g := range append(c.Groups, c.ImportedGroups...) {
 
 		var childServices []*ServiceConfig
 
 		for _, name := range g.Children {
 			if s, ok := services[name]; ok {
 				childServices = append(childServices, s)
+			} else {
+				orphanNames[name] = struct{}{}
 			}
 		}
 
@@ -175,18 +185,28 @@ func (c *Config) initMaps() {
 	}
 
 	// Second pass: Groups
-	for _, g := range c.Groups {
+	for _, g := range append(c.Groups, c.ImportedGroups...) {
 		childGroups := []*ServiceGroupConfig{}
 
 		for _, name := range g.Children {
 			if gr, ok := groups[name]; ok {
+				delete(orphanNames, name)
 				childGroups = append(childGroups, gr)
 			}
 		}
 		groups[g.Name].Groups = childGroups
 	}
 
+	if len(orphanNames) > 0 {
+		var keys []string
+		for k := range orphanNames {
+			keys = append(keys, k)
+		}
+		return errgo.New("A service or group could not be found for the following names: " + strings.Join(keys, ", "))
+	}
+
 	c.GroupMap = groups
+	return nil
 }
 
 func stringSliceIntersect(slices [][]string) []string {
