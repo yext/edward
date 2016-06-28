@@ -150,7 +150,7 @@ func loadConfig() error {
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		config, err := LoadConfig(r)
+		config, err := LoadConfigWithDir(r, filepath.Dir(configPath))
 		if err != nil {
 			return errgo.Mask(err)
 		}
