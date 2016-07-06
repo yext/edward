@@ -160,29 +160,6 @@ func thirdPartyService(name string, startCommand string, stopCommand string, sta
 	}
 }
 
-func getAlpha() string {
-	for _, env := range os.Environ() {
-		pair := strings.Split(env, "=")
-		if pair[0] == "ALPHA" {
-			return pair[1]
-		}
-	}
-	return ""
-}
-
-func addFoundServices() {
-	foundServices, _, err := generateServices(getAlpha())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, s := range foundServices {
-		if _, found := services[s.Name]; !found {
-			services[s.Name] = s
-		}
-	}
-}
-
 // getConfigPath identifies the location of edward.json, if any exists
 func getConfigPath() string {
 
