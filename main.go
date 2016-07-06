@@ -249,7 +249,7 @@ func loadConfig() error {
 		groups = config.GroupMap
 		return nil
 	} else {
-		addFoundServices()
+		return errgo.New("No config file found")
 	}
 
 	return nil
