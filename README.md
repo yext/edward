@@ -20,26 +20,27 @@ To update an existing install to the latest version of Edward, run:
 
     NAME:
        Edward - Manage local microservices
-    
+
     USAGE:
-       edward-prototype.git [global options] command [command options] [arguments...]
-    
+       edward [global options] command [command options] [arguments...]
+
     VERSION:
-       0.0.0
+       1.0.0
 
     COMMANDS:
-        list	    List available services
-        generate	 Generate Edward config for a source tree
-        status	 Display service status
-        messages	 Show messages from services
-        start   	 Build and launch a service
-        stop	    Stop a service
-        restart	 Rebuild and relaunch a service
-        log		 Tail the log for a service
+         list	List available services
+         generate	Generate Edward config for a source tree
+         status	Display service status
+         messages	Show messages from services
+         start	Build and launch a service
+         stop	Stop a service
+         restart	Rebuild and relaunch a service
+         log, tail	Tail the log for a service
 
     GLOBAL OPTIONS:
-       --help, -h		show help
-       --version, -v	print the version
+       --config PATH, -c PATH	Use service configuration file at PATH
+       --help, -h			show help
+       --version, -v		print the version
 
 ## Running Services and Groups
 
