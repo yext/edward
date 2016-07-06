@@ -93,6 +93,38 @@ func NewConfig(services []ServiceConfig, groups []ServiceGroupConfig) Config {
 		Groups:   []GroupDef{},
 	}
 
+	cfg.AddGroups(groups)
+
+	return cfg
+}
+
+func EmptyConfig(workingDir string) Config {
+
+	cfg := Config{
+		workingDir: workingDir,
+	}
+
+	cfg.ServiceMap = make(map[string]*ServiceConfig)
+	cfg.GroupMap = make(map[string]*ServiceGroupConfig)
+
+	return cfg
+}
+
+// AppendServices adds services to an existing config without replacing existing services
+func (cfg *Config) AppendServices(services []*ServiceConfig) error {
+	if cfg.ServiceMap == nil {
+		cfg.ServiceMap = make(map[string]*ServiceConfig)
+	}
+	for _, s := range services {
+		if _, found := cfg.ServiceMap[s.Name]; !found {
+			cfg.ServiceMap[s.Name] = s
+			cfg.Services = append(cfg.Services, *s)
+		}
+	}
+	return nil
+}
+
+func (cfg *Config) AddGroups(groups []ServiceGroupConfig) error {
 	for _, group := range groups {
 		grp := GroupDef{
 			Name:     group.Name,
@@ -110,8 +142,7 @@ func NewConfig(services []ServiceConfig, groups []ServiceGroupConfig) Config {
 		}
 		cfg.Groups = append(cfg.Groups, grp)
 	}
-
-	return cfg
+	return nil
 }
 
 func (c *Config) loadImports() error {

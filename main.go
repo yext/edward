@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -305,8 +306,8 @@ func list(c *cli.Context) error {
 
 func generate(c *cli.Context) error {
 
-	// Add any new services to the config as appropriate
-	addFoundServices()
+	var config Config
+	var err error
 
 	configPath := getConfigPath()
 	if configPath == "" {
@@ -316,9 +317,47 @@ func generate(c *cli.Context) error {
 		}
 	}
 
-	if err := generateConfigFile(configPath); err != nil {
-		return err
+	if _, err := os.Stat(configPath); err == nil {
+
+		r, err := os.Open(configPath)
+		if err != nil {
+			return errgo.Mask(err)
+		}
+		config, err = LoadConfigWithDir(r, filepath.Dir(configPath))
+		if err != nil {
+			return errgo.Mask(err)
+		}
+	} else {
+		config = EmptyConfig(filepath.Dir(configPath))
 	}
+
+	wd, err := os.Getwd()
+	if err != nil {
+		return errgo.Mask(err)
+	}
+
+	foundServices, _, err := generateServices(wd)
+	if err != nil {
+		return errgo.Mask(err)
+	}
+	err = config.AppendServices(foundServices)
+	if err != nil {
+		return errgo.Mask(err)
+	}
+
+	f, err := os.Create(configPath)
+	if err != nil {
+		return errgo.Mask(err)
+	}
+
+	defer f.Close()
+
+	w := bufio.NewWriter(f)
+	err = config.Save(w)
+	if err != nil {
+		return errgo.Mask(err)
+	}
+
 	println("Wrote to", configPath)
 
 	return nil

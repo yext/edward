@@ -3,12 +3,14 @@ package main
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/yext/errgo"
 )
 
 func generateConfigFile(file string) error {
@@ -44,7 +46,7 @@ func generateConfigFile(file string) error {
 }
 
 func validateRegular(path string) error {
-	if info, err := os.Stat(path); !info.Mode().IsRegular() {
+	if info, err := os.Stat(path); err != nil || !info.Mode().IsRegular() {
 		if err != nil {
 			return err
 		}
@@ -54,7 +56,7 @@ func validateRegular(path string) error {
 }
 
 func validateDir(path string) error {
-	if info, err := os.Stat(path); !info.IsDir() {
+	if info, err := os.Stat(path); err != nil || !info.IsDir() {
 		if err != nil {
 			return err
 		}
@@ -108,6 +110,9 @@ func NewGoWalker(goPath string) GoWalker {
 }
 
 func (v *GoWalker) visit(path string, f os.FileInfo, err error) error {
+	if _, err := os.Stat(path); err != nil {
+		return errgo.Mask(err)
+	}
 
 	if !f.Mode().IsRegular() {
 		return nil
@@ -197,10 +202,10 @@ func generateServices(path string) ([]*ServiceConfig, []*ServiceGroupConfig, err
 		return outServices, outGroups, err
 	}
 
-	for _, generator := range Generators {
+	for name, generator := range Generators {
 		s, g, err := generator(path)
 		if err != nil {
-			log.Print(err)
+			fmt.Println("Error in generator", name, ":", err)
 		} else {
 			outServices = append(outServices, s...)
 			outGroups = append(outGroups, g...)
