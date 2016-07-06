@@ -20,6 +20,95 @@ import (
 	"github.com/yext/errgo"
 )
 
+func main() {
+
+	app := cli.NewApp()
+	app.Name = "Edward"
+	app.Usage = "Manage local microservices"
+	app.Version = "1.0.0"
+	app.Before = func(c *cli.Context) error {
+		command := c.Args().First()
+		if command == "start" || command == "stop" || command == "restart" {
+			prepareForSudo()
+		}
+
+		err := EdwardConfig.initialize()
+		if err != nil {
+			return errgo.Mask(err)
+		}
+		err = refreshForReboot()
+		if err != nil {
+			return errgo.Mask(err)
+		}
+
+		if command != "generate" {
+			err = loadConfig()
+			if err != nil {
+				return errgo.Mask(err)
+			}
+		} else {
+			initEmptyConfig()
+		}
+
+		return nil
+	}
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:        "config, c",
+			Usage:       "Use service configuration file at `PATH`",
+			Destination: &(flags.config),
+		},
+	}
+	app.Commands = []cli.Command{
+		{
+			Name:   "list",
+			Usage:  "List available services",
+			Action: list,
+		},
+		{
+			Name:   "generate",
+			Usage:  "Generate Edward config for a source tree",
+			Action: generate,
+		},
+		{
+			Name:   "status",
+			Usage:  "Display service status",
+			Action: status,
+		},
+		{
+			Name:   "messages",
+			Usage:  "Show messages from services",
+			Action: messages,
+		},
+		{
+			Name:   "start",
+			Usage:  "Build and launch a service",
+			Action: start,
+		},
+		{
+			Name:   "stop",
+			Usage:  "Stop a service",
+			Action: stop,
+		},
+		{
+			Name:   "restart",
+			Usage:  "Rebuild and relaunch a service",
+			Action: restart,
+		},
+		{
+			Name:    "log",
+			Aliases: []string{"tail"},
+			Usage:   "Tail the log for a service",
+			Action:  doLog,
+		},
+	}
+
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 type EdwardConfiguration struct {
 	Dir       string
 	LogDir    string
@@ -456,91 +545,3 @@ func refreshForReboot() error {
 var flags = struct {
 	config string
 }{}
-
-func main() {
-
-	app := cli.NewApp()
-	app.Name = "Edward"
-	app.Usage = "Manage local microservices"
-	app.Before = func(c *cli.Context) error {
-		command := c.Args().First()
-		if command == "start" || command == "stop" || command == "restart" {
-			prepareForSudo()
-		}
-
-		err := EdwardConfig.initialize()
-		if err != nil {
-			return errgo.Mask(err)
-		}
-		err = refreshForReboot()
-		if err != nil {
-			return errgo.Mask(err)
-		}
-
-		if command != "generate" {
-			err = loadConfig()
-			if err != nil {
-				return errgo.Mask(err)
-			}
-		} else {
-			initEmptyConfig()
-		}
-
-		return nil
-	}
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:        "config, c",
-			Usage:       "Use service configuration file at `PATH`",
-			Destination: &(flags.config),
-		},
-	}
-	app.Commands = []cli.Command{
-		{
-			Name:   "list",
-			Usage:  "List available services",
-			Action: list,
-		},
-		{
-			Name:   "generate",
-			Usage:  "Generate Edward config for a source tree",
-			Action: generate,
-		},
-		{
-			Name:   "status",
-			Usage:  "Display service status",
-			Action: status,
-		},
-		{
-			Name:   "messages",
-			Usage:  "Show messages from services",
-			Action: messages,
-		},
-		{
-			Name:   "start",
-			Usage:  "Build and launch a service",
-			Action: start,
-		},
-		{
-			Name:   "stop",
-			Usage:  "Stop a service",
-			Action: stop,
-		},
-		{
-			Name:   "restart",
-			Usage:  "Rebuild and relaunch a service",
-			Action: restart,
-		},
-		{
-			Name:    "log",
-			Aliases: []string{"tail"},
-			Usage:   "Tail the log for a service",
-			Action:  doLog,
-		},
-	}
-
-	err := app.Run(os.Args)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
