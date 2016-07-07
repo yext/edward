@@ -2,8 +2,6 @@
 
 A command line tool for managing local instances of microservices.
 
-Full proposal document at: https://docs.google.com/a/yext.com/document/d/16Y8qWTlYDmuEnJgYKTcKb98a2Te-xqdD11auOJ7fUtM/edit?usp=sharing
-
 ## Installation
 
 Edward uses the vendor folder, and as such, Go 1.6 is required.
