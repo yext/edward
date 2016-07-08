@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -18,6 +17,11 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/hpcloud/tail"
+	"github.com/yext/edward/config"
+	"github.com/yext/edward/generators"
+	"github.com/yext/edward/home"
+	"github.com/yext/edward/reboot"
+	"github.com/yext/edward/services"
 	"github.com/yext/errgo"
 )
 
@@ -33,7 +37,7 @@ func main() {
 			prepareForSudo()
 		}
 
-		err := EdwardConfig.initialize()
+		err := home.EdwardConfig.Initialize()
 		if err != nil {
 			return errgo.Mask(err)
 		}
@@ -110,51 +114,20 @@ func main() {
 	}
 }
 
-type EdwardConfiguration struct {
-	Dir       string
-	LogDir    string
-	PidDir    string
-	ScriptDir string
-}
+var groupMap map[string]*services.ServiceGroupConfig
+var serviceMap map[string]*services.ServiceConfig
 
-var EdwardConfig EdwardConfiguration = EdwardConfiguration{}
-
-func createDirIfNeeded(path string) {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.MkdirAll(path, 0777)
-	}
-}
-
-func (e *EdwardConfiguration) initialize() error {
-	user, err := user.Current()
-	if err != nil {
-		return err
-	}
-	e.Dir = path.Join(user.HomeDir, ".edward")
-	e.LogDir = path.Join(e.Dir, "logs")
-	e.PidDir = path.Join(e.Dir, "pidFiles")
-	e.ScriptDir = path.Join(e.Dir, "scriptFiles")
-	createDirIfNeeded(e.Dir)
-	createDirIfNeeded(e.LogDir)
-	createDirIfNeeded(e.PidDir)
-	createDirIfNeeded(e.ScriptDir)
-	return nil
-}
-
-var groups map[string]*ServiceGroupConfig
-var services map[string]*ServiceConfig
-
-func thirdPartyService(name string, startCommand string, stopCommand string, started string) *ServiceConfig {
+func thirdPartyService(name string, startCommand string, stopCommand string, started string) *services.ServiceConfig {
 	pathStr := "$ALPHA"
-	return &ServiceConfig{
+	return &services.ServiceConfig{
 		Name: name,
 		Path: &pathStr,
 		Env:  []string{"YEXT_RABBITMQ=localhost"},
-		Commands: ServiceConfigCommands{
+		Commands: services.ServiceConfigCommands{
 			Launch: startCommand,
 			Stop:   stopCommand,
 		},
-		Properties: ServiceConfigProperties{
+		Properties: services.ServiceConfigProperties{
 			Started: started,
 		},
 	}
@@ -170,7 +143,7 @@ func getConfigPath() string {
 	var pathOptions []string
 
 	// Config file in Edward Config dir
-	pathOptions = append(pathOptions, filepath.Join(EdwardConfig.Dir, "edward.json"))
+	pathOptions = append(pathOptions, filepath.Join(home.EdwardConfig.Dir, "edward.json"))
 
 	// Config file in current working directory
 	wd, err := os.Getwd()
@@ -203,8 +176,8 @@ func gitRoot() (string, error) {
 }
 
 func initEmptyConfig() {
-	groups = make(map[string]*ServiceGroupConfig)
-	services = make(map[string]*ServiceConfig)
+	groupMap = make(map[string]*services.ServiceGroupConfig)
+	serviceMap = make(map[string]*services.ServiceConfig)
 }
 
 func loadConfig() error {
@@ -217,13 +190,13 @@ func loadConfig() error {
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		config, err := LoadConfigWithDir(r, filepath.Dir(configPath))
+		cfg, err := config.LoadConfigWithDir(r, filepath.Dir(configPath))
 		if err != nil {
 			return errgo.Mask(err)
 		}
 
-		services = config.ServiceMap
-		groups = config.GroupMap
+		serviceMap = cfg.ServiceMap
+		groupMap = cfg.GroupMap
 		return nil
 	} else {
 		return errgo.New("No config file found")
@@ -232,8 +205,8 @@ func loadConfig() error {
 	return nil
 }
 
-func getServicesOrGroups(names []string) ([]ServiceOrGroup, error) {
-	var outSG []ServiceOrGroup
+func getServicesOrGroups(names []string) ([]services.ServiceOrGroup, error) {
+	var outSG []services.ServiceOrGroup
 	for _, name := range names {
 		sg, err := getServiceOrGroup(name)
 		if err != nil {
@@ -244,11 +217,11 @@ func getServicesOrGroups(names []string) ([]ServiceOrGroup, error) {
 	return outSG, nil
 }
 
-func getServiceOrGroup(name string) (ServiceOrGroup, error) {
-	if group, ok := groups[name]; ok {
+func getServiceOrGroup(name string) (services.ServiceOrGroup, error) {
+	if group, ok := groupMap[name]; ok {
 		return group, nil
 	}
-	if service, ok := services[name]; ok {
+	if service, ok := serviceMap[name]; ok {
 		return service, nil
 	}
 	return nil, errors.New("Service or group not found")
@@ -258,10 +231,10 @@ func list(c *cli.Context) error {
 
 	var groupNames []string
 	var serviceNames []string
-	for name, _ := range groups {
+	for name, _ := range groupMap {
 		groupNames = append(groupNames, name)
 	}
-	for name, _ := range services {
+	for name, _ := range serviceMap {
 		serviceNames = append(serviceNames, name)
 	}
 
@@ -283,7 +256,7 @@ func list(c *cli.Context) error {
 
 func generate(c *cli.Context) error {
 
-	var config Config
+	var cfg config.Config
 	var err error
 
 	configPath := getConfigPath()
@@ -300,12 +273,12 @@ func generate(c *cli.Context) error {
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		config, err = LoadConfigWithDir(r, filepath.Dir(configPath))
+		cfg, err = config.LoadConfigWithDir(r, filepath.Dir(configPath))
 		if err != nil {
 			return errgo.Mask(err)
 		}
 	} else {
-		config = EmptyConfig(filepath.Dir(configPath))
+		cfg = config.EmptyConfig(filepath.Dir(configPath))
 	}
 
 	wd, err := os.Getwd()
@@ -313,11 +286,11 @@ func generate(c *cli.Context) error {
 		return errgo.Mask(err)
 	}
 
-	foundServices, _, err := generateServices(wd)
+	foundServices, _, err := generators.GenerateServices(wd)
 	if err != nil {
 		return errgo.Mask(err)
 	}
-	err = config.AppendServices(foundServices)
+	err = cfg.AppendServices(foundServices)
 	if err != nil {
 		return errgo.Mask(err)
 	}
@@ -330,7 +303,7 @@ func generate(c *cli.Context) error {
 	defer f.Close()
 
 	w := bufio.NewWriter(f)
-	err = config.Save(w)
+	err = cfg.Save(w)
 	if err != nil {
 		return errgo.Mask(err)
 	}
@@ -341,8 +314,8 @@ func generate(c *cli.Context) error {
 }
 
 func allStatus() {
-	var statuses []ServiceStatus
-	for _, service := range services {
+	var statuses []services.ServiceStatus
+	for _, service := range serviceMap {
 		statuses = append(statuses, service.GetStatus()...)
 	}
 	for _, status := range statuses {
@@ -396,16 +369,16 @@ func start(c *cli.Context) error {
 	return nil
 }
 
-func allServices() []ServiceOrGroup {
-	var as []ServiceOrGroup
-	for _, service := range services {
+func allServices() []services.ServiceOrGroup {
+	var as []services.ServiceOrGroup
+	for _, service := range serviceMap {
 		as = append(as, service)
 	}
 	return as
 }
 
 func stop(c *cli.Context) error {
-	var sgs []ServiceOrGroup
+	var sgs []services.ServiceOrGroup
 	var err error
 	if len(c.Args()) == 0 {
 		sgs = allServices()
@@ -445,10 +418,10 @@ func doLog(c *cli.Context) error {
 		return errors.New("Cannot output multiple service logs")
 	}
 	name := c.Args()[0]
-	if _, ok := groups[name]; ok {
+	if _, ok := groupMap[name]; ok {
 		return errors.New("Cannot output group logs")
 	}
-	if service, ok := services[name]; ok {
+	if service, ok := serviceMap[name]; ok {
 		command := service.GetCommand()
 		runLog := command.Logs.Run
 		t, err := tail.TailFile(runLog, tail.Config{Follow: true})
@@ -539,17 +512,17 @@ func RemoveContents(dir string) error {
 }
 
 func refreshForReboot() error {
-	rebooted, err := hasRebooted(EdwardConfig.Dir)
+	rebooted, err := reboot.HasRebooted(home.EdwardConfig.Dir)
 	if err != nil {
 		return errgo.Mask(err)
 	}
 
 	if rebooted {
-		err = RemoveContents(EdwardConfig.PidDir)
+		err = RemoveContents(home.EdwardConfig.PidDir)
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		err = setRebootMarker(EdwardConfig.Dir)
+		err = reboot.SetRebootMarker(home.EdwardConfig.Dir)
 		if err != nil {
 			return errgo.Mask(err)
 		}

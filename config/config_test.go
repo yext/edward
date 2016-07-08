@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"bytes"
@@ -10,62 +10,63 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/yext/edward/services"
 )
 
-var service1 = ServiceConfig{
+var service1 = services.ServiceConfig{
 	Name:         "service1",
 	Path:         stringToStringPointer("."),
 	RequiresSudo: true,
-	Commands: ServiceConfigCommands{
+	Commands: services.ServiceConfigCommands{
 		Build:  "buildCmd",
 		Launch: "launchCmd",
 		Stop:   "stopCmd",
 	},
-	Properties: ServiceConfigProperties{
+	Properties: services.ServiceConfigProperties{
 		Started: "startedProperty",
 	},
 }
 
-var group1 = ServiceGroupConfig{
+var group1 = services.ServiceGroupConfig{
 	Name:     "group1",
-	Services: []*ServiceConfig{&service1},
-	Groups:   []*ServiceGroupConfig{},
+	Services: []*services.ServiceConfig{&service1},
+	Groups:   []*services.ServiceGroupConfig{},
 }
 
-var service2 = ServiceConfig{
+var service2 = services.ServiceConfig{
 	Name: "service2",
 	Path: stringToStringPointer("service2/path"),
-	Commands: ServiceConfigCommands{
+	Commands: services.ServiceConfigCommands{
 		Build:  "buildCmd2",
 		Launch: "launchCmd2",
 		Stop:   "stopCmd2",
 	},
 }
 
-var group2 = ServiceGroupConfig{
+var group2 = services.ServiceGroupConfig{
 	Name:     "group2",
-	Services: []*ServiceConfig{&service2},
-	Groups:   []*ServiceGroupConfig{},
+	Services: []*services.ServiceConfig{&service2},
+	Groups:   []*services.ServiceGroupConfig{},
 }
 
-var service3 = ServiceConfig{
+var service3 = services.ServiceConfig{
 	Name:         "service3",
 	Path:         stringToStringPointer("."),
 	RequiresSudo: true,
-	Commands: ServiceConfigCommands{
+	Commands: services.ServiceConfigCommands{
 		Build:  "buildCmd",
 		Launch: "launchCmd",
 		Stop:   "stopCmd",
 	},
-	Properties: ServiceConfigProperties{
+	Properties: services.ServiceConfigProperties{
 		Started: "startedProperty",
 	},
 }
 
-var group3 = ServiceGroupConfig{
+var group3 = services.ServiceGroupConfig{
 	Name:     "group3",
-	Services: []*ServiceConfig{&service3},
-	Groups:   []*ServiceGroupConfig{},
+	Services: []*services.ServiceConfig{&service3},
+	Groups:   []*services.ServiceGroupConfig{},
 }
 
 func stringToStringPointer(s string) *string {
@@ -75,8 +76,8 @@ func stringToStringPointer(s string) *string {
 var basicTests = []struct {
 	name          string
 	inJson        string
-	outServiceMap map[string]*ServiceConfig
-	outGroupMap   map[string]*ServiceGroupConfig
+	outServiceMap map[string]*services.ServiceConfig
+	outGroupMap   map[string]*services.ServiceGroupConfig
 	outErr        error
 }{
 	{
@@ -89,8 +90,8 @@ var basicTests = []struct {
 	{
 		name:          "Valid, empty",
 		inJson:        "{}",
-		outServiceMap: make(map[string]*ServiceConfig),
-		outGroupMap:   make(map[string]*ServiceGroupConfig),
+		outServiceMap: make(map[string]*services.ServiceConfig),
+		outGroupMap:   make(map[string]*services.ServiceGroupConfig),
 		outErr:        nil,
 	},
 	{
@@ -120,10 +121,10 @@ var basicTests = []struct {
 			]
 		}
 		`,
-		outServiceMap: map[string]*ServiceConfig{
+		outServiceMap: map[string]*services.ServiceConfig{
 			"service1": &service1,
 		},
-		outGroupMap: map[string]*ServiceGroupConfig{
+		outGroupMap: map[string]*services.ServiceGroupConfig{
 			"group1": &group1,
 		},
 		outErr: nil,
@@ -140,19 +141,19 @@ func TestLoadConfigBasic(t *testing.T) {
 var fileBasedTests = []struct {
 	name          string
 	inFile        string
-	outServiceMap map[string]*ServiceConfig
-	outGroupMap   map[string]*ServiceGroupConfig
+	outServiceMap map[string]*services.ServiceConfig
+	outGroupMap   map[string]*services.ServiceGroupConfig
 	outErr        error
 }{
 	{
 		name:   "Config with imports",
 		inFile: "testdata/test1.json",
-		outServiceMap: map[string]*ServiceConfig{
+		outServiceMap: map[string]*services.ServiceConfig{
 			"service1": &service1,
 			"service2": &service2,
 			"service3": &service3,
 		},
-		outGroupMap: map[string]*ServiceGroupConfig{
+		outGroupMap: map[string]*services.ServiceGroupConfig{
 			"group1": &group1,
 			"group2": &group2,
 			"group3": &group3,
@@ -194,7 +195,7 @@ func TestLoadConfigWithImports(t *testing.T) {
 	}
 }
 
-func validateTestResults(cfg Config, err error, expectedServices map[string]*ServiceConfig, expectedGroups map[string]*ServiceGroupConfig, expectedErr error, name string, t *testing.T) {
+func validateTestResults(cfg Config, err error, expectedServices map[string]*services.ServiceConfig, expectedGroups map[string]*services.ServiceGroupConfig, expectedErr error, name string, t *testing.T) {
 	if !reflect.DeepEqual(cfg.ServiceMap, expectedServices) {
 		t.Errorf("%v: Service maps did not match.\nExpected:\n%v\nGot:%v", name, spew.Sdump(expectedServices), spew.Sdump(cfg.ServiceMap))
 	}

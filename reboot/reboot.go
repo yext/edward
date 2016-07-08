@@ -1,4 +1,4 @@
-package main
+package reboot
 
 import (
 	"io/ioutil"
@@ -11,27 +11,8 @@ import (
 	"github.com/yext/errgo"
 )
 
-func updateLegacyReboot(markerPath string) error {
-	rebootFile := path.Join(markerPath, ".lastreboot")
-
-	rebootMarker, _ := ioutil.ReadFile(rebootFile)
-
-	command := exec.Command("last", "-1", "reboot")
-	output, err := command.CombinedOutput()
-	if err != nil {
-		return errgo.Mask(err)
-	}
-
-	if string(output) == string(rebootMarker) {
-		setRebootMarker(markerPath)
-	}
-
-	_ = os.Remove(rebootFile)
-	return nil
-}
-
 // hasRebooted checks the reboot marker under the given path and returns a boolean indicating whether the system has been rebooted since the last time the marker was set
-func hasRebooted(markerPath string) (bool, error) {
+func HasRebooted(markerPath string) (bool, error) {
 	err := updateLegacyReboot(markerPath)
 	if err != nil {
 		return false, errgo.Mask(err)
@@ -52,7 +33,7 @@ func hasRebooted(markerPath string) (bool, error) {
 	return false, nil
 }
 
-func setRebootMarker(markerPath string) error {
+func SetRebootMarker(markerPath string) error {
 	rebootFile := path.Join(markerPath, ".boottime")
 	bootTime, err := host.BootTime()
 	if err != nil {
@@ -62,4 +43,23 @@ func setRebootMarker(markerPath string) error {
 	err = ioutil.WriteFile(rebootFile, []byte(bootTimeStr), os.ModePerm)
 	return errgo.Mask(err)
 
+}
+
+func updateLegacyReboot(markerPath string) error {
+	rebootFile := path.Join(markerPath, ".lastreboot")
+
+	rebootMarker, _ := ioutil.ReadFile(rebootFile)
+
+	command := exec.Command("last", "-1", "reboot")
+	output, err := command.CombinedOutput()
+	if err != nil {
+		return errgo.Mask(err)
+	}
+
+	if string(output) == string(rebootMarker) {
+		SetRebootMarker(markerPath)
+	}
+
+	_ = os.Remove(rebootFile)
+	return nil
 }

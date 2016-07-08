@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"encoding/json"
@@ -7,20 +7,21 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/yext/edward/services"
 	"github.com/yext/errgo"
 )
 
 type Config struct {
-	workingDir       string          `json:"-"`
-	Imports          []string        `json:"imports"`
-	ImportedGroups   []GroupDef      `json:"-"`
-	ImportedServices []ServiceConfig `json:"-"`
-	Env              []string        `json:"env"`
-	Groups           []GroupDef      `json:"groups"`
-	Services         []ServiceConfig `json:"services"`
+	workingDir       string                   `json:"-"`
+	Imports          []string                 `json:"imports"`
+	ImportedGroups   []GroupDef               `json:"-"`
+	ImportedServices []services.ServiceConfig `json:"-"`
+	Env              []string                 `json:"env"`
+	Groups           []GroupDef               `json:"groups"`
+	Services         []services.ServiceConfig `json:"services"`
 
-	ServiceMap map[string]*ServiceConfig      `json:"-"`
-	GroupMap   map[string]*ServiceGroupConfig `json:"-"`
+	ServiceMap map[string]*services.ServiceConfig      `json:"-"`
+	GroupMap   map[string]*services.ServiceGroupConfig `json:"-"`
 }
 
 type GroupDef struct {
@@ -71,18 +72,18 @@ func (c Config) Save(writer io.Writer) error {
 	return err
 }
 
-func NewConfig(services []ServiceConfig, groups []ServiceGroupConfig) Config {
+func NewConfig(newServices []services.ServiceConfig, newGroups []services.ServiceGroupConfig) Config {
 
 	// Find Env settings common to all services
 	var allEnvSlices [][]string
-	for _, s := range services {
+	for _, s := range newServices {
 		allEnvSlices = append(allEnvSlices, s.Env)
 	}
 	env := stringSliceIntersect(allEnvSlices)
 
 	// Remove common settings from services
-	var svcs []ServiceConfig
-	for _, s := range services {
+	var svcs []services.ServiceConfig
+	for _, s := range newServices {
 		s.Env = stringSliceRemoveCommon(env, s.Env)
 		svcs = append(svcs, s)
 	}
@@ -93,7 +94,7 @@ func NewConfig(services []ServiceConfig, groups []ServiceGroupConfig) Config {
 		Groups:   []GroupDef{},
 	}
 
-	cfg.AddGroups(groups)
+	cfg.AddGroups(newGroups)
 
 	return cfg
 }
@@ -104,18 +105,18 @@ func EmptyConfig(workingDir string) Config {
 		workingDir: workingDir,
 	}
 
-	cfg.ServiceMap = make(map[string]*ServiceConfig)
-	cfg.GroupMap = make(map[string]*ServiceGroupConfig)
+	cfg.ServiceMap = make(map[string]*services.ServiceConfig)
+	cfg.GroupMap = make(map[string]*services.ServiceGroupConfig)
 
 	return cfg
 }
 
 // AppendServices adds services to an existing config without replacing existing services
-func (cfg *Config) AppendServices(services []*ServiceConfig) error {
+func (cfg *Config) AppendServices(newServices []*services.ServiceConfig) error {
 	if cfg.ServiceMap == nil {
-		cfg.ServiceMap = make(map[string]*ServiceConfig)
+		cfg.ServiceMap = make(map[string]*services.ServiceConfig)
 	}
-	for _, s := range services {
+	for _, s := range newServices {
 		if _, found := cfg.ServiceMap[s.Name]; !found {
 			cfg.ServiceMap[s.Name] = s
 			cfg.Services = append(cfg.Services, *s)
@@ -124,7 +125,7 @@ func (cfg *Config) AppendServices(services []*ServiceConfig) error {
 	return nil
 }
 
-func (cfg *Config) AddGroups(groups []ServiceGroupConfig) error {
+func (cfg *Config) AddGroups(groups []services.ServiceGroupConfig) error {
 	for _, group := range groups {
 		grp := GroupDef{
 			Name:     group.Name,
@@ -182,42 +183,42 @@ func (c *Config) importConfig(second Config) error {
 }
 
 func (c *Config) initMaps() error {
-	var services map[string]*ServiceConfig = make(map[string]*ServiceConfig)
+	var svcs map[string]*services.ServiceConfig = make(map[string]*services.ServiceConfig)
 	for _, s := range append(c.Services, c.ImportedServices...) {
 		sc := s
 		sc.Env = append(sc.Env, c.Env...)
-		if _, exists := services[s.Name]; exists {
+		if _, exists := svcs[s.Name]; exists {
 			return errgo.New("Service name already exists: " + s.Name)
 		}
-		services[s.Name] = &sc
+		svcs[s.Name] = &sc
 	}
-	c.ServiceMap = services
+	c.ServiceMap = svcs
 
-	var groups map[string]*ServiceGroupConfig = make(map[string]*ServiceGroupConfig)
+	var groups map[string]*services.ServiceGroupConfig = make(map[string]*services.ServiceGroupConfig)
 	// First pass: Services
 	var orphanNames map[string]struct{} = make(map[string]struct{})
 	for _, g := range append(c.Groups, c.ImportedGroups...) {
 
-		var childServices []*ServiceConfig
+		var childServices []*services.ServiceConfig
 
 		for _, name := range g.Children {
-			if s, ok := services[name]; ok {
+			if s, ok := svcs[name]; ok {
 				childServices = append(childServices, s)
 			} else {
 				orphanNames[name] = struct{}{}
 			}
 		}
 
-		groups[g.Name] = &ServiceGroupConfig{
+		groups[g.Name] = &services.ServiceGroupConfig{
 			Name:     g.Name,
 			Services: childServices,
-			Groups:   []*ServiceGroupConfig{},
+			Groups:   []*services.ServiceGroupConfig{},
 		}
 	}
 
 	// Second pass: Groups
 	for _, g := range append(c.Groups, c.ImportedGroups...) {
-		childGroups := []*ServiceGroupConfig{}
+		childGroups := []*services.ServiceGroupConfig{}
 
 		for _, name := range g.Children {
 			if gr, ok := groups[name]; ok {

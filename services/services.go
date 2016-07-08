@@ -1,4 +1,4 @@
-package main
+package services
 
 import (
 	"bytes"
@@ -16,6 +16,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/hpcloud/tail"
+	"github.com/yext/edward/home"
 )
 
 type ServiceStatus struct {
@@ -224,7 +225,7 @@ type ServiceCommand struct {
 }
 
 func (sc *ServiceCommand) createScript(content string, scriptType string) (*os.File, error) {
-	file, err := os.Create(path.Join(EdwardConfig.ScriptDir, sc.Service.Name+"-"+scriptType))
+	file, err := os.Create(path.Join(home.EdwardConfig.ScriptDir, sc.Service.Name+"-"+scriptType))
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +241,7 @@ func (sc *ServiceCommand) createScript(content string, scriptType string) (*os.F
 }
 
 func (sc *ServiceCommand) deleteScript(scriptType string) error {
-	return os.Remove(path.Join(EdwardConfig.ScriptDir, sc.Service.Name+"-"+scriptType))
+	return os.Remove(path.Join(home.EdwardConfig.ScriptDir, sc.Service.Name+"-"+scriptType))
 }
 
 func printOperation(operation string) {
@@ -423,13 +424,13 @@ func (sc *ServiceCommand) clearState() {
 }
 
 func (sc *ServiceCommand) getPidPath() string {
-	dir := EdwardConfig.PidDir
+	dir := home.EdwardConfig.PidDir
 	return path.Join(dir, sc.Service.Name+".pid")
 }
 
 func (s *ServiceConfig) GetCommand() *ServiceCommand {
 
-	dir := EdwardConfig.LogDir
+	dir := home.EdwardConfig.LogDir
 
 	logs := struct {
 		Build string
