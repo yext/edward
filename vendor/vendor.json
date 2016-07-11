@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"checksumSHA1": "iYOh5dzttSHLWwX4qV/T8qW7jqU=",
+			"path": "github.com/yext/errgo",
+			"revision": "7f28413f927adced39d3f45e09490ad6fd15bd95",
+			"revisionTime": "2014-09-30T19:41:53Z"
+		}
+	],
+	"rootPath": "github.com/yext/edward"
+}
