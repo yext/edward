@@ -25,7 +25,6 @@ var Generators map[string]ConfigGenerator = map[string]ConfigGenerator{
 			return outServices, outGroups, err
 		}
 
-		// TODO: Look for build.spec and parse for Play services vs regular java ones
 		buildFilePath := filepath.Join(path, "build.spec")
 		err = validateRegular(buildFilePath)
 		if err != nil {
