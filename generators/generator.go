@@ -188,7 +188,7 @@ func playService(name string) *services.ServiceConfig {
 	return &services.ServiceConfig{
 		Name: name,
 		Path: &pathStr,
-		Env:  []string{"YEXT_RABBITMQ=localhost"},
+		Env:  []string{},
 		Commands: services.ServiceConfigCommands{
 			Build:  "python tools/icbm/build.py :" + name + "_dev",
 			Launch: "thirdparty/play/play test src/com/yext/" + name,
@@ -204,7 +204,7 @@ func javaService(name string) *services.ServiceConfig {
 	return &services.ServiceConfig{
 		Name: name,
 		Path: &pathStr,
-		Env:  []string{"YEXT_RABBITMQ=localhost", "YEXT_SITE=office"},
+		Env:  []string{},
 		Commands: services.ServiceConfigCommands{
 			Build:  "python tools/icbm/build.py :" + name,
 			Launch: "JVM_ARGS='-Xmx3G' build/" + name + "/" + name,
