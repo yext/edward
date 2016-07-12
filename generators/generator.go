@@ -10,11 +10,10 @@ type ConfigGenerator func(path string) ([]*services.ServiceConfig, []*services.S
 
 var Generators map[string]ConfigGenerator
 
-func init() {
-	Generators = make(map[string]ConfigGenerator)
-}
-
 func RegisterGenerator(name string, generator ConfigGenerator) {
+	if Generators == nil {
+		Generators = make(map[string]ConfigGenerator)
+	}
 	Generators[name] = generator
 }
 
