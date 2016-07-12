@@ -10,12 +10,13 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
 )
 
 var service1 = services.ServiceConfig{
 	Name:         "service1",
-	Path:         stringToStringPointer("."),
+	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
 	Commands: services.ServiceConfigCommands{
 		Build:  "buildCmd",
@@ -35,7 +36,7 @@ var group1 = services.ServiceGroupConfig{
 
 var service2 = services.ServiceConfig{
 	Name: "service2",
-	Path: stringToStringPointer("service2/path"),
+	Path: common.StringToStringPointer("service2/path"),
 	Commands: services.ServiceConfigCommands{
 		Build:  "buildCmd2",
 		Launch: "launchCmd2",
@@ -51,7 +52,7 @@ var group2 = services.ServiceGroupConfig{
 
 var service3 = services.ServiceConfig{
 	Name:         "service3",
-	Path:         stringToStringPointer("."),
+	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
 	Commands: services.ServiceConfigCommands{
 		Build:  "buildCmd",
@@ -67,10 +68,6 @@ var group3 = services.ServiceGroupConfig{
 	Name:     "group3",
 	Services: []*services.ServiceConfig{&service3},
 	Groups:   []*services.ServiceGroupConfig{},
-}
-
-func stringToStringPointer(s string) *string {
-	return &s
 }
 
 var basicTests = []struct {

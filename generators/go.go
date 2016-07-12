@@ -88,7 +88,7 @@ func goService(name string, goPackage string) *services.ServiceConfig {
 	return &services.ServiceConfig{
 		Name: name,
 		Path: &pathStr,
-		Env:  []string{"YEXT_RABBITMQ=localhost"},
+		Env:  []string{},
 		Commands: services.ServiceConfigCommands{
 			Build:  "go install " + goPackage,
 			Launch: name,
