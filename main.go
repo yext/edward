@@ -136,8 +136,12 @@ func thirdPartyService(name string, startCommand string, stopCommand string, sta
 // getConfigPath identifies the location of edward.json, if any exists
 func getConfigPath() string {
 
-	if flags.config != "" {
-		return flags.config
+	// TODO: Handle abs path not working more cleanly
+
+	if len(flags.config) > 0 {
+		if absfp, err := filepath.Abs(flags.config); err == nil {
+			return absfp
+		}
 	}
 
 	var pathOptions []string
@@ -160,7 +164,9 @@ func getConfigPath() string {
 
 	for _, path := range pathOptions {
 		if _, err := os.Stat(path); err == nil {
-			return path
+			if absfp, err := filepath.Abs(path); err != nil {
+				return absfp
+			}
 		}
 	}
 
@@ -287,6 +293,10 @@ func generate(c *cli.Context) error {
 	}
 
 	foundServices, _, err := generators.GenerateServices(wd)
+	if err != nil {
+		return errgo.Mask(err)
+	}
+	foundServices, err = cfg.NormalizeServicePaths(wd, foundServices)
 	if err != nil {
 		return errgo.Mask(err)
 	}

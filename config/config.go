@@ -111,6 +111,23 @@ func EmptyConfig(workingDir string) Config {
 	return cfg
 }
 
+// NormalizeServicePaths will modify the Paths for each of the provided services
+// to be relative to the working directory of this config file
+func (cfg *Config) NormalizeServicePaths(searchPath string, newServices []*services.ServiceConfig) ([]*services.ServiceConfig, error) {
+	var outServices []*services.ServiceConfig
+	for _, s := range newServices {
+		curService := *s
+		fullPath := filepath.Join(searchPath, *curService.Path)
+		relPath, err := filepath.Rel(cfg.workingDir, fullPath)
+		if err != nil {
+			return outServices, errgo.Mask(err)
+		}
+		curService.Path = &relPath
+		outServices = append(outServices, &curService)
+	}
+	return outServices, nil
+}
+
 // AppendServices adds services to an existing config without replacing existing services
 func (cfg *Config) AppendServices(newServices []*services.ServiceConfig) error {
 	if cfg.ServiceMap == nil {

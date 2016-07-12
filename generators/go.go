@@ -23,8 +23,8 @@ var goGenerator = func(path string) ([]*services.ServiceConfig, []*services.Serv
 		return outServices, outGroups, err
 	}
 
-	visitor := NewGoWalker(filepath.Join(path, "gocode", "src"))
-	err = filepath.Walk(filepath.Join(path, "gocode", "src", "yext"), visitor.visit)
+	visitor := NewGoWalker(path)
+	err = filepath.Walk(path, visitor.visit)
 	if err != nil {
 		return outServices, outGroups, err
 	}
@@ -34,14 +34,14 @@ var goGenerator = func(path string) ([]*services.ServiceConfig, []*services.Serv
 }
 
 type GoWalker struct {
-	found  map[string]string
-	goPath string
+	basePath string
+	found    map[string]string
 }
 
-func NewGoWalker(goPath string) GoWalker {
+func NewGoWalker(basePath string) GoWalker {
 	return GoWalker{
-		found:  make(map[string]string),
-		goPath: goPath,
+		basePath: basePath,
+		found:    make(map[string]string),
 	}
 }
 
@@ -59,13 +59,16 @@ func (v *GoWalker) visit(path string, f os.FileInfo, err error) error {
 
 	input, err := ioutil.ReadFile(path)
 	if err != nil {
-		return err
+		return errgo.Mask(err)
 	}
 
 	packageExpr := regexp.MustCompile(`package main\n`)
 	if packageExpr.Match(input) {
 		packageName := filepath.Base(filepath.Dir(path))
-		packagePath := filepath.Dir(path)
+		packagePath, err := filepath.Rel(v.basePath, filepath.Dir(path))
+		if err != nil {
+			return errgo.Mask(err)
+		}
 		v.found[packageName] = packagePath
 	}
 
