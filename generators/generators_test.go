@@ -22,10 +22,10 @@ var goTests = []struct {
 		outServices: []*services.ServiceConfig{
 			&services.ServiceConfig{
 				Name: "simple",
-				Path: common.StringToStringPointer("$ALPHA"),
+				Path: common.StringToStringPointer("testdata/go_simple/gocode/src/yext/simple"),
 				Env:  []string{},
 				Commands: services.ServiceConfigCommands{
-					Build:  "go install yext/simple",
+					Build:  "go install",
 					Launch: "simple",
 				},
 				Properties: services.ServiceConfigProperties{

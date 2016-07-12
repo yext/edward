@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/yext/edward/services"
 	"github.com/yext/errgo"
@@ -66,7 +65,7 @@ func (v *GoWalker) visit(path string, f os.FileInfo, err error) error {
 	packageExpr := regexp.MustCompile(`package main\n`)
 	if packageExpr.Match(input) {
 		packageName := filepath.Base(filepath.Dir(path))
-		packagePath := strings.Replace(filepath.Dir(path), v.goPath+"/", "", 1)
+		packagePath := filepath.Dir(path)
 		v.found[packageName] = packagePath
 	}
 
@@ -83,14 +82,13 @@ func (v *GoWalker) GetServices() []*services.ServiceConfig {
 	return outServices
 }
 
-func goService(name string, goPackage string) *services.ServiceConfig {
-	pathStr := "$ALPHA"
+func goService(name, packagePath string) *services.ServiceConfig {
 	return &services.ServiceConfig{
 		Name: name,
-		Path: &pathStr,
+		Path: &packagePath,
 		Env:  []string{},
 		Commands: services.ServiceConfigCommands{
-			Build:  "go install " + goPackage,
+			Build:  "go install",
 			Launch: name,
 		},
 		Properties: services.ServiceConfigProperties{
