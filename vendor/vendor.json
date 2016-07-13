@@ -3,6 +3,24 @@
 	"ignore": "",
 	"package": [
 		{
+			"checksumSHA1": "RZOdTSZN/PgcTqko5LzIAzw+UT4=",
+			"path": "github.com/pmezard/go-difflib/difflib",
+			"revision": "792786c7400a136282c1664665ae0a8db921c6c2",
+			"revisionTime": "2016-01-10T10:55:54Z"
+		},
+		{
+			"checksumSHA1": "u7qSU5PvTxCAYjTHec2g87Nxce4=",
+			"path": "github.com/sabhiram/go-git-ignore",
+			"revision": "228fcfa2a06e870a3ef238d54c45ea847f492a37",
+			"revisionTime": "2016-01-16T02:08:57Z"
+		},
+		{
+			"checksumSHA1": "5mJ/wol4LCFBUct8fbQVkRJv7ZI=",
+			"path": "github.com/stretchr/testify/assert",
+			"revision": "d77da356e56a7428ad25149ca77381849a6a5232",
+			"revisionTime": "2016-06-15T09:26:46Z"
+		},
+		{
 			"checksumSHA1": "iYOh5dzttSHLWwX4qV/T8qW7jqU=",
 			"path": "github.com/yext/errgo",
 			"revision": "7f28413f927adced39d3f45e09490ad6fd15bd95",

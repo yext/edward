@@ -2,39 +2,59 @@ package generators
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 
 	"github.com/yext/edward/services"
+	"github.com/yext/errgo"
 )
 
 func init() {
-	RegisterGenerator("icbm", icbmGenerator)
+	RegisterGenerator(&IcbmGenerator{})
 }
 
-var icbmGenerator = func(path string) ([]*services.ServiceConfig, []*services.ServiceGroupConfig, error) {
-	var outServices []*services.ServiceConfig
-	var outGroups []*services.ServiceGroupConfig
+type IcbmGenerator struct {
+	foundServices []*services.ServiceConfig
+}
 
-	err := validateDir(path)
-	if err != nil {
-		return outServices, outGroups, err
+func (v *IcbmGenerator) Name() string {
+	return "icbm"
+}
+
+func (v *IcbmGenerator) StartWalk(path string) {
+	v.foundServices = nil
+}
+
+func (v *IcbmGenerator) StopWalk() {
+}
+
+func (v *IcbmGenerator) VisitDir(path string, f os.FileInfo, err error) error {
+	buildFilePath := filepath.Join(path, "build.spec")
+
+	if _, err := os.Stat(buildFilePath); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return errgo.Mask(err)
 	}
 
-	buildFilePath := filepath.Join(path, "build.spec")
 	err = validateRegular(buildFilePath)
 	if err != nil {
-		return outServices, outGroups, err
+		return errgo.Mask(err)
 	}
 
 	specData, err := ioutil.ReadFile(buildFilePath)
 	if err != nil {
-		return outServices, outGroups, err
+		return errgo.Mask(err)
 	}
-	outServices = append(outServices, parsePlayServices(specData)...)
-	outServices = append(outServices, parseJavaServices(specData)...)
+	v.foundServices = append(v.foundServices, parsePlayServices(specData)...)
+	v.foundServices = append(v.foundServices, parseJavaServices(specData)...)
 
-	return outServices, outGroups, nil
+	return filepath.SkipDir
+}
+
+func (v *IcbmGenerator) Found() []*services.ServiceConfig {
+	return v.foundServices
 }
 
 func parsePlayServices(spec []byte) []*services.ServiceConfig {

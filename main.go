@@ -292,7 +292,7 @@ func generate(c *cli.Context) error {
 		return errgo.Mask(err)
 	}
 
-	foundServices, _, err := generators.GenerateServices(wd)
+	foundServices, err := generators.GenerateServices(wd)
 	if err != nil {
 		return errgo.Mask(err)
 	}

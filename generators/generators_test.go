@@ -39,7 +39,7 @@ var goTests = []struct {
 
 func TestGoGenerator(t *testing.T) {
 	for _, test := range goTests {
-		services, _, err := GenerateServices(test.path)
+		services, err := GenerateServices(test.path)
 		if !reflect.DeepEqual(test.outServices, services) {
 			t.Errorf("%v: Services did not match.\nExpected:\n%v\nGot:%v", test.name, spew.Sdump(test.outServices), spew.Sdump(services))
 		}
