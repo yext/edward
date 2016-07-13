@@ -1,6 +1,7 @@
 package generators
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -31,15 +32,20 @@ func RegisterGenerator(g Generator) {
 func GenerateServices(path string) ([]*services.ServiceConfig, error) {
 	var outServices []*services.ServiceConfig
 
-	err := validateDir(path)
-	if err != nil {
-		return outServices, err
+	if info, err := os.Stat(path); err != nil || !info.IsDir() {
+		if err != nil {
+			return outServices, err
+		}
+		return outServices, errors.New(path + " is not a directory")
 	}
 
 	for name, generator := range Generators {
 		generator.StartWalk(path)
 		err := filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
 			if _, err := os.Stat(path); err != nil {
+				if os.IsNotExist(err) {
+					return nil
+				}
 				return errgo.Mask(err)
 			}
 

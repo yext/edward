@@ -38,11 +38,6 @@ func (v *IcbmGenerator) VisitDir(path string, f os.FileInfo, err error) error {
 		return errgo.Mask(err)
 	}
 
-	err = validateRegular(buildFilePath)
-	if err != nil {
-		return errgo.Mask(err)
-	}
-
 	specData, err := ioutil.ReadFile(buildFilePath)
 	if err != nil {
 		return errgo.Mask(err)
