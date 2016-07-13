@@ -44,7 +44,11 @@ func GenerateServices(path string) ([]*services.ServiceConfig, error) {
 			}
 
 			if f.Mode().IsDir() {
-				return errgo.Mask(generator.VisitDir(path, f, err))
+				err := generator.VisitDir(path, f, err)
+				if err == filepath.SkipDir {
+					return err
+				}
+				return errgo.Mask(err)
 			}
 			return nil
 		})
