@@ -30,7 +30,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "Edward"
 	app.Usage = "Manage local microservices"
-	app.Version = "1.0.0"
+	app.Version = "1.1.0"
 	app.Before = func(c *cli.Context) error {
 		command := c.Args().First()
 		if command == "start" || command == "stop" || command == "restart" {
