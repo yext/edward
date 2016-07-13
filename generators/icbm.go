@@ -15,6 +15,7 @@ func init() {
 }
 
 type IcbmGenerator struct {
+	basePath      string
 	foundServices []*services.ServiceConfig
 }
 
@@ -23,6 +24,7 @@ func (v *IcbmGenerator) Name() string {
 }
 
 func (v *IcbmGenerator) StartWalk(path string) {
+	v.basePath = path
 	v.foundServices = nil
 }
 
@@ -42,8 +44,14 @@ func (v *IcbmGenerator) VisitDir(path string, f os.FileInfo, err error) error {
 	if err != nil {
 		return errgo.Mask(err)
 	}
-	v.foundServices = append(v.foundServices, parsePlayServices(specData)...)
-	v.foundServices = append(v.foundServices, parseJavaServices(specData)...)
+
+	relPath, err := filepath.Rel(v.basePath, path)
+	if err != nil {
+		return err
+	}
+
+	v.foundServices = append(v.foundServices, parsePlayServices(relPath, specData)...)
+	v.foundServices = append(v.foundServices, parseJavaServices(relPath, specData)...)
 
 	return filepath.SkipDir
 }
@@ -52,7 +60,7 @@ func (v *IcbmGenerator) Found() []*services.ServiceConfig {
 	return v.foundServices
 }
 
-func parsePlayServices(spec []byte) []*services.ServiceConfig {
+func parsePlayServices(path string, spec []byte) []*services.ServiceConfig {
 	var outServices []*services.ServiceConfig
 
 	playExpr := regexp.MustCompile("name=\"(.*)_dev")
@@ -60,14 +68,14 @@ func parsePlayServices(spec []byte) []*services.ServiceConfig {
 
 	for _, match := range matches {
 		if len(match) > 1 {
-			outServices = append(outServices, playService(string(match[1])))
+			outServices = append(outServices, playService(path, string(match[1])))
 		}
 	}
 
 	return outServices
 }
 
-func parseJavaServices(spec []byte) []*services.ServiceConfig {
+func parseJavaServices(path string, spec []byte) []*services.ServiceConfig {
 	var outServices []*services.ServiceConfig
 
 	playExpr := regexp.MustCompile("name=\"([A-Za-z0-9]+)\"")
@@ -75,18 +83,17 @@ func parseJavaServices(spec []byte) []*services.ServiceConfig {
 
 	for _, match := range matches {
 		if len(match) > 1 {
-			outServices = append(outServices, javaService(string(match[1])))
+			outServices = append(outServices, javaService(path, string(match[1])))
 		}
 	}
 
 	return outServices
 }
 
-func playService(name string) *services.ServiceConfig {
-	pathStr := "$ALPHA"
+func playService(path, name string) *services.ServiceConfig {
 	return &services.ServiceConfig{
 		Name: name,
-		Path: &pathStr,
+		Path: &path,
 		Env:  []string{},
 		Commands: services.ServiceConfigCommands{
 			Build:  "python tools/icbm/build.py :" + name + "_dev",
@@ -98,11 +105,10 @@ func playService(name string) *services.ServiceConfig {
 	}
 }
 
-func javaService(name string) *services.ServiceConfig {
-	pathStr := "$ALPHA"
+func javaService(path, name string) *services.ServiceConfig {
 	return &services.ServiceConfig{
 		Name: name,
-		Path: &pathStr,
+		Path: &path,
 		Env:  []string{},
 		Commands: services.ServiceConfigCommands{
 			Build:  "python tools/icbm/build.py :" + name,
