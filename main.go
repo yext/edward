@@ -512,6 +512,11 @@ func RemoveContents(dir string) error {
 }
 
 func refreshForReboot() error {
+	if os.Getenv("EDWARD_NO_REBOOT") == "1" {
+		fmt.Println("Reboot detection disabled")
+		return nil
+	}
+
 	rebooted, err := reboot.HasRebooted(home.EdwardConfig.Dir)
 	if err != nil {
 		return errgo.Mask(err)
