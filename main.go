@@ -117,22 +117,6 @@ func main() {
 var groupMap map[string]*services.ServiceGroupConfig
 var serviceMap map[string]*services.ServiceConfig
 
-func thirdPartyService(name string, startCommand string, stopCommand string, started string) *services.ServiceConfig {
-	pathStr := "$ALPHA"
-	return &services.ServiceConfig{
-		Name: name,
-		Path: &pathStr,
-		Env:  []string{"YEXT_RABBITMQ=localhost"},
-		Commands: services.ServiceConfigCommands{
-			Launch: startCommand,
-			Stop:   stopCommand,
-		},
-		Properties: services.ServiceConfigProperties{
-			Started: started,
-		},
-	}
-}
-
 // getConfigPath identifies the location of edward.json, if any exists
 func getConfigPath() string {
 
