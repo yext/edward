@@ -164,8 +164,10 @@ func getConfigPath() string {
 
 	for _, path := range pathOptions {
 		if _, err := os.Stat(path); err == nil {
-			if absfp, err := filepath.Abs(path); err != nil {
+			if absfp, err := filepath.Abs(path); err == nil {
 				return absfp
+			} else {
+				fmt.Println("Error getting config file: ", err)
 			}
 		}
 	}
