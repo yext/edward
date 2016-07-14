@@ -44,7 +44,7 @@ func (v *GoGenerator) VisitDir(path string, f os.FileInfo, err error) error {
 	for _, f := range files {
 		fPath := filepath.Join(path, f.Name())
 		if filepath.Ext(fPath) != ".go" {
-			return nil
+			continue
 		}
 
 		input, err := ioutil.ReadFile(fPath)
