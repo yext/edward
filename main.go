@@ -33,9 +33,6 @@ func main() {
 	app.Version = "1.1.0"
 	app.Before = func(c *cli.Context) error {
 		command := c.Args().First()
-		if command == "start" || command == "stop" || command == "restart" {
-			prepareForSudo()
-		}
 
 		err := home.EdwardConfig.Initialize()
 		if err != nil {
@@ -177,7 +174,6 @@ func loadConfig() error {
 
 	configPath := getConfigPath()
 	if configPath != "" {
-		println("Loading configuration from", configPath)
 		r, err := os.Open(configPath)
 		if err != nil {
 			return errgo.Mask(err)
@@ -195,6 +191,14 @@ func loadConfig() error {
 	}
 
 	return nil
+}
+
+func sudoIfNeeded(sgs []services.ServiceOrGroup) {
+	for _, sg := range sgs {
+		if sg.IsSudo() {
+			prepareForSudo()
+		}
+	}
 }
 
 func getServicesOrGroups(names []string) ([]services.ServiceOrGroup, error) {
@@ -350,6 +354,8 @@ func start(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	sudoIfNeeded(sgs)
+
 	for _, s := range sgs {
 		println("==== Build Phase ====")
 		err = s.Build()
@@ -384,6 +390,7 @@ func stop(c *cli.Context) error {
 			return err
 		}
 	}
+	sudoIfNeeded(sgs)
 	for _, s := range sgs {
 		_ = s.Stop()
 	}
@@ -395,6 +402,7 @@ func restart(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	sudoIfNeeded(sgs)
 	for _, s := range sgs {
 		_ = s.Stop()
 		err = s.Build()

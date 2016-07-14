@@ -77,6 +77,7 @@ type ServiceOrGroup interface {
 	Start() error
 	Stop() error
 	GetStatus() []ServiceStatus
+	IsSudo() bool
 }
 
 func (sc ServiceConfig) GetName() string {
@@ -144,6 +145,10 @@ func (sc ServiceConfig) GetStatus() []ServiceStatus {
 	}
 }
 
+func (sc ServiceConfig) IsSudo() bool {
+	return sc.RequiresSudo
+}
+
 func (sg ServiceGroupConfig) GetName() string {
 	return sg.Name
 }
@@ -205,6 +210,21 @@ func (sg ServiceGroupConfig) GetStatus() []ServiceStatus {
 		outStatus = append(outStatus, group.GetStatus()...)
 	}
 	return outStatus
+}
+
+func (sg ServiceGroupConfig) IsSudo() bool {
+	for _, service := range sg.Services {
+		if service.IsSudo() {
+			return true
+		}
+	}
+	for _, group := range sg.Groups {
+		if group.IsSudo() {
+			return true
+		}
+	}
+
+	return false
 }
 
 type ServiceCommand struct {
