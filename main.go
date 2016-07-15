@@ -25,7 +25,11 @@ import (
 	"github.com/yext/errgo"
 )
 
+var logger *log.Logger
+
 func main() {
+
+	logger = log.New(os.Stdout, "", 0)
 
 	app := cli.NewApp()
 	app.Name = "Edward"
@@ -105,9 +109,11 @@ func main() {
 		},
 	}
 
+	logger.Printf("%v v%v", app.Name, app.Version)
+
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 }
 
@@ -178,7 +184,7 @@ func loadConfig() error {
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		cfg, err := config.LoadConfigWithDir(r, filepath.Dir(configPath))
+		cfg, err := config.LoadConfigWithDir(r, filepath.Dir(configPath), logger)
 		if err != nil {
 			return errgo.Mask(err)
 		}
@@ -269,7 +275,7 @@ func generate(c *cli.Context) error {
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		cfg, err = config.LoadConfigWithDir(r, filepath.Dir(configPath))
+		cfg, err = config.LoadConfigWithDir(r, filepath.Dir(configPath), logger)
 		if err != nil {
 			return errgo.Mask(err)
 		}

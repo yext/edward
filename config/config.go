@@ -22,6 +22,8 @@ type Config struct {
 
 	ServiceMap map[string]*services.ServiceConfig      `json:"-"`
 	GroupMap   map[string]*services.ServiceGroupConfig `json:"-"`
+
+	Log Logger
 }
 
 type GroupDef struct {
@@ -29,13 +31,13 @@ type GroupDef struct {
 	Children []string `json:"children"`
 }
 
-func LoadConfig(reader io.Reader) (Config, error) {
-	outCfg, err := LoadConfigWithDir(reader, "")
+func LoadConfig(reader io.Reader, logger Logger) (Config, error) {
+	outCfg, err := LoadConfigWithDir(reader, "", logger)
 	return outCfg, errgo.Mask(err)
 }
 
-func LoadConfigWithDir(reader io.Reader, workingDir string) (Config, error) {
-	config, err := LoadConfigContents(reader, workingDir)
+func LoadConfigWithDir(reader io.Reader, workingDir string, logger Logger) (Config, error) {
+	config, err := LoadConfigContents(reader, workingDir, logger)
 	if err != nil {
 		return Config{}, errgo.Mask(err)
 	}
@@ -44,7 +46,7 @@ func LoadConfigWithDir(reader io.Reader, workingDir string) (Config, error) {
 }
 
 // Reader from os.Open
-func LoadConfigContents(reader io.Reader, workingDir string) (Config, error) {
+func LoadConfigContents(reader io.Reader, workingDir string, logger Logger) (Config, error) {
 	var config Config
 	dec := json.NewDecoder(reader)
 	err := dec.Decode(&config)
@@ -72,7 +74,9 @@ func (c Config) Save(writer io.Writer) error {
 	return err
 }
 
-func NewConfig(newServices []services.ServiceConfig, newGroups []services.ServiceGroupConfig) Config {
+func NewConfig(newServices []services.ServiceConfig, newGroups []services.ServiceGroupConfig, logger Logger) Config {
+
+	logger.Printf("Creating new config with %d services and %d groups.\n", len(newServices), len(newGroups))
 
 	// Find Env settings common to all services
 	var allEnvSlices [][]string
@@ -92,6 +96,7 @@ func NewConfig(newServices []services.ServiceConfig, newGroups []services.Servic
 		Env:      env,
 		Services: svcs,
 		Groups:   []GroupDef{},
+		Log:      logger,
 	}
 
 	cfg.AddGroups(newGroups)
@@ -176,7 +181,7 @@ func (c *Config) loadImports() error {
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		cfg, err := LoadConfigContents(r, filepath.Dir(cPath))
+		cfg, err := LoadConfigContents(r, filepath.Dir(cPath), c.Log)
 		if err != nil {
 			return errgo.Mask(err)
 		}
@@ -287,4 +292,10 @@ func stringSliceRemoveCommon(common []string, original []string) []string {
 		}
 	}
 	return outSlice
+}
+
+type Logger interface {
+	Printf(format string, v ...interface{})
+	Print(v ...interface{})
+	Println(v ...interface{})
 }
