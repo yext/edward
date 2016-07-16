@@ -280,7 +280,7 @@ func generate(c *cli.Context) error {
 			return errgo.Mask(err)
 		}
 	} else {
-		cfg = config.EmptyConfig(filepath.Dir(configPath))
+		cfg = config.EmptyConfig(filepath.Dir(configPath), logger)
 	}
 
 	wd, err := os.Getwd()
