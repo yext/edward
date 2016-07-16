@@ -76,7 +76,8 @@ func (c Config) Save(writer io.Writer) error {
 
 func NewConfig(newServices []services.ServiceConfig, newGroups []services.ServiceGroupConfig, logger Logger) Config {
 
-	logger.Printf("Creating new config with %d services and %d groups.\n", len(newServices), len(newGroups))
+	log := MaskLogger(logger)
+	log.Printf("Creating new config with %d services and %d groups.\n", len(newServices), len(newGroups))
 
 	// Find Env settings common to all services
 	var allEnvSlices [][]string
@@ -96,7 +97,7 @@ func NewConfig(newServices []services.ServiceConfig, newGroups []services.Servic
 		Env:      env,
 		Services: svcs,
 		Groups:   []GroupDef{},
-		Log:      logger,
+		Log:      log,
 	}
 
 	cfg.AddGroups(newGroups)
@@ -298,4 +299,17 @@ type Logger interface {
 	Printf(format string, v ...interface{})
 	Print(v ...interface{})
 	Println(v ...interface{})
+}
+
+type nullLogger struct{}
+
+func (n *nullLogger) Printf(_ string, _ ...interface{}) {}
+func (n *nullLogger) Print(_ ...interface{})            {}
+func (n *nullLogger) Println(_ ...interface{})          {}
+
+func MaskLogger(logger Logger) Logger {
+	if logger != nil {
+		return logger
+	}
+	return &nullLogger{}
 }
