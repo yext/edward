@@ -29,7 +29,7 @@ var logger *log.Logger
 
 func main() {
 
-	logger = log.New(os.Stdout, "", 0)
+	logger = log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 
 	app := cli.NewApp()
 	app.Name = "Edward"
