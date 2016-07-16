@@ -130,7 +130,7 @@ var basicTests = []struct {
 
 func TestLoadConfigBasic(t *testing.T) {
 	for _, test := range basicTests {
-		cfg, err := LoadConfig(bytes.NewBufferString(test.inJson))
+		cfg, err := LoadConfig(bytes.NewBufferString(test.inJson), nil)
 		validateTestResults(cfg, err, test.outServiceMap, test.outGroupMap, test.outErr, test.name, t)
 	}
 }
@@ -187,7 +187,7 @@ func TestLoadConfigWithImports(t *testing.T) {
 			t.Errorf("%v: Could not open input file", test.name)
 			return
 		}
-		cfg, err := LoadConfigWithDir(f, filepath.Dir(test.inFile))
+		cfg, err := LoadConfigWithDir(f, filepath.Dir(test.inFile), nil)
 		validateTestResults(cfg, err, test.outServiceMap, test.outGroupMap, test.outErr, test.name, t)
 	}
 }

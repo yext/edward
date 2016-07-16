@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
 	"github.com/yext/errgo"
 )
@@ -23,7 +24,7 @@ type Config struct {
 	ServiceMap map[string]*services.ServiceConfig      `json:"-"`
 	GroupMap   map[string]*services.ServiceGroupConfig `json:"-"`
 
-	Log Logger
+	Log common.Logger
 }
 
 type GroupDef struct {
@@ -31,12 +32,12 @@ type GroupDef struct {
 	Children []string `json:"children"`
 }
 
-func LoadConfig(reader io.Reader, logger Logger) (Config, error) {
+func LoadConfig(reader io.Reader, logger common.Logger) (Config, error) {
 	outCfg, err := LoadConfigWithDir(reader, "", logger)
 	return outCfg, errgo.Mask(err)
 }
 
-func LoadConfigWithDir(reader io.Reader, workingDir string, logger Logger) (Config, error) {
+func LoadConfigWithDir(reader io.Reader, workingDir string, logger common.Logger) (Config, error) {
 	config, err := LoadConfigContents(reader, workingDir, logger)
 	if err != nil {
 		return Config{}, errgo.Mask(err)
@@ -46,7 +47,7 @@ func LoadConfigWithDir(reader io.Reader, workingDir string, logger Logger) (Conf
 }
 
 // Reader from os.Open
-func LoadConfigContents(reader io.Reader, workingDir string, logger Logger) (Config, error) {
+func LoadConfigContents(reader io.Reader, workingDir string, logger common.Logger) (Config, error) {
 	var config Config
 	dec := json.NewDecoder(reader)
 	err := dec.Decode(&config)
@@ -74,9 +75,9 @@ func (c Config) Save(writer io.Writer) error {
 	return err
 }
 
-func NewConfig(newServices []services.ServiceConfig, newGroups []services.ServiceGroupConfig, logger Logger) Config {
+func NewConfig(newServices []services.ServiceConfig, newGroups []services.ServiceGroupConfig, logger common.Logger) Config {
 
-	log := MaskLogger(logger)
+	log := common.MaskLogger(logger)
 	log.Printf("Creating new config with %d services and %d groups.\n", len(newServices), len(newGroups))
 
 	// Find Env settings common to all services
@@ -264,6 +265,13 @@ func (c *Config) initMaps() error {
 	return nil
 }
 
+func (c *Config) printf(format string, v ...interface{}) {
+	if c.Log == nil {
+		return
+	}
+	c.Log.Printf(format, v...)
+}
+
 func stringSliceIntersect(slices [][]string) []string {
 	var counts map[string]int = make(map[string]int)
 	for _, s := range slices {
@@ -293,23 +301,4 @@ func stringSliceRemoveCommon(common []string, original []string) []string {
 		}
 	}
 	return outSlice
-}
-
-type Logger interface {
-	Printf(format string, v ...interface{})
-	Print(v ...interface{})
-	Println(v ...interface{})
-}
-
-type nullLogger struct{}
-
-func (n *nullLogger) Printf(_ string, _ ...interface{}) {}
-func (n *nullLogger) Print(_ ...interface{})            {}
-func (n *nullLogger) Println(_ ...interface{})          {}
-
-func MaskLogger(logger Logger) Logger {
-	if logger != nil {
-		return logger
-	}
-	return &nullLogger{}
 }
