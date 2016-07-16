@@ -44,6 +44,10 @@ func loadIgnores(path string, currentIgnores *ignore.GitIgnore) (*ignore.GitIgno
 }
 
 func shouldIgnore(basePath, path string, ignores *ignore.GitIgnore) bool {
+	if ignores == nil {
+		return false
+	}
+
 	rel, err := filepath.Rel(basePath, path)
 	if err != nil {
 		fmt.Println("Error checking ignore:", err)
