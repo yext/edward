@@ -527,7 +527,7 @@ func refreshForReboot() error {
 		return nil
 	}
 
-	rebooted, err := reboot.HasRebooted(home.EdwardConfig.Dir)
+	rebooted, err := reboot.HasRebooted(home.EdwardConfig.Dir, logger)
 	if err != nil {
 		return errgo.Mask(err)
 	}
@@ -537,7 +537,7 @@ func refreshForReboot() error {
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		err = reboot.SetRebootMarker(home.EdwardConfig.Dir)
+		err = reboot.SetRebootMarker(home.EdwardConfig.Dir, logger)
 		if err != nil {
 			return errgo.Mask(err)
 		}
