@@ -113,6 +113,7 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
+		fmt.Println(err)
 		logger.Fatal(err)
 	}
 }
@@ -199,12 +200,15 @@ func loadConfig() error {
 	return nil
 }
 
-func sudoIfNeeded(sgs []services.ServiceOrGroup) {
+func sudoIfNeeded(sgs []services.ServiceOrGroup) error {
 	for _, sg := range sgs {
 		if sg.IsSudo() {
-			prepareForSudo()
+			logger.Printf("sudo required for %v\n", sg.GetName())
+			return errgo.Mask(prepareForSudo())
 		}
 	}
+	logger.Printf("sudo not required for any services/groups\n")
+	return nil
 }
 
 func getServicesOrGroups(names []string) ([]services.ServiceOrGroup, error) {
@@ -360,7 +364,10 @@ func start(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	sudoIfNeeded(sgs)
+	err = sudoIfNeeded(sgs)
+	if err != nil {
+		return errgo.Mask(err)
+	}
 
 	for _, s := range sgs {
 		println("==== Build Phase ====")
@@ -396,7 +403,11 @@ func stop(c *cli.Context) error {
 			return err
 		}
 	}
-	sudoIfNeeded(sgs)
+	err = sudoIfNeeded(sgs)
+	if err != nil {
+		return errgo.Mask(err)
+	}
+
 	for _, s := range sgs {
 		_ = s.Stop()
 	}
@@ -408,7 +419,10 @@ func restart(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	sudoIfNeeded(sgs)
+	err = sudoIfNeeded(sgs)
+	if err != nil {
+		return errgo.Mask(err)
+	}
 	for _, s := range sgs {
 		_ = s.Stop()
 		err = s.Build()
@@ -446,14 +460,15 @@ func doLog(c *cli.Context) error {
 	return errors.New("Service not found: " + name)
 }
 
-func checkNotSudo() {
+func checkNotSudo() error {
 	user, err := user.Current()
 	if err != nil {
-		log.Fatal(err)
+		return errgo.Mask(err)
 	}
 	if user.Uid == "0" {
-		log.Fatal("edward should not be run with sudo")
+		return errgo.New("edward should not be fun with sudo")
 	}
+	return nil
 }
 
 func createScriptFile(suffix string, content string) (*os.File, error) {
@@ -472,7 +487,7 @@ func createScriptFile(suffix string, content string) (*os.File, error) {
 	return file, nil
 }
 
-func ensureSudoAble() {
+func ensureSudoAble() error {
 	var buffer bytes.Buffer
 
 	buffer.WriteString("#!/bin/bash\n")
@@ -481,25 +496,33 @@ func ensureSudoAble() {
 	buffer.WriteString(strings.Join(os.Args, " "))
 	buffer.WriteString("\n")
 
+	logger.Printf("Writing sudoAbility script\n")
 	file, err := createScriptFile("sudoAbility", buffer.String())
 	if err != nil {
-		log.Fatal(err)
+		return errgo.Mask(err)
 	}
 
+	logger.Printf("Launching sudoAbility script: %v\n", file.Name())
 	err = syscall.Exec(file.Name(), []string{file.Name()}, os.Environ())
 	if err != nil {
-		log.Fatal(err)
+		return errgo.Mask(err)
 	}
+	return nil
 }
 
-func prepareForSudo() {
-	checkNotSudo()
+func prepareForSudo() error {
+	err := checkNotSudo()
+	if err != nil {
+		return errgo.Mask(err)
+	}
 
 	isChild := os.Getenv("ISCHILD")
 	if isChild == "" {
-		ensureSudoAble()
-		return
+		return errgo.Mask(ensureSudoAble())
+	} else {
+		logger.Println("Child process, sudo should be available")
 	}
+	return nil
 }
 
 func RemoveContents(dir string) error {
@@ -523,6 +546,7 @@ func RemoveContents(dir string) error {
 
 func refreshForReboot() error {
 	if os.Getenv("EDWARD_NO_REBOOT") == "1" {
+		logger.Printf("Reboot detection disabled\n")
 		fmt.Println("Reboot detection disabled")
 		return nil
 	}
@@ -533,6 +557,7 @@ func refreshForReboot() error {
 	}
 
 	if rebooted {
+		logger.Printf("Cleaning up pidfiles")
 		err = RemoveContents(home.EdwardConfig.PidDir)
 		if err != nil {
 			return errgo.Mask(err)
