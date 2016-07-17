@@ -24,7 +24,7 @@ type Config struct {
 	ServiceMap map[string]*services.ServiceConfig      `json:"-"`
 	GroupMap   map[string]*services.ServiceGroupConfig `json:"-"`
 
-	Log common.Logger `json:"-"`
+	Logger common.Logger `json:"-"`
 }
 
 type GroupDef struct {
@@ -69,7 +69,7 @@ func loadConfigContents(reader io.Reader, workingDir string, logger common.Logge
 		return Config{}, errgo.Mask(err)
 	}
 
-	config.Log = log
+	config.Logger = log
 
 	return config, nil
 }
@@ -107,7 +107,7 @@ func NewConfig(newServices []services.ServiceConfig, newGroups []services.Servic
 		Env:      env,
 		Services: svcs,
 		Groups:   []GroupDef{},
-		Log:      log,
+		Logger:   log,
 	}
 
 	cfg.AddGroups(newGroups)
@@ -124,7 +124,7 @@ func EmptyConfig(workingDir string, logger common.Logger) Config {
 
 	cfg := Config{
 		workingDir: workingDir,
-		Log:        log,
+		Logger:     log,
 	}
 
 	cfg.ServiceMap = make(map[string]*services.ServiceConfig)
@@ -204,7 +204,7 @@ func (c *Config) loadImports() error {
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		cfg, err := loadConfigContents(r, filepath.Dir(cPath), c.Log)
+		cfg, err := loadConfigContents(r, filepath.Dir(cPath), c.Logger)
 		if err != nil {
 			return errgo.Mask(err)
 		}
@@ -287,10 +287,10 @@ func (c *Config) initMaps() error {
 }
 
 func (c *Config) printf(format string, v ...interface{}) {
-	if c.Log == nil {
+	if c.Logger == nil {
 		return
 	}
-	c.Log.Printf(format, v...)
+	c.Logger.Printf(format, v...)
 }
 
 func stringSliceIntersect(slices [][]string) []string {
