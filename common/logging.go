@@ -4,13 +4,13 @@ type Logger interface {
 	Printf(format string, v ...interface{})
 }
 
-type nullLogger struct{}
+type NullLogger struct{}
 
-func (n nullLogger) Printf(_ string, _ ...interface{}) {}
+func (n NullLogger) Printf(_ string, _ ...interface{}) {}
 
 func MaskLogger(logger Logger) Logger {
 	if logger != nil {
 		return logger
 	}
-	return nullLogger{}
+	return NullLogger{}
 }

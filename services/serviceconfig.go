@@ -6,6 +6,7 @@ import (
 	"syscall"
 
 	"github.com/fatih/color"
+	"github.com/yext/edward/common"
 )
 
 var _ ServiceOrGroup = ServiceConfig{}
@@ -26,6 +27,15 @@ type ServiceConfig struct {
 	// Env holds environment variables for a service, for example: GOPATH=~/gocode/
 	// These will be added to the vars in the environment under which the Edward command was run
 	Env []string
+
+	Logger common.Logger `json:"-"`
+}
+
+func (c *ServiceConfig) printf(format string, v ...interface{}) {
+	if c.Logger == nil {
+		return
+	}
+	c.Logger.Printf(format, v...)
 }
 
 type ServiceConfigProperties struct {

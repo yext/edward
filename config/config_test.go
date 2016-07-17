@@ -26,12 +26,14 @@ var service1 = services.ServiceConfig{
 	Properties: services.ServiceConfigProperties{
 		Started: "startedProperty",
 	},
+	Logger: common.NullLogger{},
 }
 
 var group1 = services.ServiceGroupConfig{
 	Name:     "group1",
 	Services: []*services.ServiceConfig{&service1},
 	Groups:   []*services.ServiceGroupConfig{},
+	Logger:   common.NullLogger{},
 }
 
 var service2 = services.ServiceConfig{
@@ -42,12 +44,14 @@ var service2 = services.ServiceConfig{
 		Launch: "launchCmd2",
 		Stop:   "stopCmd2",
 	},
+	Logger: common.NullLogger{},
 }
 
 var group2 = services.ServiceGroupConfig{
 	Name:     "group2",
 	Services: []*services.ServiceConfig{&service2},
 	Groups:   []*services.ServiceGroupConfig{},
+	Logger:   common.NullLogger{},
 }
 
 var service3 = services.ServiceConfig{
@@ -62,12 +66,14 @@ var service3 = services.ServiceConfig{
 	Properties: services.ServiceConfigProperties{
 		Started: "startedProperty",
 	},
+	Logger: common.NullLogger{},
 }
 
 var group3 = services.ServiceGroupConfig{
 	Name:     "group3",
 	Services: []*services.ServiceConfig{&service3},
 	Groups:   []*services.ServiceGroupConfig{},
+	Logger:   common.NullLogger{},
 }
 
 var basicTests = []struct {

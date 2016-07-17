@@ -231,11 +231,12 @@ func (c *Config) initMaps() error {
 	var svcs map[string]*services.ServiceConfig = make(map[string]*services.ServiceConfig)
 	for _, s := range append(c.Services, c.ImportedServices...) {
 		sc := s
+		sc.Logger = c.Logger
 		sc.Env = append(sc.Env, c.Env...)
-		if _, exists := svcs[s.Name]; exists {
-			return errgo.New("Service name already exists: " + s.Name)
+		if _, exists := svcs[sc.Name]; exists {
+			return errgo.New("Service name already exists: " + sc.Name)
 		}
-		svcs[s.Name] = &sc
+		svcs[sc.Name] = &sc
 	}
 	c.ServiceMap = svcs
 
@@ -243,7 +244,6 @@ func (c *Config) initMaps() error {
 	// First pass: Services
 	var orphanNames map[string]struct{} = make(map[string]struct{})
 	for _, g := range append(c.Groups, c.ImportedGroups...) {
-
 		var childServices []*services.ServiceConfig
 
 		for _, name := range g.Children {
@@ -258,6 +258,7 @@ func (c *Config) initMaps() error {
 			Name:     g.Name,
 			Services: childServices,
 			Groups:   []*services.ServiceGroupConfig{},
+			Logger:   c.Logger,
 		}
 	}
 

@@ -1,5 +1,7 @@
 package services
 
+import "github.com/yext/edward/common"
+
 var _ ServiceOrGroup = ServiceGroupConfig{}
 
 // ServiceGroupConfig is a group of services that can be managed together
@@ -10,6 +12,15 @@ type ServiceGroupConfig struct {
 	Services []*ServiceConfig
 	// Groups on which this group depends
 	Groups []*ServiceGroupConfig
+
+	Logger common.Logger
+}
+
+func (c *ServiceGroupConfig) printf(format string, v ...interface{}) {
+	if c.Logger == nil {
+		return
+	}
+	c.Logger.Printf(format, v...)
 }
 
 func (sg ServiceGroupConfig) GetName() string {
