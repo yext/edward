@@ -2,11 +2,16 @@ package services
 
 import (
 	"bytes"
-	"errors"
+	"io/ioutil"
+	"os"
+	"path"
+	"strconv"
 	"syscall"
 
 	"github.com/fatih/color"
 	"github.com/yext/edward/common"
+	"github.com/yext/edward/home"
+	"github.com/yext/errgo"
 )
 
 var _ ServiceOrGroup = ServiceConfig{}
@@ -59,33 +64,46 @@ func (sc ServiceConfig) GetName() string {
 }
 
 func (sc ServiceConfig) Build() error {
-	command := sc.GetCommand()
-	return command.BuildSync()
+	command, err := sc.GetCommand()
+	if err != nil {
+		return errgo.Mask(err)
+	}
+	return errgo.Mask(command.BuildSync())
 }
 
 func (sc ServiceConfig) Start() error {
-	command := sc.GetCommand()
-	return command.StartAsync()
+	command, err := sc.GetCommand()
+	if err != nil {
+		return errgo.Mask(err)
+	}
+	return errgo.Mask(command.StartAsync())
 }
 
 func (sc ServiceConfig) Stop() error {
 	printOperation("Stopping " + sc.Name)
-	command := sc.GetCommand()
+	sc.printf("Stopping %v.\n", sc.Name)
+
+	command, err := sc.GetCommand()
+	if err != nil {
+		return errgo.Mask(err)
+	}
 
 	var scriptErr error = nil
 	if command.Scripts.Stop != "" {
+		sc.printf("Running stop script for %v.\n", sc.Name)
 		scriptErr = command.StopScript()
 	}
 
 	if command.Pid == 0 {
 		printResult("Not running", color.FgYellow)
-		return errors.New(sc.Name + " is not running")
+		sc.printf("%v is not running, PID == 0.\n", sc.Name)
+		return errgo.New(sc.Name + " is not running")
 	}
 
 	pgid, err := syscall.Getpgid(command.Pid)
 	if err != nil {
 		printResult("Not found", color.FgRed)
-		return err
+		return errgo.Mask(err)
 	}
 	// TODO: Allow stronger override
 	syscall.Kill(-pgid, syscall.SIGKILL) //syscall.SIGINT)
@@ -95,16 +113,20 @@ func (sc ServiceConfig) Stop() error {
 
 	if scriptErr == nil {
 		printResult("OK", color.FgGreen)
+		sc.printf("%v stopped successfully.\n", sc.Name)
 	} else {
-		// TODO: For some reason this is never called
 		printResult("Script failed, kill signal succeeded", color.FgYellow)
+		sc.printf("%v killed, but stop script failed: %v.\n", sc.Name, scriptErr)
 	}
 
 	return nil
 }
 
-func (sc ServiceConfig) GetStatus() []ServiceStatus {
-	command := sc.GetCommand()
+func (sc ServiceConfig) Status() ([]ServiceStatus, error) {
+	command, err := sc.GetCommand()
+	if err != nil {
+		return nil, errgo.Mask(err)
+	}
 
 	status := "STOPPED"
 	if command.Pid != 0 {
@@ -116,7 +138,7 @@ func (sc ServiceConfig) GetStatus() []ServiceStatus {
 			Service: &sc,
 			Status:  status,
 		},
-	}
+	}, nil
 }
 
 func (sc ServiceConfig) IsSudo() bool {
@@ -142,4 +164,73 @@ func (s *ServiceConfig) makeScript(command string, logPath string) string {
 	buffer.WriteString("\n")
 
 	return buffer.String()
+}
+
+func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
+
+	s.printf("Building control command for: %v\n", s.Name)
+
+	dir := home.EdwardConfig.LogDir
+
+	logs := struct {
+		Build string
+		Run   string
+		Stop  string
+	}{
+		Build: path.Join(dir, s.Name+"-build.log"),
+		Run:   path.Join(dir, s.Name+".log"),
+		Stop:  path.Join(dir, s.Name+"-stop.log"),
+	}
+
+	buildScript := s.makeScript(s.Commands.Build, logs.Build)
+	startScript := s.makeScript(s.Commands.Launch, logs.Run)
+	stopScript := s.makeScript(s.Commands.Stop, logs.Stop)
+	command := &ServiceCommand{
+		Service: s,
+		Scripts: struct {
+			Build  string
+			Launch string
+			Stop   string
+		}{
+			Build:  buildScript,
+			Launch: startScript,
+			Stop:   stopScript,
+		},
+		Logs:   logs,
+		Logger: s.Logger,
+	}
+
+	// Retrieve the PID if available
+	pidFile := command.getPidPath()
+	s.printf("Checking pidfile for %v: %v\n", s.Name, pidFile)
+	if _, err := os.Stat(pidFile); err == nil {
+		dat, err := ioutil.ReadFile(pidFile)
+		if err != nil {
+			return nil, errgo.Mask(err)
+		}
+		pid, err := strconv.Atoi(string(dat))
+		if err != nil {
+			return nil, errgo.Mask(err)
+		}
+		command.Pid = pid
+
+		// TODO: Check this PID is actually live
+		process, err := os.FindProcess(int(pid))
+		if err != nil {
+			s.printf("Process for %v could not be identified (%v), resetting.\n", s.Name, err)
+			command.clearState()
+		} else {
+			s.printf("Sending signal 0 to process for %v\n", s.Name)
+			err := process.Signal(syscall.Signal(0))
+			if err != nil {
+				s.printf("Process for %v could not be signalled (%v), resetting.\n", s.Name, err)
+				command.clearState()
+			}
+		}
+	} else {
+		s.printf("No pidfile for %v", s.Name)
+	}
+	// TODO: Set status
+
+	return command, nil
 }

@@ -2,8 +2,6 @@ package services
 
 import (
 	"errors"
-	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -14,7 +12,9 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/hpcloud/tail"
+	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
+	"github.com/yext/errgo"
 )
 
 type ServiceCommand struct {
@@ -32,6 +32,14 @@ type ServiceCommand struct {
 		Run   string
 		Stop  string
 	}
+	Logger common.Logger
+}
+
+func (c *ServiceCommand) printf(format string, v ...interface{}) {
+	if c.Logger == nil {
+		return
+	}
+	c.Logger.Printf(format, v...)
 }
 
 func (sc *ServiceCommand) createScript(content string, scriptType string) (*os.File, error) {
@@ -56,14 +64,17 @@ func (sc *ServiceCommand) deleteScript(scriptType string) error {
 
 func (sc *ServiceCommand) BuildSync() error {
 	printOperation("Building " + sc.Service.Name)
+	sc.printf("Building %v\n", sc.Service.Name)
 
 	if sc.Pid != 0 {
+		sc.printf("%v is already running\n", sc.Service.Name)
 		printResult("Already running", color.FgYellow)
 		return nil
 	}
 
 	if sc.Scripts.Build == "" {
 		printResult("No build", color.FgGreen)
+		sc.printf("No build needed for %v\n", sc.Service.Name)
 		return nil
 	}
 
@@ -79,15 +90,18 @@ func (sc *ServiceCommand) BuildSync() error {
 	if err != nil {
 		printResult("Failed", color.FgRed)
 		printFile(sc.Logs.Build)
-		return err
+		return errgo.Mask(err)
 	}
 
 	printResult("OK", color.FgGreen)
+	sc.printf("%v build succeeded.\n", sc.Service.Name)
 
 	return nil
 }
 
 func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
+
+	sc.printf("Waiting for %v to start.\n", sc.Service.Name)
 
 	var err error = nil
 	var wg sync.WaitGroup
@@ -120,9 +134,11 @@ func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 func (sc *ServiceCommand) StartAsync() error {
 
 	printOperation("Launching " + sc.Service.Name)
+	sc.printf("Launching %v\n", sc.Service.Name)
 
 	if sc.Pid != 0 {
 		printResult("Already running", color.FgYellow)
+		sc.printf("%v is already running.\n", sc.Service.Name)
 		return nil
 	}
 	// Clear logs
@@ -142,10 +158,12 @@ func (sc *ServiceCommand) StartAsync() error {
 	err = cmd.Start()
 	if err != nil {
 		printResult("Failed", color.FgRed)
-		return err
+		return errgo.Mask(err)
 	}
 
 	pid := cmd.Process.Pid
+
+	sc.printf("%v has PID: %d.\n", sc.Service.Name, pid)
 
 	pidStr := strconv.Itoa(pid)
 	f, err := os.Create(sc.getPidPath())
@@ -158,14 +176,17 @@ func (sc *ServiceCommand) StartAsync() error {
 	err = sc.waitUntilLive(cmd)
 	if err == nil {
 		printResult("OK", color.FgGreen)
+		sc.printf("%v start succeeded.\n", sc.Service.Name)
 	} else {
 		printResult("Failed!", color.FgRed)
 		printFile(sc.Logs.Run)
 	}
-	return err
+	return errgo.Mask(err)
 }
 
 func (sc *ServiceCommand) StopScript() error {
+
+	sc.printf("Running stop script for %v\n", sc.Service.Name)
 
 	// Start the project and get the PID
 	file, err := sc.createScript(sc.Scripts.Stop, "Stop")
@@ -195,64 +216,4 @@ func (sc *ServiceCommand) clearState() {
 func (sc *ServiceCommand) getPidPath() string {
 	dir := home.EdwardConfig.PidDir
 	return path.Join(dir, sc.Service.Name+".pid")
-}
-
-func (s *ServiceConfig) GetCommand() *ServiceCommand {
-
-	dir := home.EdwardConfig.LogDir
-
-	logs := struct {
-		Build string
-		Run   string
-		Stop  string
-	}{
-		Build: path.Join(dir, s.Name+"-build.log"),
-		Run:   path.Join(dir, s.Name+".log"),
-		Stop:  path.Join(dir, s.Name+"-stop.log"),
-	}
-
-	buildScript := s.makeScript(s.Commands.Build, logs.Build)
-	startScript := s.makeScript(s.Commands.Launch, logs.Run)
-	stopScript := s.makeScript(s.Commands.Stop, logs.Stop)
-	command := &ServiceCommand{
-		Service: s,
-		Scripts: struct {
-			Build  string
-			Launch string
-			Stop   string
-		}{
-			Build:  buildScript,
-			Launch: startScript,
-			Stop:   stopScript,
-		},
-		Logs: logs,
-	}
-
-	// Retrieve the PID if available
-	pidFile := command.getPidPath()
-	if _, err := os.Stat(pidFile); err == nil {
-		dat, err := ioutil.ReadFile(pidFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		pid, err := strconv.Atoi(string(dat))
-		if err != nil {
-			log.Fatal(err)
-		}
-		command.Pid = pid
-
-		// TODO: Check this PID is actually live
-		process, err := os.FindProcess(int(pid))
-		if err != nil {
-			command.clearState()
-		} else {
-			err := process.Signal(syscall.Signal(0))
-			if err != nil {
-				command.clearState()
-			}
-		}
-	}
-	// TODO: Set status
-
-	return command
 }

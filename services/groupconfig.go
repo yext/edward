@@ -1,6 +1,9 @@
 package services
 
-import "github.com/yext/edward/common"
+import (
+	"github.com/yext/edward/common"
+	"github.com/yext/errgo"
+)
 
 var _ ServiceOrGroup = ServiceGroupConfig{}
 
@@ -75,15 +78,23 @@ func (sg ServiceGroupConfig) Stop() error {
 	return nil
 }
 
-func (sg ServiceGroupConfig) GetStatus() []ServiceStatus {
+func (sg ServiceGroupConfig) Status() ([]ServiceStatus, error) {
 	var outStatus []ServiceStatus
 	for _, service := range sg.Services {
-		outStatus = append(outStatus, service.GetStatus()...)
+		statuses, err := service.Status()
+		if err != nil {
+			return outStatus, errgo.Mask(err)
+		}
+		outStatus = append(outStatus, statuses...)
 	}
 	for _, group := range sg.Groups {
-		outStatus = append(outStatus, group.GetStatus()...)
+		statuses, err := group.Status()
+		if err != nil {
+			return outStatus, errgo.Mask(err)
+		}
+		outStatus = append(outStatus, statuses...)
 	}
-	return outStatus
+	return outStatus, nil
 }
 
 func (sg ServiceGroupConfig) IsSudo() bool {

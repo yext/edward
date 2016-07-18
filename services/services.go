@@ -18,7 +18,7 @@ type ServiceOrGroup interface {
 	Build() error
 	Start() error
 	Stop() error
-	GetStatus() []ServiceStatus
+	Status() ([]ServiceStatus, error)
 	IsSudo() bool
 }
 

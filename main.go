@@ -323,23 +323,27 @@ func generate(c *cli.Context) error {
 	return nil
 }
 
-func allStatus() {
+func allStatus() error {
 	var statuses []services.ServiceStatus
 	for _, service := range serviceMap {
-		statuses = append(statuses, service.GetStatus()...)
+		s, err := service.Status()
+		if err != nil {
+			return errgo.Mask(err)
+		}
+		statuses = append(statuses, s...)
 	}
 	for _, status := range statuses {
 		if status.Status != "STOPPED" {
 			println(status.Service.Name, ":", status.Status)
 		}
 	}
+	return nil
 }
 
 func status(c *cli.Context) error {
 
 	if len(c.Args()) == 0 {
-		allStatus()
-		return nil
+		return errgo.Mask(allStatus())
 	}
 
 	sgs, err := getServicesOrGroups(c.Args())
@@ -347,7 +351,10 @@ func status(c *cli.Context) error {
 		return err
 	}
 	for _, s := range sgs {
-		statuses := s.GetStatus()
+		statuses, err := s.Status()
+		if err != nil {
+			return errgo.Mask(err)
+		}
 		for _, status := range statuses {
 			println(status.Service.Name, ":", status.Status)
 		}
@@ -446,7 +453,10 @@ func doLog(c *cli.Context) error {
 		return errors.New("Cannot output group logs")
 	}
 	if service, ok := serviceMap[name]; ok {
-		command := service.GetCommand()
+		command, err := service.GetCommand()
+		if err != nil {
+			return errgo.Mask(err)
+		}
 		runLog := command.Logs.Run
 		t, err := tail.TailFile(runLog, tail.Config{Follow: true})
 		if err != nil {
