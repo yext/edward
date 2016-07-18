@@ -7,10 +7,11 @@ import (
 )
 
 type EdwardConfiguration struct {
-	Dir       string
-	LogDir    string
-	PidDir    string
-	ScriptDir string
+	Dir          string
+	EdwardLogDir string
+	LogDir       string
+	PidDir       string
+	ScriptDir    string
 }
 
 var EdwardConfig EdwardConfiguration = EdwardConfiguration{}
@@ -27,12 +28,14 @@ func (e *EdwardConfiguration) Initialize() error {
 		return err
 	}
 	e.Dir = path.Join(user.HomeDir, ".edward")
-	e.LogDir = path.Join(e.Dir, "logs")
-	e.PidDir = path.Join(e.Dir, "pidFiles")
-	e.ScriptDir = path.Join(e.Dir, "scriptFiles")
 	createDirIfNeeded(e.Dir)
+	e.EdwardLogDir = path.Join(e.Dir, "edward_logs")
+	createDirIfNeeded(e.EdwardLogDir)
+	e.LogDir = path.Join(e.Dir, "logs")
 	createDirIfNeeded(e.LogDir)
+	e.PidDir = path.Join(e.Dir, "pidFiles")
 	createDirIfNeeded(e.PidDir)
+	e.ScriptDir = path.Join(e.Dir, "scriptFiles")
 	createDirIfNeeded(e.ScriptDir)
 	return nil
 }

@@ -15,6 +15,8 @@ import (
 	"strings"
 	"syscall"
 
+	"gopkg.in/natefinch/lumberjack.v2"
+
 	"github.com/codegangsta/cli"
 	"github.com/hpcloud/tail"
 	"github.com/yext/edward/config"
@@ -29,7 +31,16 @@ var logger *log.Logger
 
 func main() {
 
-	logger = log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+	if err := home.EdwardConfig.Initialize(); err != nil {
+		log.Fatal(err)
+	}
+
+	logger = log.New(&lumberjack.Logger{
+		Filename:   filepath.Join(home.EdwardConfig.EdwardLogDir, "edward.log"),
+		MaxSize:    500, // megabytes
+		MaxBackups: 3,
+		MaxAge:     365, //days
+	}, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 
 	app := cli.NewApp()
 	app.Name = "Edward"
@@ -38,11 +49,7 @@ func main() {
 	app.Before = func(c *cli.Context) error {
 		command := c.Args().First()
 
-		err := home.EdwardConfig.Initialize()
-		if err != nil {
-			return errgo.Mask(err)
-		}
-		err = refreshForReboot()
+		err := refreshForReboot()
 		if err != nil {
 			return errgo.Mask(err)
 		}
@@ -109,13 +116,15 @@ func main() {
 		},
 	}
 
-	logger.Printf("%v v%v", app.Name, app.Version)
+	logger.Printf("=== %v v%v ===\n", app.Name, app.Version)
 
 	err := app.Run(os.Args)
 	if err != nil {
 		fmt.Println(err)
-		logger.Fatal(err)
+		logger.Println(err)
 	}
+
+	logger.Printf("=== Exiting ===\n")
 }
 
 var groupMap map[string]*services.ServiceGroupConfig
