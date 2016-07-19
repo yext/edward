@@ -22,7 +22,6 @@ import (
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/generators"
 	"github.com/yext/edward/home"
-	"github.com/yext/edward/reboot"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/updates"
 	"github.com/yext/errgo"
@@ -52,13 +51,8 @@ func main() {
 	app.Before = func(c *cli.Context) error {
 		command := c.Args().First()
 
-		err := refreshForReboot()
-		if err != nil {
-			return errgo.Mask(err)
-		}
-
 		if command != "generate" {
-			err = loadConfig()
+			err := loadConfig()
 			if err != nil {
 				return errgo.Mask(err)
 			}
@@ -573,33 +567,6 @@ func RemoveContents(dir string) error {
 			return err
 		}
 	}
-	return nil
-}
-
-func refreshForReboot() error {
-	if os.Getenv("EDWARD_NO_REBOOT") == "1" {
-		logger.Printf("Reboot detection disabled\n")
-		fmt.Println("Reboot detection disabled")
-		return nil
-	}
-
-	rebooted, err := reboot.HasRebooted(home.EdwardConfig.Dir, logger)
-	if err != nil {
-		return errgo.Mask(err)
-	}
-
-	if rebooted {
-		logger.Printf("Cleaning up pidfiles")
-		err = RemoveContents(home.EdwardConfig.PidDir)
-		if err != nil {
-			return errgo.Mask(err)
-		}
-		err = reboot.SetRebootMarker(home.EdwardConfig.Dir, logger)
-		if err != nil {
-			return errgo.Mask(err)
-		}
-	}
-
 	return nil
 }
 

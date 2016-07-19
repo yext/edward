@@ -79,9 +79,3 @@ Running `generate` when a config file already exists will attempt to autodetect 
 Edward will not run if you try to launch it with sudo, but it may ask you to provide your password so that certain services can be run with elevated priviledges. The password request is triggered through a bash script that calls a command with sudo, to ensure that your bash session can make further sudo calls without prompting.
 
 This has only been tested in one bash environment, so your mileage may vary. If services hang when starting (waiting for their log), this may be an indicator that they are waiting for a password prompt that isn't redirected anywhere.
-
-## Reboot detection and cleanup
-
-Edward will attempt to automatically detect when your computer has rebooted and clean up any related files to ensure that reuse of PIDs does not result in attempting to stop the wrong process.
-
-This feature can, however, get false positives, resulting in services not found when trying to stop or restart, and requiring manual killing of processes. If you experience this issue, you can disable reboot detection by setting the environment variable `EDWARD_NO_REBOOT` to 1.
