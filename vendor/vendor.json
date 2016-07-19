@@ -27,6 +27,12 @@
 			"revisionTime": "2016-01-16T02:08:57Z"
 		},
 		{
+			"checksumSHA1": "UkExAUfzi5jJ08QYurU223nLThM=",
+			"path": "github.com/shirou/gopsutil",
+			"revision": "ca63fa830d76df9fad479ff3737349bcbeddc543",
+			"revisionTime": "2016-07-11T23:19:29Z"
+		},
+		{
 			"checksumSHA1": "5mJ/wol4LCFBUct8fbQVkRJv7ZI=",
 			"path": "github.com/stretchr/testify/assert",
 			"revision": "d77da356e56a7428ad25149ca77381849a6a5232",

@@ -6,9 +6,11 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/fatih/color"
+	"github.com/shirou/gopsutil/process"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
 	"github.com/yext/errgo"
@@ -214,19 +216,28 @@ func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 		}
 		command.Pid = pid
 
-		// TODO: Check this PID is actually live
-		process, err := os.FindProcess(int(pid))
+		exists, err := process.PidExists(int32(command.Pid))
 		if err != nil {
-			s.printf("Process for %v could not be identified (%v), resetting.\n", s.Name, err)
-			command.clearState()
-		} else {
-			s.printf("Sending signal 0 to process for %v\n", s.Name)
-			err := process.Signal(syscall.Signal(0))
-			if err != nil {
-				s.printf("Process for %v could not be signalled (%v), resetting.\n", s.Name, err)
-				command.clearState()
-			}
+			return nil, errgo.Mask(err)
 		}
+		if !exists {
+			s.printf("Process for %v was not found, resetting.\n", s.Name, err)
+			command.clearState()
+		}
+
+		proc, err := process.NewProcess(int32(command.Pid))
+		if err != nil {
+			return nil, errgo.Mask(err)
+		}
+		cmdline, err := proc.Cmdline()
+		if err != nil {
+			return nil, errgo.Mask(err)
+		}
+		if !strings.Contains(cmdline, s.Name) {
+			s.printf("Process for %v was not as expected (found %v), resetting.\n", s.Name, cmdline)
+			command.clearState()
+		}
+
 	} else {
 		s.printf("No pidfile for %v", s.Name)
 	}
