@@ -24,10 +24,13 @@ import (
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/reboot"
 	"github.com/yext/edward/services"
+	"github.com/yext/edward/updates"
 	"github.com/yext/errgo"
 )
 
 var logger *log.Logger
+
+const version = "1.2.0"
 
 func main() {
 
@@ -45,7 +48,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "Edward"
 	app.Usage = "Manage local microservices"
-	app.Version = "1.2.0"
+	app.Version = version
 	app.Before = func(c *cli.Context) error {
 		command := c.Args().First()
 
@@ -117,6 +120,7 @@ func main() {
 	}
 
 	logger.Printf("=== %v v%v ===\n", app.Name, app.Version)
+	defer logger.Printf("=== Exiting ===\n")
 
 	err := app.Run(os.Args)
 	if err != nil {
@@ -124,7 +128,16 @@ func main() {
 		logger.Println(err)
 	}
 
-	logger.Printf("=== Exiting ===\n")
+	updateAvailable, latestVersion, err := updates.UpdateAvailable("github.com/yext/edward", version)
+	if err != nil {
+		fmt.Println(err)
+		logger.Println(err)
+		return
+	}
+	if updateAvailable {
+		fmt.Printf("A new version of Edward is available (%v), update with:\n\tgo get -u github.com/yext/edward\n", latestVersion)
+	}
+
 }
 
 var groupMap map[string]*services.ServiceGroupConfig
