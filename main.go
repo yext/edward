@@ -128,7 +128,7 @@ func main() {
 		logger.Println(err)
 	}
 
-	updateAvailable, latestVersion, err := updates.UpdateAvailable("github.com/yext/edward", version)
+	updateAvailable, latestVersion, err := updates.UpdateAvailable("github.com/yext/edward", version, filepath.Join(home.EdwardConfig.Dir, ".updatecache"), logger)
 	if err != nil {
 		fmt.Println(err)
 		logger.Println(err)

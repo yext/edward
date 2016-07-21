@@ -9,10 +9,11 @@ import (
 	"regexp"
 
 	"github.com/hashicorp/go-version"
+	"github.com/yext/edward/common"
 	"github.com/yext/errgo"
 )
 
-func UpdateAvailable(repo, currentVersion string) (bool, string, error) {
+func UpdateAvailable(repo, currentVersion, cachePath string, logger common.Logger) (bool, string, error) {
 	output, err := exec.Command("git", "ls-remote", "-t", "git://"+repo).CombinedOutput()
 	if err != nil {
 		return false, "", errgo.Mask(err)
