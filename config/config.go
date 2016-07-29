@@ -227,6 +227,14 @@ func (c *Config) importConfig(second Config) error {
 	return nil
 }
 
+func (c *Config) combinePath(path string) *string {
+	if filepath.IsAbs(path) || strings.HasPrefix(path, "$") {
+		return &path
+	}
+	fullPath := filepath.Join(c.workingDir, path)
+	return &fullPath
+}
+
 func (c *Config) initMaps() error {
 	var svcs map[string]*services.ServiceConfig = make(map[string]*services.ServiceConfig)
 	for _, s := range append(c.Services, c.ImportedServices...) {
@@ -248,6 +256,7 @@ func (c *Config) initMaps() error {
 
 		for _, name := range g.Children {
 			if s, ok := svcs[name]; ok {
+				s.Path = c.combinePath(*s.Path)
 				childServices = append(childServices, s)
 			} else {
 				orphanNames[name] = struct{}{}
