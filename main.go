@@ -114,6 +114,7 @@ func main() {
 	}
 
 	logger.Printf("=== %v v%v ===\n", app.Name, app.Version)
+	logger.Printf("Args: %v\n", os.Args)
 	defer logger.Printf("=== Exiting ===\n")
 
 	err := app.Run(os.Args)
