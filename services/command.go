@@ -141,6 +141,13 @@ func (sc *ServiceCommand) StartAsync() error {
 		sc.printf("%v is already running.\n", sc.Service.Name)
 		return nil
 	}
+
+	if sc.Scripts.Launch == "" {
+		printResult("No launch", color.FgGreen)
+		sc.printf("No launch needed for %v\n", sc.Service.Name)
+		return nil
+	}
+
 	// Clear logs
 	os.Remove(sc.Logs.Run)
 
