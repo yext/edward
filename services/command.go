@@ -224,3 +224,21 @@ func (sc *ServiceCommand) getPidPath() string {
 	dir := home.EdwardConfig.PidDir
 	return path.Join(dir, sc.Service.Name+".pid")
 }
+
+func (sc *ServiceCommand) killGroup(pgid int) error {
+	killScript := "#!/bin/bash\n"
+	if sc.Service.IsSudo() {
+		killScript = killScript + "sudo "
+	}
+	killScript = killScript + "kill -2 -" + strconv.Itoa(pgid)
+	killSignalScript, err := sc.createScript(killScript, "Kill")
+	if err != nil {
+		return errgo.Mask(err)
+	}
+	defer os.Remove(killSignalScript.Name())
+
+	cmd := exec.Command(killSignalScript.Name())
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	err = cmd.Run()
+	return errgo.Mask(err)
+}

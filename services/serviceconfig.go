@@ -107,8 +107,12 @@ func (sc ServiceConfig) Stop() error {
 		printResult("Not found", color.FgRed)
 		return errgo.Mask(err)
 	}
-	// TODO: Allow stronger override
-	syscall.Kill(-pgid, syscall.SIGKILL) //syscall.SIGINT)
+
+	err = command.killGroup(pgid)
+	if err != nil {
+		printResult("Kill failed", color.FgRed)
+		return errgo.Mask(err)
+	}
 
 	// Remove leftover files
 	command.clearState()
