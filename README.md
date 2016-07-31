@@ -1,5 +1,7 @@
 # Edward
 
+[![Build Status](https://travis-ci.org/yext/edward.svg?branch=master)](https://travis-ci.org/yext/edward)
+
 A command line tool for managing local instances of microservices.
 
 ## Installation
