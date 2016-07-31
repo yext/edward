@@ -27,6 +27,18 @@
 			"revisionTime": "2016-01-16T02:08:57Z"
 		},
 		{
+			"checksumSHA1": "Fy1OaAKeUr8PwwYyFJXeWtkzBoE=",
+			"path": "github.com/shazow/go-diff",
+			"revision": "b6b7b6733b8c9589e2452df9345ddaf75badd0db",
+			"revisionTime": "2016-01-12T02:06:56Z"
+		},
+		{
+			"checksumSHA1": "XB59jZ3ruEcWd1DGk0x1Mjm4k3I=",
+			"path": "github.com/shazow/go-diff/difflib",
+			"revision": "b6b7b6733b8c9589e2452df9345ddaf75badd0db",
+			"revisionTime": "2016-01-12T02:06:56Z"
+		},
+		{
 			"checksumSHA1": "UkExAUfzi5jJ08QYurU223nLThM=",
 			"path": "github.com/shirou/gopsutil",
 			"revision": "ca63fa830d76df9fad479ff3737349bcbeddc543",

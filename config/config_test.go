@@ -7,9 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/shazow/go-diff"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
 )
@@ -150,7 +152,7 @@ var fileBasedTests = []struct {
 }{
 	{
 		name:   "Config with imports",
-		inFile: "testdata/test1.json",
+		inFile: "test1.json",
 		outServiceMap: map[string]*services.ServiceConfig{
 			"service1": &service1,
 			"service2": &service2,
@@ -165,21 +167,21 @@ var fileBasedTests = []struct {
 	},
 	{
 		name:          "Config missing imports",
-		inFile:        "testdata/test2.json",
+		inFile:        "test2.json",
 		outServiceMap: nil,
 		outGroupMap:   nil,
-		outErr:        errors.New("open testdata/imports2/import2.json: no such file or directory"),
+		outErr:        errors.New("open imports2/import2.json: no such file or directory"),
 	},
 	{
 		name:          "Duplicated import",
-		inFile:        "testdata/test3.json",
+		inFile:        "test3.json",
 		outServiceMap: nil,
 		outGroupMap:   nil,
 		outErr:        errors.New("Service name already exists: service2"),
 	},
 	{
 		name:          "Duplicated service",
-		inFile:        "testdata/test4.json",
+		inFile:        "test4.json",
 		outServiceMap: nil,
 		outGroupMap:   nil,
 		outErr:        errors.New("Service name already exists: service1"),
@@ -187,6 +189,11 @@ var fileBasedTests = []struct {
 }
 
 func TestLoadConfigWithImports(t *testing.T) {
+	err := os.Chdir("testdata")
+	if err != nil {
+		t.Errorf("%v", err)
+		return
+	}
 	for _, test := range fileBasedTests {
 		f, err := os.Open(test.inFile)
 		if err != nil {
@@ -200,11 +207,12 @@ func TestLoadConfigWithImports(t *testing.T) {
 
 func validateTestResults(cfg Config, err error, expectedServices map[string]*services.ServiceConfig, expectedGroups map[string]*services.ServiceGroupConfig, expectedErr error, name string, t *testing.T) {
 	if !reflect.DeepEqual(cfg.ServiceMap, expectedServices) {
-		t.Errorf("%v: Service maps did not match.\nExpected:\n%v\nGot:%v", name, spew.Sdump(expectedServices), spew.Sdump(cfg.ServiceMap))
+		t.Errorf("%v: Service maps did not match.\nExpected:\n%v\nGot:%v\nDiff:\n%v", name, spew.Sdump(expectedServices), spew.Sdump(cfg.ServiceMap), getDiffOrErrorText(expectedServices, cfg.ServiceMap))
+
 	}
 
 	if !reflect.DeepEqual(cfg.GroupMap, expectedGroups) {
-		t.Errorf("%v: Group maps did not match. Expected %v, got %v", name, spew.Sdump(expectedGroups), spew.Sdump(cfg.GroupMap))
+		t.Errorf("%v: Group maps did not match.\nExpected:\n%v\nGot:%v\nDiff:\n%v", name, spew.Sdump(expectedGroups), spew.Sdump(cfg.GroupMap), getDiffOrErrorText(expectedGroups, cfg.GroupMap))
 	}
 
 	if err != nil && expectedErr != nil {
@@ -216,4 +224,27 @@ func validateTestResults(cfg Config, err error, expectedServices map[string]*ser
 	} else if err != nil {
 		t.Errorf("%v: unexpected error", name, err)
 	}
+}
+
+func getDiffOrErrorText(expected interface{}, got interface{}) string {
+	d, err := getDiff(expected, got)
+	if err != nil {
+		return err.Error()
+	}
+	return d
+}
+
+func getDiff(expected interface{}, got interface{}) (string, error) {
+	differ := diff.DefaultDiffer()
+	readerA := strings.NewReader(spew.Sdump(expected))
+	readerB := strings.NewReader(spew.Sdump(got))
+
+	diffBuffer := new(bytes.Buffer)
+
+	err := differ.Diff(diffBuffer, readerA, readerB)
+	if err != nil {
+		return "", err
+	}
+
+	return diffBuffer.String(), nil
 }
