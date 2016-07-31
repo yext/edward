@@ -1,3 +1,5 @@
+all: test
+
 install:
 	go install
 
