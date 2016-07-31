@@ -1,6 +1,7 @@
 # Edward
 
 [![Build Status](https://travis-ci.org/yext/edward.svg?branch=master)](https://travis-ci.org/yext/edward)
+[![Go Report Card](https://goreportcard.com/badge/github.com/yext/edward)](https://goreportcard.com/report/github.com/yext/edward)
 
 A command line tool for managing local instances of microservices.
 
