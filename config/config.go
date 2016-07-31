@@ -13,7 +13,7 @@ import (
 )
 
 type Config struct {
-	workingDir       string                   `json:"-"`
+	workingDir       string
 	Imports          []string                 `json:"imports"`
 	ImportedGroups   []GroupDef               `json:"-"`
 	ImportedServices []services.ServiceConfig `json:"-"`

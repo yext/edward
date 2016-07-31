@@ -210,11 +210,10 @@ func loadConfig() error {
 		serviceMap = cfg.ServiceMap
 		groupMap = cfg.GroupMap
 		return nil
-	} else {
-		return errgo.New("No config file found")
 	}
 
-	return nil
+	return errgo.New("No config file found")
+
 }
 
 func sudoIfNeeded(sgs []services.ServiceOrGroup) error {

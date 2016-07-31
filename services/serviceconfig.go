@@ -225,7 +225,7 @@ func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 			return nil, errgo.Mask(err)
 		}
 		if !exists {
-			s.printf("Process for %v was not found, resetting.\n", s.Name, err)
+			s.printf("Process for %v was not found, resetting.\n", s.Name)
 			command.clearState()
 		}
 

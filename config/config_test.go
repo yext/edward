@@ -222,7 +222,7 @@ func validateTestResults(cfg Config, err error, expectedServices map[string]*ser
 	} else if expectedErr != nil {
 		t.Errorf("%v: expected error, %v", name, expectedErr)
 	} else if err != nil {
-		t.Errorf("%v: unexpected error", name, err)
+		t.Errorf("%v: unexpected error, %v", name, err)
 	}
 }
 
