@@ -253,10 +253,10 @@ func list(c *cli.Context) error {
 
 	var groupNames []string
 	var serviceNames []string
-	for name, _ := range groupMap {
+	for name := range groupMap {
 		groupNames = append(groupNames, name)
 	}
-	for name, _ := range serviceMap {
+	for name := range serviceMap {
 		serviceNames = append(serviceNames, name)
 	}
 

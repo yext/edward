@@ -140,7 +140,7 @@ func (sc ServiceConfig) Status() ([]ServiceStatus, error) {
 	}
 
 	return []ServiceStatus{
-		ServiceStatus{
+		{
 			Service: &sc,
 			Status:  status,
 		},

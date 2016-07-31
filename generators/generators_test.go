@@ -20,7 +20,7 @@ var goTests = []struct {
 		name: "Go Simple",
 		path: "testdata/go_simple/",
 		outServices: []*services.ServiceConfig{
-			&services.ServiceConfig{
+			{
 				Name: "simple",
 				Path: common.StringToStringPointer("gocode/src/yext/simple"),
 				Env:  []string{},
