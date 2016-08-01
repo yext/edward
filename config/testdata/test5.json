@@ -1,7 +1,4 @@
 {
-	"imports": [
-		"imports4/import1.json"
-	],
 	"services": [
 		{
 			"name": "service1",
@@ -18,6 +15,10 @@
 		}
 	],
 	"groups": [
+		{
+			"name": "group",
+			"children": ["service1"]
+		},
 		{
 			"name": "group",
 			"children": ["service1"]

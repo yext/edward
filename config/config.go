@@ -247,7 +247,6 @@ func (c *Config) initMaps() error {
 		}
 		svcs[sc.Name] = &sc
 	}
-	c.ServiceMap = svcs
 
 	var groups map[string]*services.ServiceGroupConfig = make(map[string]*services.ServiceGroupConfig)
 	// First pass: Services
@@ -262,6 +261,10 @@ func (c *Config) initMaps() error {
 			} else {
 				orphanNames[name] = struct{}{}
 			}
+		}
+
+		if _, exists := groups[g.Name]; exists {
+			return errgo.New("Group name already exists: " + g.Name)
 		}
 
 		groups[g.Name] = &services.ServiceGroupConfig{
@@ -293,6 +296,7 @@ func (c *Config) initMaps() error {
 		return errgo.New("A service or group could not be found for the following names: " + strings.Join(keys, ", "))
 	}
 
+	c.ServiceMap = svcs
 	c.GroupMap = groups
 	return nil
 }

@@ -186,6 +186,13 @@ var fileBasedTests = []struct {
 		outGroupMap:   nil,
 		outErr:        errors.New("Service name already exists: service1"),
 	},
+	{
+		name:          "Duplicated group",
+		inFile:        "test5.json",
+		outServiceMap: nil,
+		outGroupMap:   nil,
+		outErr:        errors.New("Group name already exists: group"),
+	},
 }
 
 func TestLoadConfigWithImports(t *testing.T) {
