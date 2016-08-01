@@ -18,6 +18,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/codegangsta/cli"
+	"github.com/hashicorp/go-version"
 	"github.com/hpcloud/tail"
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/generators"
@@ -29,7 +30,7 @@ import (
 
 var logger *log.Logger
 
-const version = "1.3.2"
+const edwardVersion = "1.3.2"
 
 func main() {
 
@@ -47,7 +48,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "Edward"
 	app.Usage = "Manage local microservices"
-	app.Version = version
+	app.Version = edwardVersion
 	app.Before = func(c *cli.Context) error {
 		command := c.Args().First()
 
@@ -123,7 +124,7 @@ func main() {
 		logger.Println(err)
 	}
 
-	updateAvailable, latestVersion, err := updates.UpdateAvailable("github.com/yext/edward", version, filepath.Join(home.EdwardConfig.Dir, ".updatecache"), logger)
+	updateAvailable, latestVersion, err := updates.UpdateAvailable("github.com/yext/edward", edwardVersion, filepath.Join(home.EdwardConfig.Dir, ".updatecache"), logger)
 	if err != nil {
 		fmt.Println(err)
 		logger.Println(err)
@@ -205,6 +206,21 @@ func loadConfig() error {
 		cfg, err := config.LoadConfigWithDir(r, filepath.Dir(configPath), logger)
 		if err != nil {
 			return errgo.Mask(err)
+		}
+
+		if cfg.MinEdwardVersion != "" {
+			// Check that this config is supported by this version
+			minVersion, err1 := version.NewVersion(cfg.MinEdwardVersion)
+			if err1 != nil {
+				return errgo.Mask(err)
+			}
+			currentVersion, err2 := version.NewVersion(edwardVersion)
+			if err2 != nil {
+				return errgo.Mask(err)
+			}
+			if currentVersion.LessThan(minVersion) {
+				return errgo.New("this config requires at least version " + cfg.MinEdwardVersion)
+			}
 		}
 
 		serviceMap = cfg.ServiceMap

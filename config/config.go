@@ -14,6 +14,7 @@ import (
 
 type Config struct {
 	workingDir       string
+	MinEdwardVersion string                   `json:"edwardVersion"`
 	Imports          []string                 `json:"imports"`
 	ImportedGroups   []GroupDef               `json:"-"`
 	ImportedServices []services.ServiceConfig `json:"-"`
