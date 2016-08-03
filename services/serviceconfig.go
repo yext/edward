@@ -9,7 +9,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/fatih/color"
 	"github.com/shirou/gopsutil/process"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
@@ -82,8 +81,12 @@ func (sc ServiceConfig) Start() error {
 }
 
 func (sc ServiceConfig) Stop() error {
-	printOperation("Stopping " + sc.Name)
-	sc.printf("Stopping %v.\n", sc.Name)
+	tracker := CommandTracker{
+		Name:       "Stopping " + sc.Name,
+		Logger:     sc.Logger,
+		OutputFile: "",
+	}
+	tracker.Start()
 
 	command, err := sc.GetCommand()
 	if err != nil {
@@ -97,20 +100,19 @@ func (sc ServiceConfig) Stop() error {
 	}
 
 	if command.Pid == 0 {
-		printResult("Not running", color.FgYellow)
-		sc.printf("%v is not running, PID == 0.\n", sc.Name)
+		tracker.SoftFail(errgo.New("Not running"))
 		return errgo.New(sc.Name + " is not running")
 	}
 
 	pgid, err := syscall.Getpgid(command.Pid)
 	if err != nil {
-		printResult("Not found", color.FgRed)
+		tracker.Fail(errgo.New("Not found"))
 		return errgo.Mask(err)
 	}
 
 	err = command.killGroup(pgid)
 	if err != nil {
-		printResult("Kill failed", color.FgRed)
+		tracker.Fail(errgo.New("Kill failed"))
 		return errgo.Mask(err)
 	}
 
@@ -118,11 +120,9 @@ func (sc ServiceConfig) Stop() error {
 	command.clearState()
 
 	if scriptErr == nil {
-		printResult("OK", color.FgGreen)
-		sc.printf("%v stopped successfully.\n", sc.Name)
+		tracker.Success()
 	} else {
-		printResult("Script failed, kill signal succeeded", color.FgYellow)
-		sc.printf("%v killed, but stop script failed: %v.\n", sc.Name, scriptErr)
+		tracker.SoftFail(errgo.New("Script failed, kill signal succeeded"))
 	}
 
 	return nil

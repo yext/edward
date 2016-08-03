@@ -63,18 +63,20 @@ func (sc *ServiceCommand) deleteScript(scriptType string) error {
 }
 
 func (sc *ServiceCommand) BuildSync() error {
-	printOperation("Building " + sc.Service.Name)
-	sc.printf("Building %v\n", sc.Service.Name)
+	tracker := CommandTracker{
+		Name:       "Building " + sc.Service.Name,
+		OutputFile: sc.Logs.Build,
+		Logger:     sc.Logger,
+	}
+	tracker.Start()
 
 	if sc.Pid != 0 {
-		sc.printf("%v is already running\n", sc.Service.Name)
-		printResult("Already running", color.FgYellow)
+		tracker.SoftFail(errgo.New("Already running"))
 		return nil
 	}
 
 	if sc.Scripts.Build == "" {
-		printResult("No build", color.FgGreen)
-		sc.printf("No build needed for %v\n", sc.Service.Name)
+		tracker.SoftFail(errgo.New("No build"))
 		return nil
 	}
 
@@ -88,13 +90,11 @@ func (sc *ServiceCommand) BuildSync() error {
 	cmd := exec.Command(file.Name())
 	err = cmd.Run()
 	if err != nil {
-		printResult("Failed", color.FgRed)
-		printFile(sc.Logs.Build)
+		tracker.Fail(err)
 		return errgo.Mask(err)
 	}
 
-	printResult("OK", color.FgGreen)
-	sc.printf("%v build succeeded.\n", sc.Service.Name)
+	tracker.Success()
 
 	return nil
 }
@@ -132,19 +132,20 @@ func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 }
 
 func (sc *ServiceCommand) StartAsync() error {
-
-	printOperation("Launching " + sc.Service.Name)
-	sc.printf("Launching %v\n", sc.Service.Name)
+	tracker := CommandTracker{
+		Name:       "Launching " + sc.Service.Name,
+		OutputFile: sc.Logs.Build,
+		Logger:     sc.Logger,
+	}
+	tracker.Start()
 
 	if sc.Pid != 0 {
-		printResult("Already running", color.FgYellow)
-		sc.printf("%v is already running.\n", sc.Service.Name)
+		tracker.SoftFail(errgo.New("Already running"))
 		return nil
 	}
 
 	if sc.Scripts.Launch == "" {
-		printResult("No launch", color.FgGreen)
-		sc.printf("No launch needed for %v\n", sc.Service.Name)
+		tracker.SoftFail(errgo.New("No launch"))
 		return nil
 	}
 
@@ -182,11 +183,9 @@ func (sc *ServiceCommand) StartAsync() error {
 
 	err = sc.waitUntilLive(cmd)
 	if err == nil {
-		printResult("OK", color.FgGreen)
-		sc.printf("%v start succeeded.\n", sc.Service.Name)
+		tracker.Success()
 	} else {
-		printResult("Failed!", color.FgRed)
-		printFile(sc.Logs.Run)
+		tracker.Fail(err)
 	}
 	return errgo.Mask(err)
 }
