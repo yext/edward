@@ -57,7 +57,7 @@ func shouldIgnore(basePath, path string, ignores *ignore.GitIgnore) bool {
 	return ignores.MatchesPath(rel)
 }
 
-func GenerateServices(path string) ([]*services.ServiceConfig, error) {
+func GenerateServices(path string, targets []string) ([]*services.ServiceConfig, error) {
 	var outServices []*services.ServiceConfig
 
 	if info, err := os.Stat(path); err != nil || !info.IsDir() {
@@ -101,5 +101,26 @@ func GenerateServices(path string) ([]*services.ServiceConfig, error) {
 		}
 	}
 
-	return outServices, nil
+	if len(targets) == 0 {
+		return outServices, nil
+	}
+
+	filterMap := make(map[string]struct{})
+	for _, name := range targets {
+		filterMap[name] = struct{}{}
+	}
+
+	var filteredServices []*services.ServiceConfig
+	for _, service := range outServices {
+		if _, ok := filterMap[service.Name]; ok {
+			filteredServices = append(filteredServices, service)
+			continue
+		}
+	}
+
+	if len(filteredServices) == 0 {
+		return nil, errgo.New("No matching services found")
+	}
+
+	return filteredServices, nil
 }

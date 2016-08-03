@@ -12,6 +12,7 @@ import (
 var goTests = []struct {
 	name        string
 	path        string
+	targets     []string
 	outServices []*services.ServiceConfig
 	outErr      error
 }{
@@ -35,11 +36,62 @@ var goTests = []struct {
 		},
 		outErr: nil,
 	},
+	{
+		name: "Go Multiple unfiltered",
+		path: "testdata/go_multiple/",
+		outServices: []*services.ServiceConfig{
+			{
+				Name: "service1",
+				Path: common.StringToStringPointer("service1"),
+				Env:  []string{},
+				Commands: services.ServiceConfigCommands{
+					Build:  "go install",
+					Launch: "service1",
+				},
+				Properties: services.ServiceConfigProperties{
+					Started: "Listening",
+				},
+			},
+			{
+				Name: "service2",
+				Path: common.StringToStringPointer("service2"),
+				Env:  []string{},
+				Commands: services.ServiceConfigCommands{
+					Build:  "go install",
+					Launch: "service2",
+				},
+				Properties: services.ServiceConfigProperties{
+					Started: "Listening",
+				},
+			},
+		},
+		outErr: nil,
+	},
+	{
+		name:    "Go Multiple filtered",
+		path:    "testdata/go_multiple/",
+		targets: []string{"service1"},
+		outServices: []*services.ServiceConfig{
+			{
+				Name: "service1",
+				Path: common.StringToStringPointer("service1"),
+				Env:  []string{},
+				Commands: services.ServiceConfigCommands{
+					Build:  "go install",
+					Launch: "service1",
+				},
+				Properties: services.ServiceConfigProperties{
+					Started: "Listening",
+				},
+			},
+		},
+		outErr: nil,
+	},
 }
 
 func TestGoGenerator(t *testing.T) {
 	for _, test := range goTests {
-		services, err := GenerateServices(test.path)
+		services, err := GenerateServices(test.path, test.targets)
 		if !reflect.DeepEqual(test.outServices, services) {
 			t.Errorf("%v: Services did not match.\nExpected:\n%v\nGot:%v", test.name, spew.Sdump(test.outServices), spew.Sdump(services))
 		}

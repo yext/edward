@@ -324,7 +324,7 @@ func generate(c *cli.Context) error {
 		return errgo.Mask(err)
 	}
 
-	foundServices, err := generators.GenerateServices(wd)
+	foundServices, err := generators.GenerateServices(wd, c.Args())
 	if err != nil {
 		return errgo.Mask(err)
 	}
@@ -346,6 +346,10 @@ func generate(c *cli.Context) error {
 
 	w := bufio.NewWriter(f)
 	err = cfg.Save(w)
+	if err != nil {
+		return errgo.Mask(err)
+	}
+	err = w.Flush()
 	if err != nil {
 		return errgo.Mask(err)
 	}
