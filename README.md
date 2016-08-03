@@ -26,7 +26,7 @@ To update an existing install to the latest version of Edward, run:
        edward [global options] command [command options] [arguments...]
 
     VERSION:
-       1.3.3
+       1.4.0
 
     COMMANDS:
          list	List available services
@@ -76,6 +76,12 @@ This file will be generated in the current working directory if no existing conf
 If this file exists when you run the Edward command, the config will be used to load services and groups. Feel free to add new groups to your config as you see fit!
 
 Running `generate` when a config file already exists will attempt to autodetect any new services and add them to this config.
+
+If you only want a certain set of services to be added to the config, specify these as a list in the arguments to `generate`, for example:
+
+    edward generate service1 service2
+
+Will add service1 and service2 to the config. Any other services below the current directory will be ignored. 
 
 ## sudo
 
