@@ -134,7 +134,7 @@ func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 func (sc *ServiceCommand) StartAsync() error {
 	tracker := CommandTracker{
 		Name:       "Launching " + sc.Service.Name,
-		OutputFile: sc.Logs.Build,
+		OutputFile: sc.Logs.Run,
 		Logger:     sc.Logger,
 	}
 	tracker.Start()
