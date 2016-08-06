@@ -9,10 +9,34 @@
 			"revisionTime": "2016-07-17T15:07:09Z"
 		},
 		{
+			"checksumSHA1": "KU+thQY7cbSgbo76tFcQ6xUss70=",
+			"path": "github.com/StackExchange/wmi",
+			"revision": "771c736650b4aabf956d9103ba5bf439414f79f9",
+			"revisionTime": "2016-07-24T13:06:07Z"
+		},
+		{
+			"checksumSHA1": "Ww/71mtrSRW2AUqqadhZFtRWg48=",
+			"path": "github.com/go-ole/go-ole",
+			"revision": "7dfdcf409020452e29b4babcbb22f984d2aa308a",
+			"revisionTime": "2016-07-29T03:38:29Z"
+		},
+		{
+			"checksumSHA1": "qLYVTQDhgrVIeZ2KI9eZV51mmug=",
+			"path": "github.com/go-ole/go-ole/oleutil",
+			"revision": "7dfdcf409020452e29b4babcbb22f984d2aa308a",
+			"revisionTime": "2016-07-29T03:38:29Z"
+		},
+		{
 			"checksumSHA1": "Gl+UkYVYWdtoRmc6yfesmKNq3pE=",
 			"path": "github.com/hashicorp/go-version",
 			"revision": "0181db47023708a38c2d20d2fe25a5fa034d5743",
 			"revisionTime": "2016-05-19T21:27:29Z"
+		},
+		{
+			"checksumSHA1": "nZU++ikynPXLr18xbGKiUOw575Y=",
+			"path": "github.com/juju/errgo",
+			"revision": "08cceb5d0b5331634b9826762a8fd53b29b86ad8",
+			"revisionTime": "2014-09-25T10:02:37Z"
 		},
 		{
 			"checksumSHA1": "RZOdTSZN/PgcTqko5LzIAzw+UT4=",
@@ -45,6 +69,12 @@
 			"revisionTime": "2016-07-11T23:19:29Z"
 		},
 		{
+			"checksumSHA1": "1eyDAmLQeWwdVKmfPzCGo28u4kw=",
+			"path": "github.com/shirou/w32",
+			"revision": "3c9377fc6748f222729a8270fe2775d149a249ad",
+			"revisionTime": "2016-02-04T00:35:29Z"
+		},
+		{
 			"checksumSHA1": "5mJ/wol4LCFBUct8fbQVkRJv7ZI=",
 			"path": "github.com/stretchr/testify/assert",
 			"revision": "d77da356e56a7428ad25149ca77381849a6a5232",
@@ -55,6 +85,12 @@
 			"path": "github.com/yext/errgo",
 			"revision": "7f28413f927adced39d3f45e09490ad6fd15bd95",
 			"revisionTime": "2014-09-30T19:41:53Z"
+		},
+		{
+			"checksumSHA1": "AHhuIKGGOtr2wVEjLddGdyTzifA=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "a646d33e2ee3172a661fc09bca23bb4889a41bc8",
+			"revisionTime": "2016-07-15T05:43:45Z"
 		},
 		{
 			"checksumSHA1": "YzHkxW3fGe5Oc5AVatDNn1g5Ung=",
@@ -73,6 +109,10 @@
 			"path": "gopkg.in/yaml.v2",
 			"revision": "e4d366fc3c7938e2958e662b4258c7a89e1f0e3e",
 			"revisionTime": "2016-07-15T03:37:55Z"
+		},
+		{
+			"path": "launchpad.net/gocheck",
+			"revision": ""
 		}
 	],
 	"rootPath": "github.com/yext/edward"
