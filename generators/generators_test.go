@@ -1,10 +1,9 @@
 package generators
 
 import (
-	"reflect"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/kylelemons/godebug/pretty"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
 )
@@ -92,8 +91,8 @@ var goTests = []struct {
 func TestGoGenerator(t *testing.T) {
 	for _, test := range goTests {
 		services, err := GenerateServices(test.path, test.targets)
-		if !reflect.DeepEqual(test.outServices, services) {
-			t.Errorf("%v: Services did not match.\nExpected:\n%v\nGot:%v", test.name, spew.Sdump(test.outServices), spew.Sdump(services))
+		if diff := pretty.Compare(test.outServices, services); diff != "" {
+			t.Errorf("%s: diff: (-got +want)\n%s", test.name, diff)
 		}
 		if err != nil && test.outErr != nil {
 			if err.Error() != test.outErr.Error() {

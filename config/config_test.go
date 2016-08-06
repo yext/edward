@@ -7,11 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/shazow/go-diff"
+	"github.com/kylelemons/godebug/pretty"
+
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
 )
@@ -213,13 +212,13 @@ func TestLoadConfigWithImports(t *testing.T) {
 }
 
 func validateTestResults(cfg Config, err error, expectedServices map[string]*services.ServiceConfig, expectedGroups map[string]*services.ServiceGroupConfig, expectedErr error, name string, t *testing.T) {
-	if !reflect.DeepEqual(cfg.ServiceMap, expectedServices) {
-		t.Errorf("%v: Service maps did not match.\nExpected:\n%v\nGot:%v\nDiff:\n%v", name, spew.Sdump(expectedServices), spew.Sdump(cfg.ServiceMap), getDiffOrErrorText(expectedServices, cfg.ServiceMap))
 
+	if diff := pretty.Compare(expectedServices, cfg.ServiceMap); diff != "" {
+		t.Errorf("%s: diff: (-got +want)\n%s", name, diff)
 	}
 
-	if !reflect.DeepEqual(cfg.GroupMap, expectedGroups) {
-		t.Errorf("%v: Group maps did not match.\nExpected:\n%v\nGot:%v\nDiff:\n%v", name, spew.Sdump(expectedGroups), spew.Sdump(cfg.GroupMap), getDiffOrErrorText(expectedGroups, cfg.GroupMap))
+	if diff := pretty.Compare(expectedGroups, cfg.GroupMap); diff != "" {
+		t.Errorf("%s: diff: (-got +want)\n%s", name, diff)
 	}
 
 	if err != nil && expectedErr != nil {
@@ -231,27 +230,4 @@ func validateTestResults(cfg Config, err error, expectedServices map[string]*ser
 	} else if err != nil {
 		t.Errorf("%v: unexpected error, %v", name, err)
 	}
-}
-
-func getDiffOrErrorText(expected interface{}, got interface{}) string {
-	d, err := getDiff(expected, got)
-	if err != nil {
-		return err.Error()
-	}
-	return d
-}
-
-func getDiff(expected interface{}, got interface{}) (string, error) {
-	differ := diff.DefaultDiffer()
-	readerA := strings.NewReader(spew.Sdump(expected))
-	readerB := strings.NewReader(spew.Sdump(got))
-
-	diffBuffer := new(bytes.Buffer)
-
-	err := differ.Diff(diffBuffer, readerA, readerB)
-	if err != nil {
-		return "", err
-	}
-
-	return diffBuffer.String(), nil
 }

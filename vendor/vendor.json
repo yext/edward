@@ -15,6 +15,18 @@
 			"revisionTime": "2016-07-24T13:06:07Z"
 		},
 		{
+			"checksumSHA1": "39c+shSLmvturiMmkG4MjIFQQB4=",
+			"path": "github.com/davecgh/go-spew/spew",
+			"revision": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d",
+			"revisionTime": "2015-11-05T21:09:06Z"
+		},
+		{
+			"checksumSHA1": "a2yC46a1qsJomgY6rb+FkTFiqmE=",
+			"path": "github.com/davecgh/go-spew/spew/testdata",
+			"revision": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d",
+			"revisionTime": "2015-11-05T21:09:06Z"
+		},
+		{
 			"checksumSHA1": "Ww/71mtrSRW2AUqqadhZFtRWg48=",
 			"path": "github.com/go-ole/go-ole",
 			"revision": "7dfdcf409020452e29b4babcbb22f984d2aa308a",
@@ -39,6 +51,18 @@
 			"revisionTime": "2014-09-25T10:02:37Z"
 		},
 		{
+			"checksumSHA1": "WRd3nGkS1rG/XE/Uph++tX9P5Nc=",
+			"path": "github.com/kylelemons/godebug/diff",
+			"revision": "eadb3ce320cbab8393bea5ca17bebac3f78a021b",
+			"revisionTime": "2016-04-06T21:19:39Z"
+		},
+		{
+			"checksumSHA1": "mPVQVCUro+TIHr9N+7NeFtmnG/4=",
+			"path": "github.com/kylelemons/godebug/pretty",
+			"revision": "eadb3ce320cbab8393bea5ca17bebac3f78a021b",
+			"revisionTime": "2016-04-06T21:19:39Z"
+		},
+		{
 			"checksumSHA1": "RZOdTSZN/PgcTqko5LzIAzw+UT4=",
 			"path": "github.com/pmezard/go-difflib/difflib",
 			"revision": "792786c7400a136282c1664665ae0a8db921c6c2",
@@ -49,18 +73,6 @@
 			"path": "github.com/sabhiram/go-git-ignore",
 			"revision": "228fcfa2a06e870a3ef238d54c45ea847f492a37",
 			"revisionTime": "2016-01-16T02:08:57Z"
-		},
-		{
-			"checksumSHA1": "Fy1OaAKeUr8PwwYyFJXeWtkzBoE=",
-			"path": "github.com/shazow/go-diff",
-			"revision": "b6b7b6733b8c9589e2452df9345ddaf75badd0db",
-			"revisionTime": "2016-01-12T02:06:56Z"
-		},
-		{
-			"checksumSHA1": "XB59jZ3ruEcWd1DGk0x1Mjm4k3I=",
-			"path": "github.com/shazow/go-diff/difflib",
-			"revision": "b6b7b6733b8c9589e2452df9345ddaf75badd0db",
-			"revisionTime": "2016-01-12T02:06:56Z"
 		},
 		{
 			"checksumSHA1": "UkExAUfzi5jJ08QYurU223nLThM=",
