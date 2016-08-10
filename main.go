@@ -467,7 +467,10 @@ func restart(c *cli.Context) error {
 		return errgo.Mask(err)
 	}
 	for _, s := range sgs {
-		_ = s.Stop()
+		err = s.Stop()
+		if err != nil {
+			return err
+		}
 		err = s.Build()
 		if err != nil {
 			return err

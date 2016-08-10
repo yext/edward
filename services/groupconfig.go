@@ -70,10 +70,16 @@ func (sg ServiceGroupConfig) Stop() error {
 	println("=== Group:", sg.Name, "===")
 	// TODO: Do this in reverse
 	for _, service := range sg.Services {
-		_ = service.Stop()
+		err := service.Stop()
+		if err != nil {
+			return errgo.Mask(err)
+		}
 	}
 	for _, group := range sg.Groups {
-		_ = group.Stop()
+		err := group.Stop()
+		if err != nil {
+			return errgo.Mask(err)
+		}
 	}
 	return nil
 }

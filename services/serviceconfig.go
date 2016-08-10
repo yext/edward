@@ -101,7 +101,7 @@ func (sc ServiceConfig) Stop() error {
 
 	if command.Pid == 0 {
 		tracker.SoftFail(errgo.New("Not running"))
-		return errgo.New(sc.Name + " is not running")
+		return nil
 	}
 
 	pgid, err := syscall.Getpgid(command.Pid)
