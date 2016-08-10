@@ -133,6 +133,66 @@ var basicTests = []struct {
 		},
 		outErr: nil,
 	},
+	{
+		name: "Invalid, self-referencing group",
+		inJson: `
+		{
+			"groups": [
+				{
+					"name": "group1",
+					"children": ["group1"]
+				}
+			]
+		}
+		`,
+		outServiceMap: nil,
+		outGroupMap:   nil,
+		outErr:        errors.New("group cycle: group1"),
+	},
+	{
+		name: "Invalid, group cycle",
+		inJson: `
+		{
+			"groups": [
+				{
+					"name": "group1",
+					"children": ["group2"]
+				},
+				{
+					"name": "group2",
+					"children": ["group1"]
+				}
+			]
+		}
+		`,
+		outServiceMap: nil,
+		outGroupMap:   nil,
+		outErr:        errors.New("group cycle: group2"),
+	},
+	{
+		name: "Invalid, 3 group cycle",
+		inJson: `
+		{
+			"groups": [
+				{
+					"name": "group1",
+					"children": ["group2"]
+				},
+				{
+					"name": "group2",
+					"children": ["group3"]
+				},
+				{
+					"name": "group3",
+					"children": ["group1"]
+				}
+			]
+		}
+		`,
+		outServiceMap: nil,
+		outGroupMap:   nil,
+		outErr:        errors.New("group cycle: group3"),
+	},
 }
 
 func TestLoadConfigBasic(t *testing.T) {

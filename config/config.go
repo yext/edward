@@ -284,6 +284,9 @@ func (c *Config) initMaps() error {
 				delete(orphanNames, name)
 				childGroups = append(childGroups, gr)
 			}
+			if hasChildCycle(groups[g.Name], childGroups) {
+				return errgo.New("group cycle: " + g.Name)
+			}
 		}
 		groups[g.Name].Groups = childGroups
 	}
@@ -299,6 +302,18 @@ func (c *Config) initMaps() error {
 	c.ServiceMap = svcs
 	c.GroupMap = groups
 	return nil
+}
+
+func hasChildCycle(parent *services.ServiceGroupConfig, children []*services.ServiceGroupConfig) bool {
+	for _, sg := range children {
+		if parent == sg {
+			return true
+		}
+		if hasChildCycle(parent, sg.Groups) {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Config) printf(format string, v ...interface{}) {
