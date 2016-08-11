@@ -12,9 +12,9 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/hpcloud/tail"
+	"github.com/juju/errgo"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
-	"github.com/yext/errgo"
 )
 
 type ServiceCommand struct {

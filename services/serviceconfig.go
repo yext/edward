@@ -9,10 +9,10 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/juju/errgo"
 	"github.com/shirou/gopsutil/process"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
-	"github.com/yext/errgo"
 )
 
 var _ ServiceOrGroup = ServiceConfig{}

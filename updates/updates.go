@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
+	"github.com/juju/errgo"
 	"github.com/yext/edward/common"
-	"github.com/yext/errgo"
 )
 
 func UpdateAvailable(repo, currentVersion, cachePath string, logger common.Logger) (bool, string, error) {

@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/juju/errgo"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
-	"github.com/yext/errgo"
 )
 
 type Config struct {

@@ -1,8 +1,8 @@
 package services
 
 import (
+	"github.com/juju/errgo"
 	"github.com/yext/edward/common"
-	"github.com/yext/errgo"
 )
 
 var _ ServiceOrGroup = ServiceGroupConfig{}

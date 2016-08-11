@@ -20,12 +20,12 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/hashicorp/go-version"
 	"github.com/hpcloud/tail"
+	"github.com/juju/errgo"
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/generators"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/updates"
-	"github.com/yext/errgo"
 )
 
 var logger *log.Logger

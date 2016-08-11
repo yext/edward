@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/juju/errgo"
 	"github.com/yext/edward/services"
-	"github.com/yext/errgo"
 )
 
 func init() {

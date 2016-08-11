@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/juju/errgo"
 	"github.com/sabhiram/go-git-ignore"
 	"github.com/yext/edward/services"
-	"github.com/yext/errgo"
 )
 
 type Generator interface {

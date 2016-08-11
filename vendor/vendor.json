@@ -93,12 +93,6 @@
 			"revisionTime": "2016-06-15T09:26:46Z"
 		},
 		{
-			"checksumSHA1": "iYOh5dzttSHLWwX4qV/T8qW7jqU=",
-			"path": "github.com/yext/errgo",
-			"revision": "7f28413f927adced39d3f45e09490ad6fd15bd95",
-			"revisionTime": "2014-09-30T19:41:53Z"
-		},
-		{
 			"checksumSHA1": "AHhuIKGGOtr2wVEjLddGdyTzifA=",
 			"path": "golang.org/x/sys/unix",
 			"revision": "a646d33e2ee3172a661fc09bca23bb4889a41bc8",
@@ -121,10 +115,6 @@
 			"path": "gopkg.in/yaml.v2",
 			"revision": "e4d366fc3c7938e2958e662b4258c7a89e1f0e3e",
 			"revisionTime": "2016-07-15T03:37:55Z"
-		},
-		{
-			"path": "launchpad.net/gocheck",
-			"revision": ""
 		}
 	],
 	"rootPath": "github.com/yext/edward"
