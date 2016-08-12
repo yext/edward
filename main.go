@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -160,12 +161,9 @@ func getConfigPath() string {
 	if err == nil {
 		pathOptions = append(pathOptions, filepath.Join(wd, "edward.json"))
 	}
-
-	// Config file at root of working dir's git repo, if any
-	gitRoot, err := gitRoot()
-	if err == nil {
-		pathOptions = append(pathOptions, filepath.Join(gitRoot, "edward.json"))
-
+	for path.Dir(wd) != wd {
+		wd = path.Dir(wd)
+		pathOptions = append(pathOptions, filepath.Join(wd, "edward.json"))
 	}
 
 	for _, path := range pathOptions {
