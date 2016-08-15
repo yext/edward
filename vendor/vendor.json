@@ -1,30 +1,12 @@
 {
 	"comment": "",
-	"ignore": "",
+	"ignore": "test",
 	"package": [
-		{
-			"checksumSHA1": "HyoKkpkPoyJwnhE6HVYoxRBwoo4=",
-			"path": "github.com/BurntSushi/toml",
-			"revision": "99064174e013895bbd9b025c31100bd1d9b590ca",
-			"revisionTime": "2016-07-17T15:07:09Z"
-		},
 		{
 			"checksumSHA1": "KU+thQY7cbSgbo76tFcQ6xUss70=",
 			"path": "github.com/StackExchange/wmi",
 			"revision": "771c736650b4aabf956d9103ba5bf439414f79f9",
 			"revisionTime": "2016-07-24T13:06:07Z"
-		},
-		{
-			"checksumSHA1": "39c+shSLmvturiMmkG4MjIFQQB4=",
-			"path": "github.com/davecgh/go-spew/spew",
-			"revision": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d",
-			"revisionTime": "2015-11-05T21:09:06Z"
-		},
-		{
-			"checksumSHA1": "a2yC46a1qsJomgY6rb+FkTFiqmE=",
-			"path": "github.com/davecgh/go-spew/spew/testdata",
-			"revision": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d",
-			"revisionTime": "2015-11-05T21:09:06Z"
 		},
 		{
 			"checksumSHA1": "Ww/71mtrSRW2AUqqadhZFtRWg48=",
@@ -63,12 +45,6 @@
 			"revisionTime": "2016-04-06T21:19:39Z"
 		},
 		{
-			"checksumSHA1": "RZOdTSZN/PgcTqko5LzIAzw+UT4=",
-			"path": "github.com/pmezard/go-difflib/difflib",
-			"revision": "792786c7400a136282c1664665ae0a8db921c6c2",
-			"revisionTime": "2016-01-10T10:55:54Z"
-		},
-		{
 			"checksumSHA1": "u7qSU5PvTxCAYjTHec2g87Nxce4=",
 			"path": "github.com/sabhiram/go-git-ignore",
 			"revision": "228fcfa2a06e870a3ef238d54c45ea847f492a37",
@@ -87,12 +63,6 @@
 			"revisionTime": "2016-02-04T00:35:29Z"
 		},
 		{
-			"checksumSHA1": "5mJ/wol4LCFBUct8fbQVkRJv7ZI=",
-			"path": "github.com/stretchr/testify/assert",
-			"revision": "d77da356e56a7428ad25149ca77381849a6a5232",
-			"revisionTime": "2016-06-15T09:26:46Z"
-		},
-		{
 			"checksumSHA1": "JmpkSMStvllQIuCJC15GeSf30us=",
 			"path": "github.com/theothertomelliott/go-must",
 			"revision": "28be1411ccfceeb6321944beb661f1248398a069",
@@ -105,22 +75,10 @@
 			"revisionTime": "2016-07-15T05:43:45Z"
 		},
 		{
-			"checksumSHA1": "YzHkxW3fGe5Oc5AVatDNn1g5Ung=",
-			"path": "gopkg.in/check.v1",
-			"revision": "4f90aeace3a26ad7021961c297b22c42160c7b25",
-			"revisionTime": "2016-01-05T16:49:36Z"
-		},
-		{
 			"checksumSHA1": "O6a3Kn/+mjZ8GZQWyx0ajPFSpF8=",
 			"path": "gopkg.in/natefinch/lumberjack.v2",
 			"revision": "514cbda263a734ae8caac038dadf05f8f3f9f738",
 			"revisionTime": "2016-01-25T11:17:49Z"
-		},
-		{
-			"checksumSHA1": "jOGdm8IZTAHZNv+6KIiXv0nloBM=",
-			"path": "gopkg.in/yaml.v2",
-			"revision": "e4d366fc3c7938e2958e662b4258c7a89e1f0e3e",
-			"revisionTime": "2016-07-15T03:37:55Z"
 		}
 	],
 	"rootPath": "github.com/yext/edward"
