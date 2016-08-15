@@ -93,6 +93,12 @@
 			"revisionTime": "2016-06-15T09:26:46Z"
 		},
 		{
+			"checksumSHA1": "JmpkSMStvllQIuCJC15GeSf30us=",
+			"path": "github.com/theothertomelliott/go-must",
+			"revision": "28be1411ccfceeb6321944beb661f1248398a069",
+			"revisionTime": "2016-08-15T01:22:05Z"
+		},
+		{
 			"checksumSHA1": "AHhuIKGGOtr2wVEjLddGdyTzifA=",
 			"path": "golang.org/x/sys/unix",
 			"revision": "a646d33e2ee3172a661fc09bca23bb4889a41bc8",

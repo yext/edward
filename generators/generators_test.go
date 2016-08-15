@@ -3,7 +3,7 @@ package generators
 import (
 	"testing"
 
-	"github.com/kylelemons/godebug/pretty"
+	must "github.com/theothertomelliott/go-must"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
 )
@@ -91,15 +91,7 @@ var goTests = []struct {
 func TestGoGenerator(t *testing.T) {
 	for _, test := range goTests {
 		services, err := GenerateServices(test.path, test.targets)
-		if diff := pretty.Compare(test.outServices, services); diff != "" {
-			t.Errorf("%s: diff: (-got +want)\n%s", test.name, diff)
-		}
-		if err != nil && test.outErr != nil {
-			if err.Error() != test.outErr.Error() {
-				t.Errorf("%v: Error did not match. Expected %v, got %v", test.name, test.outErr, err)
-			}
-		} else if err != test.outErr {
-			t.Errorf("%v: Errors did not match. Expected: %v, got: %v", test.name, test.outErr, err)
-		}
+		must.BeEqual(t, test.outServices, services, test.name+": services did not match.")
+		must.BeEqualErrors(t, test.outErr, err, test.name+": errors did not match.")
 	}
 }

@@ -6,10 +6,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
-	"github.com/kylelemons/godebug/pretty"
+	must "github.com/theothertomelliott/go-must"
 
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
@@ -273,21 +272,8 @@ func TestLoadConfigWithImports(t *testing.T) {
 
 func validateTestResults(cfg Config, err error, expectedServices map[string]*services.ServiceConfig, expectedGroups map[string]*services.ServiceGroupConfig, expectedErr error, name string, t *testing.T) {
 
-	if diff := pretty.Compare(expectedServices, cfg.ServiceMap); diff != "" {
-		t.Errorf("%s: diff: (-got +want)\n%s", name, diff)
-	}
+	must.BeEqual(t, expectedServices, cfg.ServiceMap, name+": services did not match.")
+	must.BeEqual(t, expectedGroups, cfg.GroupMap, name+": groups did not match.")
 
-	if diff := pretty.Compare(expectedGroups, cfg.GroupMap); diff != "" {
-		t.Errorf("%s: diff: (-got +want)\n%s", name, diff)
-	}
-
-	if err != nil && expectedErr != nil {
-		if !reflect.DeepEqual(err.Error(), expectedErr.Error()) {
-			t.Errorf("%v: Error did not match. Expected %v, got %v", name, expectedErr, err)
-		}
-	} else if expectedErr != nil {
-		t.Errorf("%v: expected error, %v", name, expectedErr)
-	} else if err != nil {
-		t.Errorf("%v: unexpected error, %v", name, err)
-	}
+	must.BeEqualErrors(t, expectedErr, err, name+": Errors did not match.")
 }
