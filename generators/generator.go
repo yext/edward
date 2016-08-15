@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/juju/errgo"
 	"github.com/sabhiram/go-git-ignore"
@@ -64,13 +65,13 @@ func GenerateServices(path string, targets []string) ([]*services.ServiceConfig,
 		if err != nil {
 			return outServices, err
 		}
-		return outServices, errors.New(path + " is not a directory")
+		return nil, errors.New(path + " is not a directory")
 	}
 
 	// TODO: Create a stack of ignore files to handle ignores in subdirs
 	ignores, err := loadIgnores(path, nil)
 	if err != nil {
-		return outServices, errgo.Mask(err)
+		return nil, errgo.Mask(err)
 	}
 
 	for name, generator := range Generators {
@@ -102,6 +103,7 @@ func GenerateServices(path string, targets []string) ([]*services.ServiceConfig,
 	}
 
 	if len(targets) == 0 {
+		sort.Sort(ByName(outServices))
 		return outServices, nil
 	}
 
@@ -122,5 +124,18 @@ func GenerateServices(path string, targets []string) ([]*services.ServiceConfig,
 		return nil, errgo.New("No matching services found")
 	}
 
+	sort.Sort(ByName(filteredServices))
 	return filteredServices, nil
+}
+
+type ByName []*services.ServiceConfig
+
+func (s ByName) Len() int {
+	return len(s)
+}
+func (s ByName) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s ByName) Less(i, j int) bool {
+	return s[i].Name < s[j].Name
 }
