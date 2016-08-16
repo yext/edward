@@ -110,6 +110,14 @@ func (sc ServiceConfig) Stop() error {
 		return errgo.Mask(err)
 	}
 
+	sc.printf("Killing process group %d (from PID %d)\n", pgid, command.Pid)
+
+	if pgid == 0 || pgid == 1 {
+		err := errgo.New("Suspect pgid: " + strconv.Itoa(pgid))
+		tracker.Fail(err)
+		return errgo.Mask(err)
+	}
+
 	err = command.killGroup(pgid)
 	if err != nil {
 		tracker.Fail(errgo.New("Kill failed"))
