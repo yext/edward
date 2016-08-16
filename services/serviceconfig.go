@@ -32,7 +32,7 @@ type ServiceConfig struct {
 
 	// Env holds environment variables for a service, for example: GOPATH=~/gocode/
 	// These will be added to the vars in the environment under which the Edward command was run
-	Env []string
+	Env []string `json:"env"`
 
 	Logger common.Logger `json:"-"`
 }
