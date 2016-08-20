@@ -358,37 +358,38 @@ func generate(c *cli.Context) error {
 	return nil
 }
 
-func allStatus() error {
-	var statuses []services.ServiceStatus
-	for _, service := range serviceMap {
-		s, err := service.Status()
-		if err != nil {
-			return errgo.Mask(err)
-		}
-		statuses = append(statuses, s...)
-	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Status"})
-
-	for _, status := range statuses {
-		if status.Status != "STOPPED" {
-			table.Append([]string{status.Service.Name, status.Status})
-		}
-	}
-	table.Render()
-	return nil
-}
-
 func status(c *cli.Context) error {
 
+	var sgs []services.ServiceOrGroup
+	var err error
 	if len(c.Args()) == 0 {
-		return errgo.Mask(allStatus())
+		allSrv := allServices()
+		for _, service := range allSrv {
+			s, err := service.Status()
+			if err != nil {
+				return errgo.Mask(err)
+			}
+			for _, status := range s {
+				if status.Status != "STOPPED" {
+					sgs = append(sgs, service)
+				}
+			}
+		}
+		if len(sgs) == 0 {
+			fmt.Println("No services are running")
+			return nil
+		}
+	} else {
+
+		sgs, err = getServicesOrGroups(c.Args())
+		if err != nil {
+			return err
+		}
 	}
 
-	sgs, err := getServicesOrGroups(c.Args())
-	if err != nil {
-		return err
+	if len(sgs) == 0 {
+		fmt.Println("No services found")
+		return nil
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
@@ -441,6 +442,7 @@ func allServices() []services.ServiceOrGroup {
 	for _, service := range serviceMap {
 		as = append(as, service)
 	}
+	sort.Sort(serviceOrGroupByName(as))
 	return as
 }
 
@@ -605,3 +607,15 @@ func RemoveContents(dir string) error {
 var flags = struct {
 	config string
 }{}
+
+type serviceOrGroupByName []services.ServiceOrGroup
+
+func (s serviceOrGroupByName) Len() int {
+	return len(s)
+}
+func (s serviceOrGroupByName) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s serviceOrGroupByName) Less(i, j int) bool {
+	return len(s[i].GetName()) < len(s[j].GetName())
+}
