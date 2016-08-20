@@ -22,6 +22,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hpcloud/tail"
 	"github.com/juju/errgo"
+	"github.com/olekukonko/tablewriter"
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/generators"
 	"github.com/yext/edward/home"
@@ -366,11 +367,16 @@ func allStatus() error {
 		}
 		statuses = append(statuses, s...)
 	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Status"})
+
 	for _, status := range statuses {
 		if status.Status != "STOPPED" {
-			println(status.Service.Name, ":", status.Status)
+			table.Append([]string{status.Service.Name, status.Status})
 		}
 	}
+	table.Render()
 	return nil
 }
 
@@ -384,15 +390,20 @@ func status(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Status"})
+
 	for _, s := range sgs {
 		statuses, err := s.Status()
 		if err != nil {
 			return errgo.Mask(err)
 		}
 		for _, status := range statuses {
-			println(status.Service.Name, ":", status.Status)
+			table.Append([]string{status.Service.Name, status.Status})
 		}
 	}
+	table.Render()
 	return nil
 }
 
