@@ -142,16 +142,18 @@ func (sc ServiceConfig) Status() ([]ServiceStatus, error) {
 		return nil, errgo.Mask(err)
 	}
 
-	status := "STOPPED"
+	status := ServiceStatus{
+		Service: &sc,
+		Status:  "STOPPED",
+	}
+
 	if command.Pid != 0 {
-		status = "RUNNING"
+		status.Status = "RUNNING"
+		status.Pid = command.Pid
 	}
 
 	return []ServiceStatus{
-		{
-			Service: &sc,
-			Status:  status,
-		},
+		status,
 	}, nil
 }
 

@@ -3,6 +3,7 @@ package services
 type ServiceStatus struct {
 	Service *ServiceConfig
 	Status  string
+	Pid     int
 }
 
 type ServiceOrGroup interface {

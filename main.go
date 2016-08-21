@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -393,7 +394,7 @@ func status(c *cli.Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Status"})
+	table.SetHeader([]string{"Name", "Status", "PID"})
 
 	for _, s := range sgs {
 		statuses, err := s.Status()
@@ -401,7 +402,7 @@ func status(c *cli.Context) error {
 			return errgo.Mask(err)
 		}
 		for _, status := range statuses {
-			table.Append([]string{status.Service.Name, status.Status})
+			table.Append([]string{status.Service.Name, status.Status, strconv.Itoa(status.Pid)})
 		}
 	}
 	table.Render()
