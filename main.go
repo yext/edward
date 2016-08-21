@@ -394,7 +394,7 @@ func status(c *cli.Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Status", "PID"})
+	table.SetHeader([]string{"Name", "Status", "PID", "Start Time"})
 
 	for _, s := range sgs {
 		statuses, err := s.Status()
@@ -402,7 +402,7 @@ func status(c *cli.Context) error {
 			return errgo.Mask(err)
 		}
 		for _, status := range statuses {
-			table.Append([]string{status.Service.Name, status.Status, strconv.Itoa(status.Pid)})
+			table.Append([]string{status.Service.Name, status.Status, strconv.Itoa(status.Pid), status.StartTime.String()})
 		}
 	}
 	table.Render()

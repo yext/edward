@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/juju/errgo"
 	"github.com/shirou/gopsutil/process"
@@ -150,6 +151,15 @@ func (sc ServiceConfig) Status() ([]ServiceStatus, error) {
 	if command.Pid != 0 {
 		status.Status = "RUNNING"
 		status.Pid = command.Pid
+		proc, err := process.NewProcess(int32(command.Pid))
+		if err != nil {
+			return nil, errgo.Mask(err)
+		}
+		epochStart, err := proc.CreateTime()
+		if err != nil {
+			return nil, errgo.Mask(err)
+		}
+		status.StartTime = time.Unix(epochStart/1000, 0)
 	}
 
 	return []ServiceStatus{

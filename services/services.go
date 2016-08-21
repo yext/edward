@@ -1,9 +1,12 @@
 package services
 
+import "time"
+
 type ServiceStatus struct {
-	Service *ServiceConfig
-	Status  string
-	Pid     int
+	Service   *ServiceConfig
+	Status    string
+	Pid       int
+	StartTime time.Time
 }
 
 type ServiceOrGroup interface {
