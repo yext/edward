@@ -23,17 +23,17 @@ type ServiceConfig struct {
 	// Service name, used to identify in commands
 	Name string `json:"name"`
 	// Optional path to service. If nil, uses cwd
-	Path *string `json:"path"`
+	Path *string `json:"path,omitempty"`
 	// Does this service require sudo privileges?
 	RequiresSudo bool `json:"requiresSudo,omitempty"`
 	// Commands for managing the service
 	Commands ServiceConfigCommands `json:"commands"`
 	// Service state properties that can be obtained from logs
-	Properties ServiceConfigProperties `json:"log_properties"`
+	Properties ServiceConfigProperties `json:"log_properties,omitempty"`
 
 	// Env holds environment variables for a service, for example: GOPATH=~/gocode/
 	// These will be added to the vars in the environment under which the Edward command was run
-	Env []string `json:"env"`
+	Env []string `json:"env,omitempty"`
 
 	Logger common.Logger `json:"-"`
 }
@@ -54,11 +54,11 @@ type ServiceConfigProperties struct {
 
 type ServiceConfigCommands struct {
 	// Command to build
-	Build string `json:"build"`
+	Build string `json:"build,omitempty"`
 	// Command to launch
-	Launch string `json:"launch"`
+	Launch string `json:"launch,omitempty"`
 	// Optional command to stop
-	Stop string `json:"stop"`
+	Stop string `json:"stop,omitempty"`
 }
 
 func (sc ServiceConfig) GetName() string {

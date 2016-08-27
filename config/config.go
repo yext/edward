@@ -14,12 +14,12 @@ import (
 
 type Config struct {
 	workingDir       string
-	MinEdwardVersion string                   `json:"edwardVersion"`
-	Imports          []string                 `json:"imports"`
+	MinEdwardVersion string                   `json:"edwardVersion,omitempty"`
+	Imports          []string                 `json:"imports,omitempty"`
 	ImportedGroups   []GroupDef               `json:"-"`
 	ImportedServices []services.ServiceConfig `json:"-"`
-	Env              []string                 `json:"env"`
-	Groups           []GroupDef               `json:"groups"`
+	Env              []string                 `json:"env,omitempty"`
+	Groups           []GroupDef               `json:"groups,omitempty"`
 	Services         []services.ServiceConfig `json:"services"`
 
 	ServiceMap map[string]*services.ServiceConfig      `json:"-"`
