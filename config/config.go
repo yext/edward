@@ -238,6 +238,7 @@ func (c *Config) combinePath(path string) *string {
 
 func (c *Config) initMaps() error {
 	var svcs map[string]*services.ServiceConfig = make(map[string]*services.ServiceConfig)
+	var servicesSkipped = make(map[string]struct{})
 	for _, s := range append(c.Services, c.ImportedServices...) {
 		sc := s
 		sc.Logger = c.Logger
@@ -245,7 +246,11 @@ func (c *Config) initMaps() error {
 		if _, exists := svcs[sc.Name]; exists {
 			return errgo.New("Service name already exists: " + sc.Name)
 		}
-		svcs[sc.Name] = &sc
+		if sc.MatchesPlatform() {
+			svcs[sc.Name] = &sc
+		} else {
+			servicesSkipped[sc.Name] = struct{}{}
+		}
 	}
 
 	var groups map[string]*services.ServiceGroupConfig = make(map[string]*services.ServiceGroupConfig)
@@ -256,9 +261,11 @@ func (c *Config) initMaps() error {
 
 		for _, name := range g.Children {
 			if s, ok := svcs[name]; ok {
-				s.Path = c.combinePath(*s.Path)
+				if s.Path != nil {
+					s.Path = c.combinePath(*s.Path)
+				}
 				childServices = append(childServices, s)
-			} else {
+			} else if _, skipped := servicesSkipped[name]; !skipped {
 				orphanNames[name] = struct{}{}
 			}
 		}

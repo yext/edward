@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -35,7 +36,14 @@ type ServiceConfig struct {
 	// These will be added to the vars in the environment under which the Edward command was run
 	Env []string `json:"env,omitempty"`
 
+	Platform string `json:"platform,omitempty"`
+
 	Logger common.Logger `json:"-"`
+}
+
+// MatchesPlatform determines whether or not this service can be run on the current OS
+func (c *ServiceConfig) MatchesPlatform() bool {
+	return len(c.Platform) == 0 || c.Platform == runtime.GOOS
 }
 
 func (c *ServiceConfig) printf(format string, v ...interface{}) {

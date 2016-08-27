@@ -192,6 +192,87 @@ var basicTests = []struct {
 		outGroupMap:   nil,
 		outErr:        errors.New("group cycle: group3"),
 	},
+	{
+		name: "Platform checks, no matches",
+		inJson: `
+		{
+			"services": [
+				{
+					"name": "service1",
+					"platform": "never matches"
+				}
+			]
+		}
+		`,
+		outServiceMap: map[string]*services.ServiceConfig{},
+		outGroupMap:   map[string]*services.ServiceGroupConfig{},
+	},
+	{
+		name: "Platform check, should skip group",
+		inJson: `
+		{
+			"services": [
+				{
+					"name": "service1",
+					"platform": "never matches"
+				}
+			],
+			"groups": [
+				{
+					"name": "group1",
+					"children": ["service1"]
+				}
+			]
+		}
+		`,
+		outServiceMap: map[string]*services.ServiceConfig{},
+		outGroupMap: map[string]*services.ServiceGroupConfig{
+			"group1": &services.ServiceGroupConfig{
+				Name:   "group1",
+				Logger: common.NullLogger{},
+			},
+		},
+	},
+	{
+		name: "Platform check, replace with matching name",
+		inJson: `
+		{
+			"services": [
+				{
+					"name": "service1",
+					"platform": "never matches"
+				},
+				{
+					"name": "service1"
+				}
+			],
+			"groups": [
+				{
+					"name": "group1",
+					"children": ["service1"]
+				}
+			]
+		}
+		`,
+		outServiceMap: map[string]*services.ServiceConfig{
+			"service1": &services.ServiceConfig{
+				Name:   "service1",
+				Logger: common.NullLogger{},
+			},
+		},
+		outGroupMap: map[string]*services.ServiceGroupConfig{
+			"group1": &services.ServiceGroupConfig{
+				Name: "group1",
+				Services: []*services.ServiceConfig{
+					&services.ServiceConfig{
+						Name:   "service1",
+						Logger: common.NullLogger{},
+					},
+				},
+				Logger: common.NullLogger{},
+			},
+		},
+	},
 }
 
 func TestLoadConfigBasic(t *testing.T) {
