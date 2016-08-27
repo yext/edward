@@ -1,0 +1,28 @@
+{
+    "services": [
+        {
+            "name": "simple for Mac",
+            "path": "simple",
+            "commands": {
+                "build": "go install",
+                "launch": "simple"
+            },
+            "log_properties": {
+                "started": "Waiting for signal"
+            },
+	    "platform": "darwin"
+        },
+        {
+            "name": "simple for Linux",
+            "path": "simple",
+            "commands": {
+                "build": "go install",
+                "launch": "simple"
+            },
+            "log_properties": {
+                "started": "Waiting for signal"
+            },
+	    "platform": "linux"
+        }
+    ]
+}
