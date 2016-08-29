@@ -273,11 +273,51 @@ var basicTests = []struct {
 			},
 		},
 	},
+	{
+		name: "Platform check, replace with matching name, matching service first",
+		inJson: `
+		{
+			"services": [
+				{
+					"name": "service1"
+				},
+				{
+					"name": "service1",
+					"platform": "never matches"
+				}
+			],
+			"groups": [
+				{
+					"name": "group1",
+					"children": ["service1"]
+				}
+			]
+		}
+		`,
+		outServiceMap: map[string]*services.ServiceConfig{
+			"service1": &services.ServiceConfig{
+				Name:   "service1",
+				Logger: common.NullLogger{},
+			},
+		},
+		outGroupMap: map[string]*services.ServiceGroupConfig{
+			"group1": &services.ServiceGroupConfig{
+				Name: "group1",
+				Services: []*services.ServiceConfig{
+					&services.ServiceConfig{
+						Name:   "service1",
+						Logger: common.NullLogger{},
+					},
+				},
+				Logger: common.NullLogger{},
+			},
+		},
+	},
 }
 
 func TestLoadConfigBasic(t *testing.T) {
 	for _, test := range basicTests {
-		cfg, err := LoadConfig(bytes.NewBufferString(test.inJson), nil)
+		cfg, err := LoadConfig(bytes.NewBufferString(test.inJson), "", nil)
 		validateTestResults(cfg, err, test.outServiceMap, test.outGroupMap, test.outErr, test.name, t)
 	}
 }
@@ -346,7 +386,7 @@ func TestLoadConfigWithImports(t *testing.T) {
 			t.Errorf("%v: Could not open input file", test.name)
 			return
 		}
-		cfg, err := LoadConfigWithDir(f, filepath.Dir(test.inFile), nil)
+		cfg, err := LoadConfigWithDir(f, filepath.Dir(test.inFile), "", nil)
 		validateTestResults(cfg, err, test.outServiceMap, test.outGroupMap, test.outErr, test.name, t)
 	}
 }

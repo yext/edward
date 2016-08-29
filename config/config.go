@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	version "github.com/hashicorp/go-version"
 	"github.com/juju/errgo"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
@@ -33,15 +34,29 @@ type GroupDef struct {
 	Children []string `json:"children"`
 }
 
-func LoadConfig(reader io.Reader, logger common.Logger) (Config, error) {
-	outCfg, err := LoadConfigWithDir(reader, "", logger)
+func LoadConfig(reader io.Reader, edwardVersion string, logger common.Logger) (Config, error) {
+	outCfg, err := LoadConfigWithDir(reader, "", edwardVersion, logger)
 	return outCfg, errgo.Mask(err)
 }
 
-func LoadConfigWithDir(reader io.Reader, workingDir string, logger common.Logger) (Config, error) {
+func LoadConfigWithDir(reader io.Reader, workingDir string, edwardVersion string, logger common.Logger) (Config, error) {
 	config, err := loadConfigContents(reader, workingDir, logger)
 	if err != nil {
 		return Config{}, errgo.Mask(err)
+	}
+	if config.MinEdwardVersion != "" && edwardVersion != "" {
+		// Check that this config is supported by this version
+		minVersion, err1 := version.NewVersion(config.MinEdwardVersion)
+		if err1 != nil {
+			return Config{}, errgo.Mask(err)
+		}
+		currentVersion, err2 := version.NewVersion(edwardVersion)
+		if err2 != nil {
+			return Config{}, errgo.Mask(err)
+		}
+		if currentVersion.LessThan(minVersion) {
+			return Config{}, errgo.New("this config requires at least version " + config.MinEdwardVersion)
+		}
 	}
 	err = config.initMaps()
 
@@ -243,10 +258,10 @@ func (c *Config) initMaps() error {
 		sc := s
 		sc.Logger = c.Logger
 		sc.Env = append(sc.Env, c.Env...)
-		if _, exists := svcs[sc.Name]; exists {
-			return errgo.New("Service name already exists: " + sc.Name)
-		}
 		if sc.MatchesPlatform() {
+			if _, exists := svcs[sc.Name]; exists {
+				return errgo.New("Service name already exists: " + sc.Name)
+			}
 			svcs[sc.Name] = &sc
 		} else {
 			servicesSkipped[sc.Name] = struct{}{}

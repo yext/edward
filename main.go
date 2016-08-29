@@ -20,7 +20,6 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/codegangsta/cli"
-	"github.com/hashicorp/go-version"
 	"github.com/hpcloud/tail"
 	"github.com/juju/errgo"
 	"github.com/olekukonko/tablewriter"
@@ -33,7 +32,7 @@ import (
 
 var logger *log.Logger
 
-const edwardVersion = "1.5.0"
+const edwardVersion = "1.5.1"
 
 func main() {
 
@@ -203,24 +202,9 @@ func loadConfig() error {
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		cfg, err := config.LoadConfigWithDir(r, filepath.Dir(configPath), logger)
+		cfg, err := config.LoadConfigWithDir(r, filepath.Dir(configPath), edwardVersion, logger)
 		if err != nil {
 			return errgo.Mask(err)
-		}
-
-		if cfg.MinEdwardVersion != "" {
-			// Check that this config is supported by this version
-			minVersion, err1 := version.NewVersion(cfg.MinEdwardVersion)
-			if err1 != nil {
-				return errgo.Mask(err)
-			}
-			currentVersion, err2 := version.NewVersion(edwardVersion)
-			if err2 != nil {
-				return errgo.Mask(err)
-			}
-			if currentVersion.LessThan(minVersion) {
-				return errgo.New("this config requires at least version " + cfg.MinEdwardVersion)
-			}
 		}
 
 		serviceMap = cfg.ServiceMap
@@ -311,7 +295,7 @@ func generate(c *cli.Context) error {
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		cfg, err = config.LoadConfigWithDir(r, filepath.Dir(configPath), logger)
+		cfg, err = config.LoadConfigWithDir(r, filepath.Dir(configPath), edwardVersion, logger)
 		if err != nil {
 			return errgo.Mask(err)
 		}
