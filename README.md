@@ -26,7 +26,7 @@ To update an existing install to the latest version of Edward, run:
        edward [global options] command [command options] [arguments...]
 
     VERSION:
-       1.5.1
+       1.5.2
 
     COMMANDS:
          list	List available services

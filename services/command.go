@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/hpcloud/tail"
@@ -104,29 +105,40 @@ func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 	sc.printf("Waiting for %v to start.\n", sc.Service.Name)
 
 	var err error = nil
-	var wg sync.WaitGroup
+	var wg *sync.WaitGroup = &sync.WaitGroup{}
 	wg.Add(1)
 
 	go func() {
-		// Read output until we get the success
-		var t *tail.Tail
-		t, err = tail.TailFile(sc.Logs.Run, tail.Config{Follow: true, Logger: tail.DiscardingLogger})
-		for line := range t.Lines {
-			if strings.Contains(line.Text, sc.Service.Properties.Started) {
-				wg.Done()
-				return
+		if len(sc.Service.Properties.Started) > 0 {
+			// Read output until we get the success
+			var t *tail.Tail
+			t, err = tail.TailFile(sc.Logs.Run, tail.Config{Follow: true, Logger: tail.DiscardingLogger})
+			for line := range t.Lines {
+				if strings.Contains(line.Text, sc.Service.Properties.Started) {
+					wg.Done()
+					return
+				}
 			}
+			return
+		}
+		// No output to check for, wait for 2s
+		time.Sleep(2 * time.Second)
+		if wg != nil {
+			wg.Done()
 		}
 	}()
 
 	go func() {
 		// Wait until the process exists
 		command.Wait()
-		err = errors.New("Command failed!")
-		wg.Done()
+		if wg != nil {
+			err = errors.New("Command failed!")
+			wg.Done()
+		}
 	}()
 
 	wg.Wait()
+	wg = nil
 
 	return err
 }
