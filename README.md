@@ -26,7 +26,7 @@ To update an existing install to the latest version of Edward, run:
        edward [global options] command [command options] [arguments...]
 
     VERSION:
-       1.5.2
+       1.5.3
 
     COMMANDS:
          list	List available services
@@ -52,17 +52,17 @@ For example, let's say your config has a group called *mygroup* which consolidat
 To start the services necessary for running mygroup locally:
 
     edward start mygroup
-    
+
 This will build each service, before starting them in sequence. Failure in any build process will stop the command and nothing will launch. Failure in a start will stop further progress, but will not stop already running services
-    
+
 Once they are running, you can stop them with the command:
 
     edward stop mygroup
-    
+
 If you want to view the logs for a service in mygroup, say *myservice*:
 
     edward tail myservice
-    
+
 Note that you can only do this for a single service, `logmygroup`, for example, will cause an error.
 
 ## Generating and Modifying service/group configuration
@@ -81,7 +81,7 @@ If you only want a certain set of services to be added to the config, specify th
 
     edward generate service1 service2
 
-Will add service1 and service2 to the config. Any other services below the current directory will be ignored. 
+Will add service1 and service2 to the config. Any other services below the current directory will be ignored.
 
 ## sudo
 

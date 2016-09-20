@@ -4,23 +4,15 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
+	"net/http"
 )
 
+func handler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello: %s!", r.URL.Path[1:])
+}
+
 func main() {
-	sigs := make(chan os.Signal, 1)
-	done := make(chan bool, 1)
-
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		_ = <-sigs
-		done <- true
-	}()
-
-	fmt.Println("Waiting for signal")
-	<-done
-	fmt.Println("Exiting")
+	http.HandleFunc("/", handler)
+	fmt.Println("Starting to listen on port 51936")
+	http.ListenAndServe(":51936", nil)
 }

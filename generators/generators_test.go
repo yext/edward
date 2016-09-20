@@ -28,9 +28,6 @@ var goTests = []struct {
 					Build:  "go install",
 					Launch: "simple",
 				},
-				Properties: services.ServiceConfigProperties{
-					Started: "Listening",
-				},
 			},
 		},
 		outErr: nil,
@@ -47,9 +44,6 @@ var goTests = []struct {
 					Build:  "go install",
 					Launch: "service1",
 				},
-				Properties: services.ServiceConfigProperties{
-					Started: "Listening",
-				},
 			},
 			{
 				Name: "service2",
@@ -58,9 +52,6 @@ var goTests = []struct {
 				Commands: services.ServiceConfigCommands{
 					Build:  "go install",
 					Launch: "service2",
-				},
-				Properties: services.ServiceConfigProperties{
-					Started: "Listening",
 				},
 			},
 		},
@@ -78,9 +69,6 @@ var goTests = []struct {
 				Commands: services.ServiceConfigCommands{
 					Build:  "go install",
 					Launch: "service1",
-				},
-				Properties: services.ServiceConfigProperties{
-					Started: "Listening",
 				},
 			},
 		},

@@ -86,8 +86,5 @@ func goService(name, packagePath string) *services.ServiceConfig {
 			Build:  "go install",
 			Launch: name,
 		},
-		Properties: services.ServiceConfigProperties{
-			Started: "Listening",
-		},
 	}
 }

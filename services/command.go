@@ -7,13 +7,14 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
 	"github.com/fatih/color"
 	"github.com/hpcloud/tail"
 	"github.com/juju/errgo"
+	"github.com/shirou/gopsutil/net"
+	"github.com/shirou/gopsutil/process"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
 )
@@ -100,47 +101,115 @@ func (sc *ServiceCommand) BuildSync() error {
 	return nil
 }
 
+func (sc *ServiceCommand) waitForLogText(line string, cancel <-chan struct{}) error {
+	// Read output until we get the success
+	var t *tail.Tail
+	var err error
+	t, err = tail.TailFile(sc.Logs.Run, tail.Config{Follow: true, Logger: tail.DiscardingLogger})
+	if err != nil {
+		return errgo.Mask(err)
+	}
+	for line := range t.Lines {
+
+		select {
+		case <-cancel:
+			return nil
+		default:
+		}
+
+		if strings.Contains(line.Text, sc.Service.Properties.Started) {
+			return nil
+		}
+	}
+	return nil
+}
+
+func (sc *ServiceCommand) checkForAnyPort(cancel <-chan struct{}, command *exec.Cmd) error {
+	for true {
+		time.Sleep(100 * time.Millisecond)
+
+		select {
+		case <-cancel:
+			return nil
+		default:
+		}
+
+		connections, err := net.Connections("all")
+		if err != nil {
+			return errgo.Mask(err)
+		}
+
+		proc, err := process.NewProcess(int32(command.Process.Pid))
+		if err != nil {
+			return errgo.Mask(err)
+		}
+		children, err := proc.Children()
+		if err != nil {
+			return errgo.Mask(err)
+		}
+
+		for _, connection := range connections {
+			for _, child := range children {
+				if connection.Status == "LISTEN" && connection.Pid == int32(child.Pid) {
+					return nil
+				}
+			}
+		}
+	}
+	return errors.New("exited check loop unexpectedly")
+}
+
+func cancelableWait(cancel chan struct{}, task func(cancel <-chan struct{}) error) <-chan struct{ error } {
+	finished := make(chan struct{ error })
+	go func() {
+		defer close(finished)
+		err := task(cancel)
+		finished <- struct{ error }{err}
+	}()
+	return finished
+}
+
 func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 
 	sc.printf("Waiting for %v to start.\n", sc.Service.Name)
 
-	var err error = nil
-	var wg *sync.WaitGroup = &sync.WaitGroup{}
-	wg.Add(1)
-
-	go func() {
-		if len(sc.Service.Properties.Started) > 0 {
-			// Read output until we get the success
-			var t *tail.Tail
-			t, err = tail.TailFile(sc.Logs.Run, tail.Config{Follow: true, Logger: tail.DiscardingLogger})
-			for line := range t.Lines {
-				if strings.Contains(line.Text, sc.Service.Properties.Started) {
-					wg.Done()
-					return
-				}
-			}
-			return
+	var startCheck func(cancel <-chan struct{}) error
+	if len(sc.Service.Properties.Started) > 0 {
+		startCheck = func(cancel <-chan struct{}) error {
+			return sc.waitForLogText(sc.Service.Properties.Started, cancel)
 		}
-		// No output to check for, wait for 2s
-		time.Sleep(2 * time.Second)
-		if wg != nil {
-			wg.Done()
+	} else {
+		startCheck = func(cancel <-chan struct{}) error {
+			return sc.checkForAnyPort(cancel, command)
 		}
-	}()
+	}
 
-	go func() {
+	processFinished := func(cancel <-chan struct{}) error {
 		// Wait until the process exists
 		command.Wait()
-		if wg != nil {
-			err = errors.New("Command failed!")
-			wg.Done()
+		select {
+		case <-cancel:
+			return nil
+		default:
 		}
-	}()
+		return errors.New("service terminated prematurely")
+	}
 
-	wg.Wait()
-	wg = nil
+	timeout := time.NewTimer(30 * time.Second)
+	defer timeout.Stop()
 
-	return err
+	done := make(chan struct{})
+	defer close(done)
+
+	select {
+	case result := <-cancelableWait(done, startCheck):
+		return result.error
+	case result := <-cancelableWait(done, processFinished):
+		return result.error
+	case <-timeout.C:
+		return errors.New("Waiting for service timed out")
+	}
+
 }
 
 func (sc *ServiceCommand) StartAsync() error {

@@ -99,9 +99,6 @@ func playService(path, name string) *services.ServiceConfig {
 			Build:  "python tools/icbm/build.py :" + name + "_dev",
 			Launch: "thirdparty/play/play test src/com/yext/" + name,
 		},
-		Properties: services.ServiceConfigProperties{
-			Started: "Server is up and running",
-		},
 	}
 }
 
@@ -113,9 +110,6 @@ func javaService(path, name string) *services.ServiceConfig {
 		Commands: services.ServiceConfigCommands{
 			Build:  "python tools/icbm/build.py :" + name,
 			Launch: "JVM_ARGS='-Xmx3G' build/" + name + "/" + name,
-		},
-		Properties: services.ServiceConfigProperties{
-			Started: "Listening",
 		},
 	}
 }

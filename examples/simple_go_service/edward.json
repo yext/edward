@@ -6,9 +6,6 @@
             "commands": {
                 "build": "go install",
                 "launch": "simple"
-            },
-            "log_properties": {
-                "started": "Waiting for signal"
             }
         }
     ]
