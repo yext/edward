@@ -26,7 +26,7 @@ To update an existing install to the latest version of Edward, run:
        edward [global options] command [command options] [arguments...]
 
     VERSION:
-       1.5.3
+       1.6.0
 
     COMMANDS:
          list	List available services
@@ -99,7 +99,7 @@ To enable bash autocompletion, create a file with the following:
          COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
          return 0
      }
-      
+
      complete -F _cli_bash_autocomplete $PROG
 
 Then source it from your bash profile
@@ -107,7 +107,7 @@ Then source it from your bash profile
     PROG=edward source FILE
 
 Alternatively, name the file edward and place it in your system appropriate `bash_completion.d/` directory.
- 
+
 ## sudo
 
 Edward will not run if you try to launch it with sudo, but it may ask you to provide your password so that certain services can be run with elevated priviledges. The password request is triggered through a bash script that calls a command with sudo, to ensure that your bash session can make further sudo calls without prompting.
