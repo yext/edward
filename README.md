@@ -83,6 +83,31 @@ If you only want a certain set of services to be added to the config, specify th
 
 Will add service1 and service2 to the config. Any other services below the current directory will be ignored.
 
+## Autocomplete
+
+To enable bash autocompletion, create a file with the following:
+
+    #! /bin/bash
+
+    : ${PROG:=$(basename ${BASH_SOURCE})}
+
+    _cli_bash_autocomplete() {
+         local cur opts base
+         COMPREPLY=()
+         cur="${COMP_WORDS[COMP_CWORD]}"
+         opts=$( ${COMP_WORDS[@]:0:$COMP_CWORD} --generate-bash-completion )
+         COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+         return 0
+     }
+      
+     complete -F _cli_bash_autocomplete $PROG
+
+Then source it from your bash profile
+
+    PROG=edward source FILE
+
+Alternatively, name the file edward and place it in your system appropriate `bash_completion.d/` directory.
+ 
 ## sudo
 
 Edward will not run if you try to launch it with sudo, but it may ask you to provide your password so that certain services can be run with elevated priviledges. The password request is triggered through a bash script that calls a command with sudo, to ensure that your bash session can make further sudo calls without prompting.

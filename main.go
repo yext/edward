@@ -51,6 +51,7 @@ func main() {
 	app.Name = "Edward"
 	app.Usage = "Manage local microservices"
 	app.Version = edwardVersion
+	app.EnableBashCompletion = true
 	app.Before = func(c *cli.Context) error {
 		command := c.Args().First()
 
@@ -84,35 +85,41 @@ func main() {
 			Action: generate,
 		},
 		{
-			Name:   "status",
-			Usage:  "Display service status",
-			Action: status,
+			Name:         "status",
+			Usage:        "Display service status",
+			Action:       status,
+			BashComplete: autocompleteServicesAndGroups,
 		},
 		{
-			Name:   "messages",
-			Usage:  "Show messages from services",
-			Action: messages,
+			Name:         "messages",
+			Usage:        "Show messages from services",
+			Action:       messages,
+			BashComplete: autocompleteServicesAndGroups,
 		},
 		{
-			Name:   "start",
-			Usage:  "Build and launch a service",
-			Action: start,
+			Name:         "start",
+			Usage:        "Build and launch a service",
+			Action:       start,
+			BashComplete: autocompleteServicesAndGroups,
 		},
 		{
-			Name:   "stop",
-			Usage:  "Stop a service",
-			Action: stop,
+			Name:         "stop",
+			Usage:        "Stop a service",
+			Action:       stop,
+			BashComplete: autocompleteServicesAndGroups,
 		},
 		{
-			Name:   "restart",
-			Usage:  "Rebuild and relaunch a service",
-			Action: restart,
+			Name:         "restart",
+			Usage:        "Rebuild and relaunch a service",
+			Action:       restart,
+			BashComplete: autocompleteServicesAndGroups,
 		},
 		{
-			Name:    "log",
-			Aliases: []string{"tail"},
-			Usage:   "Tail the log for a service",
-			Action:  doLog,
+			Name:         "log",
+			Aliases:      []string{"tail"},
+			Usage:        "Tail the log for a service",
+			Action:       doLog,
+			BashComplete: autocompleteServices,
 		},
 	}
 
@@ -249,16 +256,43 @@ func getServiceOrGroup(name string) (services.ServiceOrGroup, error) {
 	return nil, errors.New("Service or group not found")
 }
 
-func list(c *cli.Context) error {
-
-	var groupNames []string
+func getAllServices() []string {
 	var serviceNames []string
-	for name := range groupMap {
-		groupNames = append(groupNames, name)
-	}
 	for name := range serviceMap {
 		serviceNames = append(serviceNames, name)
 	}
+	return serviceNames
+}
+
+func getAllGroups() []string {
+	var groupNames []string
+	for name := range groupMap {
+		groupNames = append(groupNames, name)
+	}
+	return groupNames
+
+}
+
+func autocompleteServices(c *cli.Context) {
+	loadConfig()
+	names := getAllServices()
+	for _, name := range names {
+		fmt.Println(name)
+	}
+}
+
+func autocompleteServicesAndGroups(c *cli.Context) {
+	loadConfig()
+	names := append(getAllGroups(), getAllServices()...)
+	for _, name := range names {
+		fmt.Println(name)
+	}
+}
+
+func list(c *cli.Context) error {
+
+	groupNames := getAllGroups()
+	serviceNames := getAllServices()
 
 	sort.Strings(groupNames)
 	sort.Strings(serviceNames)
