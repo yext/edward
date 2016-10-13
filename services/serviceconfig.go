@@ -113,24 +113,32 @@ func (sc ServiceConfig) Stop() error {
 		return nil
 	}
 
-	pgid, err := syscall.Getpgid(command.Pid)
+	stopped, err := sc.stopProcess(command, true)
 	if err != nil {
-		tracker.Fail(errgo.New("Not found"))
-		return errgo.Mask(err)
-	}
-
-	sc.printf("Killing process group %d (from PID %d)\n", pgid, command.Pid)
-
-	if pgid == 0 || pgid == 1 {
-		err := errgo.New("Suspect pgid: " + strconv.Itoa(pgid))
 		tracker.Fail(err)
-		return errgo.Mask(err)
+		return nil
 	}
 
-	err = command.killGroup(pgid)
-	if err != nil {
-		tracker.Fail(errgo.New("Kill failed"))
-		return errgo.Mask(err)
+	if !stopped {
+		sc.printf("SIGINT failed to stop service, waiting for 5s before sending SIGKILL\n")
+		stopped, err := waitForTerm(command, time.Second*5)
+		if err != nil {
+			tracker.Fail(err)
+			return nil
+		}
+		if !stopped {
+			stopped, err := sc.stopProcess(command, false)
+			if err != nil {
+				tracker.Fail(err)
+				return nil
+			}
+			if stopped {
+				tracker.SoftFail(errgo.New("Killed"))
+				return nil
+			}
+			tracker.Fail(errgo.New("Process was not killed"))
+			return nil
+		}
 	}
 
 	// Remove leftover files
@@ -143,6 +151,44 @@ func (sc ServiceConfig) Stop() error {
 	}
 
 	return nil
+}
+
+func (sc ServiceConfig) stopProcess(command *ServiceCommand, graceful bool) (success bool, err error) {
+	pgid, err := syscall.Getpgid(command.Pid)
+	if err != nil {
+		return false, errgo.Mask(err)
+	}
+
+	if pgid == 0 || pgid == 1 {
+		return false, errgo.Mask(errgo.New("suspect pgid: " + strconv.Itoa(pgid)))
+	}
+
+	err = command.killGroup(pgid, graceful)
+	if err != nil {
+		return false, errgo.Mask(err)
+	}
+
+	// Check to see if the process is still running
+	exists, err := process.PidExists(int32(command.Pid))
+	if err != nil {
+		return false, errgo.Mask(err)
+	}
+
+	return !exists, nil
+}
+
+func waitForTerm(command *ServiceCommand, timeout time.Duration) (bool, error) {
+	for elapsed := time.Duration(0); elapsed <= timeout; elapsed += time.Millisecond * 100 {
+		exists, err := process.PidExists(int32(command.Pid))
+		if err != nil {
+			return false, errgo.Mask(err)
+		}
+		if !exists {
+			return true, nil
+		}
+		time.Sleep(time.Millisecond * 100)
+	}
+	return false, nil
 }
 
 func (sc ServiceConfig) Status() ([]ServiceStatus, error) {

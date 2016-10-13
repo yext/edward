@@ -305,12 +305,17 @@ func (sc *ServiceCommand) getPidPath() string {
 	return path.Join(dir, sc.Service.Name+".pid")
 }
 
-func (sc *ServiceCommand) killGroup(pgid int) error {
+func (sc *ServiceCommand) killGroup(pgid int, graceful bool) error {
 	killScript := "#!/bin/bash\n"
 	if sc.Service.IsSudo() {
-		killScript = killScript + "sudo "
+		killScript += "sudo "
 	}
-	killScript = killScript + "kill -2 -" + strconv.Itoa(pgid)
+	if graceful {
+		killScript += "kill -2 -"
+	} else {
+		killScript += "kill -9 -"
+	}
+	killScript += strconv.Itoa(pgid)
 	killSignalScript, err := sc.createScript(killScript, "Kill")
 	if err != nil {
 		return errgo.Mask(err)

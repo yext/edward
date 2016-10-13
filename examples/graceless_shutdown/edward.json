@@ -1,0 +1,14 @@
+{
+    "services": [
+        {
+            "name": "graceless",
+            "path": ".",
+            "commands": {
+                "launch": "go run main.go"
+            },
+            "log_properties": {
+                "started": "Waiting for signal"
+            }
+        }
+    ]
+}
