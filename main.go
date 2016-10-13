@@ -120,8 +120,9 @@ func main() {
 	logger.Printf("Args: %v\n", os.Args)
 	defer logger.Printf("=== Exiting ===\n")
 
-	updateChan := make(chan interface{})
-	go checkUpdateAvailable(updateChan)
+
+	checkUpdateChan := make(chan interface{})
+	go checkUpdateAvailable(checkUpdateChan)
 
 	err := app.Run(os.Args)
 	if err != nil {
@@ -129,24 +130,25 @@ func main() {
 		logger.Println(err)
 	}
 
-	updateAvailable := (<-updateChan).(bool)
+	updateAvailable := (<-checkUpdateChan).(bool)
 	if updateAvailable {
-		latestVersion := (<-updateChan).(string)
+		latestVersion := (<-checkUpdateChan).(string)
 		fmt.Printf("A new version of Edward is available (%v), update with:\n\tgo get -u github.com/yext/edward\n", latestVersion)
 	}
 
 }
 
-func checkUpdateAvailable(updateChan chan interface{}) {
+func checkUpdateAvailable(checkUpdateChan chan interface{}) {
 	updateAvailable, latestVersion, err := updates.UpdateAvailable("github.com/yext/edward", edwardVersion, filepath.Join(home.EdwardConfig.Dir, ".updatecache"), logger)
 	if err != nil {
 		fmt.Println(err)
 		logger.Println(err)
 		return
 	}
-	updateChan <- updateAvailable
+	
+	checkUpdateChan <- updateAvailable
 	if updateAvailable {
-		updateChan <- latestVersion
+		checkUpdateChan <- latestVersion
 	}
 }
 
