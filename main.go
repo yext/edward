@@ -120,22 +120,34 @@ func main() {
 	logger.Printf("Args: %v\n", os.Args)
 	defer logger.Printf("=== Exiting ===\n")
 
+	updateChan := make(chan interface{})
+	go checkUpdateAvailable(updateChan)
+
 	err := app.Run(os.Args)
 	if err != nil {
 		fmt.Println(err)
 		logger.Println(err)
 	}
 
+	updateAvailable := (<-updateChan).(bool)
+	if updateAvailable {
+		latestVersion := (<-updateChan).(string)
+		fmt.Printf("A new version of Edward is available (%v), update with:\n\tgo get -u github.com/yext/edward\n", latestVersion)
+	}
+
+}
+
+func checkUpdateAvailable(updateChan chan interface{}) {
 	updateAvailable, latestVersion, err := updates.UpdateAvailable("github.com/yext/edward", edwardVersion, filepath.Join(home.EdwardConfig.Dir, ".updatecache"), logger)
 	if err != nil {
 		fmt.Println(err)
 		logger.Println(err)
 		return
 	}
+	updateChan <- updateAvailable
 	if updateAvailable {
-		fmt.Printf("A new version of Edward is available (%v), update with:\n\tgo get -u github.com/yext/edward\n", latestVersion)
+		updateChan <- latestVersion
 	}
-
 }
 
 var groupMap map[string]*services.ServiceGroupConfig
