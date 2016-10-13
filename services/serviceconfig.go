@@ -30,7 +30,7 @@ type ServiceConfig struct {
 	// Commands for managing the service
 	Commands ServiceConfigCommands `json:"commands"`
 	// Service state properties that can be obtained from logs
-	Properties ServiceConfigProperties `json:"log_properties,omitempty"`
+	Properties *ServiceConfigProperties `json:"log_properties,omitempty"`
 
 	// Env holds environment variables for a service, for example: GOPATH=~/gocode/
 	// These will be added to the vars in the environment under which the Edward command was run
