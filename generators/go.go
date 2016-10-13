@@ -79,9 +79,10 @@ func (v *GoGenerator) Found() []*services.ServiceConfig {
 
 func goService(name, packagePath string) *services.ServiceConfig {
 	return &services.ServiceConfig{
-		Name: name,
-		Path: &packagePath,
-		Env:  []string{},
+		Name:  name,
+		Path:  &packagePath,
+		Env:   []string{},
+		Watch: &packagePath,
 		Commands: services.ServiceConfigCommands{
 			Build:  "go install",
 			Launch: name,

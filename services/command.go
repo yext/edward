@@ -64,7 +64,9 @@ func (sc *ServiceCommand) deleteScript(scriptType string) error {
 	return os.Remove(path.Join(home.EdwardConfig.ScriptDir, sc.Service.Name+"-"+scriptType))
 }
 
-func (sc *ServiceCommand) BuildSync() error {
+// BuildSync will buid the service synchronously.
+// If force is false, the build will be skipped if the service is already running.
+func (sc *ServiceCommand) BuildSync(force bool) error {
 	tracker := CommandTracker{
 		Name:       "Building " + sc.Service.Name,
 		OutputFile: sc.Logs.Build,
@@ -72,7 +74,7 @@ func (sc *ServiceCommand) BuildSync() error {
 	}
 	tracker.Start()
 
-	if sc.Pid != 0 {
+	if !force && sc.Pid != 0 {
 		tracker.SoftFail(errgo.New("Already running"))
 		return nil
 	}

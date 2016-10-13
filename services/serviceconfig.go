@@ -17,7 +17,7 @@ import (
 	"github.com/yext/edward/home"
 )
 
-var _ ServiceOrGroup = ServiceConfig{}
+var _ ServiceOrGroup = &ServiceConfig{}
 
 // ServiceConfig represents a service that can be managed by Edward
 type ServiceConfig struct {
@@ -39,6 +39,9 @@ type ServiceConfig struct {
 	Platform string `json:"platform,omitempty"`
 
 	Logger common.Logger `json:"-"`
+
+	// Path to watch for updates, relative to config file. If specified, will enable hot reloading.
+	Watch *string `json:"watch,omitempty"`
 }
 
 // MatchesPlatform determines whether or not this service can be run on the current OS
@@ -69,19 +72,19 @@ type ServiceConfigCommands struct {
 	Stop string `json:"stop,omitempty"`
 }
 
-func (sc ServiceConfig) GetName() string {
+func (sc *ServiceConfig) GetName() string {
 	return sc.Name
 }
 
-func (sc ServiceConfig) Build() error {
+func (sc *ServiceConfig) Build() error {
 	command, err := sc.GetCommand()
 	if err != nil {
 		return errgo.Mask(err)
 	}
-	return errgo.Mask(command.BuildSync())
+	return errgo.Mask(command.BuildSync(false))
 }
 
-func (sc ServiceConfig) Start() error {
+func (sc *ServiceConfig) Start() error {
 	command, err := sc.GetCommand()
 	if err != nil {
 		return errgo.Mask(err)
@@ -89,7 +92,7 @@ func (sc ServiceConfig) Start() error {
 	return errgo.Mask(command.StartAsync())
 }
 
-func (sc ServiceConfig) Stop() error {
+func (sc *ServiceConfig) Stop() error {
 	tracker := CommandTracker{
 		Name:       "Stopping " + sc.Name,
 		Logger:     sc.Logger,
@@ -153,7 +156,7 @@ func (sc ServiceConfig) Stop() error {
 	return nil
 }
 
-func (sc ServiceConfig) stopProcess(command *ServiceCommand, graceful bool) (success bool, err error) {
+func (sc *ServiceConfig) stopProcess(command *ServiceCommand, graceful bool) (success bool, err error) {
 	pgid, err := syscall.Getpgid(command.Pid)
 	if err != nil {
 		return false, errgo.Mask(err)
@@ -191,14 +194,14 @@ func waitForTerm(command *ServiceCommand, timeout time.Duration) (bool, error) {
 	return false, nil
 }
 
-func (sc ServiceConfig) Status() ([]ServiceStatus, error) {
+func (sc *ServiceConfig) Status() ([]ServiceStatus, error) {
 	command, err := sc.GetCommand()
 	if err != nil {
 		return nil, errgo.Mask(err)
 	}
 
 	status := ServiceStatus{
-		Service: &sc,
+		Service: sc,
 		Status:  "STOPPED",
 	}
 
@@ -221,7 +224,7 @@ func (sc ServiceConfig) Status() ([]ServiceStatus, error) {
 	}, nil
 }
 
-func (sc ServiceConfig) IsSudo() bool {
+func (sc *ServiceConfig) IsSudo() bool {
 	return sc.RequiresSudo
 }
 
@@ -322,4 +325,11 @@ func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 	// TODO: Set status
 
 	return command, nil
+}
+
+func (s *ServiceConfig) GetWatchDirs() map[string]*ServiceConfig {
+	if s.Watch != nil {
+		return map[string]*ServiceConfig{*s.Watch: s}
+	}
+	return map[string]*ServiceConfig{}
 }

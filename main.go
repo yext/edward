@@ -27,6 +27,7 @@ import (
 	"github.com/yext/edward/generators"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/services"
+	"github.com/yext/edward/servicewatch"
 	"github.com/yext/edward/updates"
 )
 
@@ -107,6 +108,11 @@ func main() {
 					Usage:       "Skip the build phase",
 					Destination: &(flags.skipBuild),
 				},
+				cli.BoolFlag{
+					Name:        "watch, w",
+					Usage:       "After starting, watch services for changes and hot-reload.",
+					Destination: &(flags.watch),
+				},
 			},
 		},
 		{
@@ -141,7 +147,6 @@ func main() {
 	logger.Printf("Args: %v\n", os.Args)
 	defer logger.Printf("=== Exiting ===\n")
 
-
 	checkUpdateChan := make(chan interface{})
 	go checkUpdateAvailable(checkUpdateChan)
 
@@ -167,7 +172,7 @@ func checkUpdateAvailable(checkUpdateChan chan interface{}) {
 		logger.Println(err)
 		return
 	}
-	
+
 	checkUpdateChan <- updateAvailable
 	if updateAvailable {
 		checkUpdateChan <- latestVersion
@@ -484,6 +489,12 @@ func start(c *cli.Context) error {
 			return errors.New("Error launching " + s.GetName() + ": " + err.Error())
 		}
 	}
+
+	if flags.watch {
+		println("==== Watch ====")
+		return errgo.Mask(servicewatch.Begin(sgs))
+	}
+
 	return nil
 }
 
@@ -670,6 +681,7 @@ func RemoveContents(dir string) error {
 var flags = struct {
 	config    string
 	skipBuild bool
+	watch     bool
 }{}
 
 type serviceOrGroupByName []services.ServiceOrGroup

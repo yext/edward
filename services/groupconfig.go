@@ -5,7 +5,7 @@ import (
 	"github.com/yext/edward/common"
 )
 
-var _ ServiceOrGroup = ServiceGroupConfig{}
+var _ ServiceOrGroup = &ServiceGroupConfig{}
 
 // ServiceGroupConfig is a group of services that can be managed together
 type ServiceGroupConfig struct {
@@ -26,11 +26,11 @@ func (c *ServiceGroupConfig) printf(format string, v ...interface{}) {
 	c.Logger.Printf(format, v...)
 }
 
-func (sg ServiceGroupConfig) GetName() string {
+func (sg *ServiceGroupConfig) GetName() string {
 	return sg.Name
 }
 
-func (sg ServiceGroupConfig) Build() error {
+func (sg *ServiceGroupConfig) Build() error {
 	println("Building group: ", sg.Name)
 	for _, group := range sg.Groups {
 		err := group.Build()
@@ -47,7 +47,7 @@ func (sg ServiceGroupConfig) Build() error {
 	return nil
 }
 
-func (sg ServiceGroupConfig) Start() error {
+func (sg *ServiceGroupConfig) Start() error {
 	println("Starting group:", sg.Name)
 	for _, group := range sg.Groups {
 		err := group.Start()
@@ -66,7 +66,7 @@ func (sg ServiceGroupConfig) Start() error {
 	return outErr
 }
 
-func (sg ServiceGroupConfig) Stop() error {
+func (sg *ServiceGroupConfig) Stop() error {
 	println("=== Group:", sg.Name, "===")
 	// TODO: Do this in reverse
 	for _, service := range sg.Services {
@@ -84,7 +84,7 @@ func (sg ServiceGroupConfig) Stop() error {
 	return nil
 }
 
-func (sg ServiceGroupConfig) Status() ([]ServiceStatus, error) {
+func (sg *ServiceGroupConfig) Status() ([]ServiceStatus, error) {
 	var outStatus []ServiceStatus
 	for _, service := range sg.Services {
 		statuses, err := service.Status()
@@ -103,7 +103,7 @@ func (sg ServiceGroupConfig) Status() ([]ServiceStatus, error) {
 	return outStatus, nil
 }
 
-func (sg ServiceGroupConfig) IsSudo() bool {
+func (sg *ServiceGroupConfig) IsSudo() bool {
 	for _, service := range sg.Services {
 		if service.IsSudo() {
 			return true
@@ -116,4 +116,19 @@ func (sg ServiceGroupConfig) IsSudo() bool {
 	}
 
 	return false
+}
+
+func (s *ServiceGroupConfig) GetWatchDirs() map[string]*ServiceConfig {
+	watchMap := make(map[string]*ServiceConfig)
+	for _, service := range s.Services {
+		for watch, s := range service.GetWatchDirs() {
+			watchMap[watch] = s
+		}
+	}
+	for _, group := range s.Groups {
+		for watch, s := range group.GetWatchDirs() {
+			watchMap[watch] = s
+		}
+	}
+	return watchMap
 }

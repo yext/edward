@@ -9,6 +9,30 @@
 			"revisionTime": "2016-07-24T13:06:07Z"
 		},
 		{
+			"checksumSHA1": "InNxuBJN3Js/OgeS2cHeA/J+BNE=",
+			"path": "github.com/codeskyblue/dockerignore",
+			"revision": "de82dee623d9207f906d327172149cba50427a88",
+			"revisionTime": "2015-12-14T07:05:07Z"
+		},
+		{
+			"checksumSHA1": "hdza19Z+RWAffTEPXxbJu8PRBUg=",
+			"path": "github.com/codeskyblue/fswatch",
+			"revision": "9e41535146498b778d535fe1c09d21bd05a9964a",
+			"revisionTime": "2016-09-20T14:00:58Z"
+		},
+		{
+			"checksumSHA1": "yiGr7YzBRLZVwQevHPzwEG+Z5Rc=",
+			"path": "github.com/codeskyblue/kexec",
+			"revision": "863094f94c7fb7c235764bf8f0f79cccea78c8eb",
+			"revisionTime": "2016-09-08T02:05:25Z"
+		},
+		{
+			"checksumSHA1": "H9gWZZclxgJiV58KxN0PgPADqsU=",
+			"path": "github.com/go-fsnotify/fsnotify",
+			"revision": "bd2828f9f176e52d7222e565abb2d338d3f3c103",
+			"revisionTime": "2016-10-13T01:22:19Z"
+		},
+		{
 			"checksumSHA1": "Ww/71mtrSRW2AUqqadhZFtRWg48=",
 			"path": "github.com/go-ole/go-ole",
 			"revision": "7dfdcf409020452e29b4babcbb22f984d2aa308a",
@@ -19,6 +43,18 @@
 			"path": "github.com/go-ole/go-ole/oleutil",
 			"revision": "7dfdcf409020452e29b4babcbb22f984d2aa308a",
 			"revisionTime": "2016-07-29T03:38:29Z"
+		},
+		{
+			"checksumSHA1": "uflsjE8yIKhan9lwlzWdJLSRAIA=",
+			"path": "github.com/gobuild/log",
+			"revision": "f1f03dc733eb8acf247f889dd103ee1de1a06caa",
+			"revisionTime": "2014-05-25T15:26:17Z"
+		},
+		{
+			"checksumSHA1": "e/Kc2UOy1lKAy31xWlK37M1r2e8=",
+			"path": "github.com/google/shlex",
+			"revision": "6f45313302b9c56850fc17f99e40caebce98c716",
+			"revisionTime": "2015-01-27T13:39:51Z"
 		},
 		{
 			"checksumSHA1": "Gl+UkYVYWdtoRmc6yfesmKNq3pE=",
@@ -91,6 +127,12 @@
 			"path": "gopkg.in/natefinch/lumberjack.v2",
 			"revision": "514cbda263a734ae8caac038dadf05f8f3f9f738",
 			"revisionTime": "2016-01-25T11:17:49Z"
+		},
+		{
+			"checksumSHA1": "12GqsW8PiRPnezDDy0v4brZrndM=",
+			"path": "gopkg.in/yaml.v2",
+			"revision": "a5b47d31c556af34a302ce5d659e6fea44d90de0",
+			"revisionTime": "2016-09-28T15:37:09Z"
 		}
 	],
 	"rootPath": "github.com/yext/edward"

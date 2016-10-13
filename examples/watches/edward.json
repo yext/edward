@@ -1,0 +1,21 @@
+{
+    "services": [
+        {
+            "name": "watch",
+            "path": "service1",
+            "commands": {
+                "build": "go install",
+                "launch": "service1"
+            },
+            "watch": "service1"
+        },
+        {
+            "name": "nowatch",
+            "path": "service2",
+            "commands": {
+                "build": "go install",
+                "launch": "service2"
+            }
+        }
+    ]
+}
