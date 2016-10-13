@@ -101,6 +101,13 @@ func main() {
 			Usage:        "Build and launch a service",
 			Action:       start,
 			BashComplete: autocompleteServicesAndGroups,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:        "skip-build, s",
+					Usage:       "Skip the build phase",
+					Destination: &(flags.skipBuild),
+				},
+			},
 		},
 		{
 			Name:         "stop",
@@ -113,6 +120,13 @@ func main() {
 			Usage:        "Rebuild and relaunch a service",
 			Action:       restart,
 			BashComplete: autocompleteServicesAndGroups,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:        "skip-build, s",
+					Usage:       "Skip the build phase",
+					Destination: &(flags.skipBuild),
+				},
+			},
 		},
 		{
 			Name:         "log",
@@ -457,10 +471,12 @@ func start(c *cli.Context) error {
 	}
 
 	for _, s := range sgs {
-		println("==== Build Phase ====")
-		err = s.Build()
-		if err != nil {
-			return errors.New("Error building " + s.GetName() + ": " + err.Error())
+		if !flags.skipBuild {
+			println("==== Build Phase ====")
+			err = s.Build()
+			if err != nil {
+				return errors.New("Error building " + s.GetName() + ": " + err.Error())
+			}
 		}
 		println("==== Launch Phase ====")
 		err = s.Start()
@@ -527,9 +543,11 @@ func restart(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		err = s.Build()
-		if err != nil {
-			return err
+		if !flags.skipBuild {
+			err = s.Build()
+			if err != nil {
+				return err
+			}
 		}
 		err = s.Start()
 		if err != nil {
@@ -650,7 +668,8 @@ func RemoveContents(dir string) error {
 }
 
 var flags = struct {
-	config string
+	config    string
+	skipBuild bool
 }{}
 
 type serviceOrGroupByName []services.ServiceOrGroup
