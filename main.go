@@ -139,6 +139,7 @@ func main() {
 }
 
 func checkUpdateAvailable(checkUpdateChan chan interface{}) {
+	defer close(checkUpdateChan)
 	updateAvailable, latestVersion, err := updates.UpdateAvailable("github.com/yext/edward", edwardVersion, filepath.Join(home.EdwardConfig.Dir, ".updatecache"), logger)
 	if err != nil {
 		fmt.Println(err)
