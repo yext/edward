@@ -58,7 +58,7 @@ func (c *ServiceConfig) printf(format string, v ...interface{}) {
 
 type ServiceConfigProperties struct {
 	// Regex to detect a line indicating the service has started successfully
-	Started string `json:"started"`
+	Started string `json:"started,omitempty"`
 	// Custom properties, mapping a property name to a regex
 	Custom map[string]string `json:"-"`
 }
