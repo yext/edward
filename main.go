@@ -469,7 +469,18 @@ func stop(c *cli.Context) error {
 	var sgs []services.ServiceOrGroup
 	var err error
 	if len(c.Args()) == 0 {
-		sgs = allServices()
+		allSrv := allServices()
+		for _, service := range allSrv {
+			s, err := service.Status()
+			if err != nil {
+				return errgo.Mask(err)
+			}
+			for _, status := range s {
+				if status.Status != "STOPPED" {
+					sgs = append(sgs, service)
+				}
+			}
+		}
 	} else {
 		sgs, err = getServicesOrGroups(c.Args())
 		if err != nil {
