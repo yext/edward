@@ -266,7 +266,11 @@ func (sc *ServiceCommand) StartAsync() error {
 	if err == nil {
 		tracker.Success()
 	} else {
-		tracker.Fail(err)
+		tracker.Fail(errgo.New("Timed Out"))
+		err := sc.Service.Stop()
+		if err != nil {
+			return errgo.Mask(err)
+		}
 	}
 	return errgo.Mask(err)
 }
