@@ -469,7 +469,40 @@ func stop(c *cli.Context) error {
 }
 
 func restart(c *cli.Context) error {
-	sgs, err := getServicesOrGroups(c.Args())
+	if c.Args().First() == "all" {
+		restartAll()
+		return nil
+	}
+	restartOneOrMoreServices(c.Args())
+	return nil
+}
+
+func restartAll() error {
+
+	var as []*services.ServiceConfig
+	for _, service := range serviceMap {
+		s, err := service.Status()
+		if err != nil {
+			return errgo.Mask(err)
+		}
+		for _, status := range s {
+			if status.Status != "STOPPED" {
+				as = append(as, service)
+			}
+		}
+	}
+
+	sort.Sort(ServiceConfigByPID(as))
+	var serviceNames []string
+	for _, service := range as {
+		serviceNames = append(serviceNames, service.Name)
+	}
+
+	return restartOneOrMoreServices(serviceNames)
+}
+
+func restartOneOrMoreServices(serviceNames []string) error {
+	sgs, err := getServicesOrGroups(serviceNames)
 	if err != nil {
 		return err
 	}
@@ -618,4 +651,18 @@ func (s serviceOrGroupByName) Swap(i, j int) {
 }
 func (s serviceOrGroupByName) Less(i, j int) bool {
 	return len(s[i].GetName()) < len(s[j].GetName())
+}
+
+type ServiceConfigByPID []*services.ServiceConfig
+
+func (s ServiceConfigByPID) Len() int {
+	return len(s)
+}
+func (s ServiceConfigByPID) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s ServiceConfigByPID) Less(i, j int) bool {
+	cmd1, _ := s[i].GetCommand()
+	cmd2, _ := s[j].GetCommand()
+	return cmd1.Pid < cmd2.Pid
 }
