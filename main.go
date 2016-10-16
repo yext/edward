@@ -19,10 +19,10 @@ import (
 
 	"gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/codegangsta/cli"
 	"github.com/hpcloud/tail"
 	"github.com/juju/errgo"
 	"github.com/olekukonko/tablewriter"
+	"github.com/urfave/cli"
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/generators"
 	"github.com/yext/edward/home"

@@ -176,7 +176,7 @@ func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 	sc.printf("Waiting for %v to start.\n", sc.Service.Name)
 
 	var startCheck func(cancel <-chan struct{}) error
-	if len(sc.Service.Properties.Started) > 0 {
+	if sc.Service.Properties != nil && len(sc.Service.Properties.Started) > 0 {
 		startCheck = func(cancel <-chan struct{}) error {
 			return sc.waitForLogText(sc.Service.Properties.Started, cancel)
 		}
