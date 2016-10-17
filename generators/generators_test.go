@@ -82,7 +82,7 @@ var goTests = []struct {
 
 func TestGoGenerator(t *testing.T) {
 	for _, test := range goTests {
-		services, servGenMap, err := GenerateServices(test.path, test.targets)
+		services, _, err := GenerateServices(test.path, test.targets)
 		must.BeEqual(t, test.outServices, services, test.name+": services did not match.")
 		must.BeEqualErrors(t, test.outErr, err, test.name+": errors did not match.")
 	}
