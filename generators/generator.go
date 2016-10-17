@@ -58,20 +58,21 @@ func shouldIgnore(basePath, path string, ignores *ignore.GitIgnore) bool {
 	return ignores.MatchesPath(rel)
 }
 
-func GenerateServices(path string, targets []string) ([]*services.ServiceConfig, error) {
+func GenerateServices(path string, targets []string) ([]*services.ServiceConfig, map[string]string, error) {
 	var outServices []*services.ServiceConfig
+	var serviceToGenerator = make(map[string]string)
 
 	if info, err := os.Stat(path); err != nil || !info.IsDir() {
 		if err != nil {
-			return outServices, err
+			return outServices, serviceToGenerator, err
 		}
-		return nil, errors.New(path + " is not a directory")
+		return nil, nil, errors.New(path + " is not a directory")
 	}
 
 	// TODO: Create a stack of ignore files to handle ignores in subdirs
 	ignores, err := loadIgnores(path, nil)
 	if err != nil {
-		return nil, errgo.Mask(err)
+		return nil, nil, errgo.Mask(err)
 	}
 
 	for name, generator := range Generators {
@@ -98,13 +99,16 @@ func GenerateServices(path string, targets []string) ([]*services.ServiceConfig,
 		if err != nil {
 			fmt.Println("Error in generator", name, ":", err)
 		} else {
+			for _, service := range generator.Found() {
+				serviceToGenerator[service.Name] = generator.Name()
+			}
 			outServices = append(outServices, generator.Found()...)
 		}
 	}
 
 	if len(targets) == 0 {
 		sort.Sort(ByName(outServices))
-		return outServices, nil
+		return outServices, serviceToGenerator, nil
 	}
 
 	filterMap := make(map[string]struct{})
@@ -121,11 +125,11 @@ func GenerateServices(path string, targets []string) ([]*services.ServiceConfig,
 	}
 
 	if len(filteredServices) == 0 {
-		return nil, errgo.New("No matching services found")
+		return nil, nil, errgo.New("No matching services found")
 	}
 
 	sort.Sort(ByName(filteredServices))
-	return filteredServices, nil
+	return filteredServices, serviceToGenerator, nil
 }
 
 type ByName []*services.ServiceConfig

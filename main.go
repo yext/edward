@@ -84,6 +84,13 @@ func main() {
 			Name:   "generate",
 			Usage:  "Generate Edward config for a source tree",
 			Action: generate,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:        "no_prompt, n",
+					Usage:       "Skip confirmation prompts",
+					Destination: &(flags.noPrompt),
+				},
+			},
 		},
 		{
 			Name:         "status",
@@ -376,10 +383,46 @@ func generate(c *cli.Context) error {
 		return errgo.Mask(err)
 	}
 
-	foundServices, err := generators.GenerateServices(wd, c.Args())
+	foundServices, serviceToGenerator, err := generators.GenerateServices(wd, c.Args())
 	if err != nil {
 		return errgo.Mask(err)
 	}
+
+	// Prompt user to confirm the list of services that will be generated
+	if !flags.noPrompt {
+		fmt.Println("The following list of services will be generated:\n")
+		var goServices []string
+		var icbmServices []string
+		for _, service := range foundServices {
+			switch serviceToGenerator[service.Name] {
+			case "go":
+				goServices = append(goServices, service.Name)
+			case "icbm":
+				icbmServices = append(icbmServices, service.Name)
+			default:
+				fmt.Println("\t", service.Name)
+			}
+		}
+
+		if len(goServices) > 0 {
+			fmt.Println("GO:")
+		}
+		for _, service := range goServices {
+			fmt.Println("\t", service)
+		}
+
+		if len(icbmServices) > 0 {
+			fmt.Println("ICBM:")
+		}
+		for _, service := range icbmServices {
+			fmt.Println("\t", service)
+		}
+
+		if !askForConfirmation("Do you wish to continue?") {
+			return nil
+		}
+	}
+
 	foundServices, err = cfg.NormalizeServicePaths(wd, foundServices)
 	if err != nil {
 		return errgo.Mask(err)
@@ -406,9 +449,29 @@ func generate(c *cli.Context) error {
 		return errgo.Mask(err)
 	}
 
-	println("Wrote to", configPath)
+	fmt.Println("Wrote to:", configPath)
 
 	return nil
+}
+
+func askForConfirmation(question string) bool {
+	reader := bufio.NewReader(os.Stdin)
+	for {	
+		fmt.Printf("%s [y/n]? ", question)
+
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			return false
+		}
+
+		response = strings.ToLower(strings.TrimSpace(response))
+
+		if response == "y" || response == "yes" {
+			return true
+		} else if response == "n" || response == "no" {
+			return false
+		}
+	}
 }
 
 func status(c *cli.Context) error {
@@ -682,6 +745,7 @@ var flags = struct {
 	config    string
 	skipBuild bool
 	watch     bool
+	noPrompt  bool
 }{}
 
 type serviceOrGroupByName []services.ServiceOrGroup
