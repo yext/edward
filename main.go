@@ -456,7 +456,7 @@ func generate(c *cli.Context) error {
 
 func askForConfirmation(question string) bool {
 	reader := bufio.NewReader(os.Stdin)
-	for {	
+	for {
 		fmt.Printf("%s [y/n]? ", question)
 
 		response, err := reader.ReadString('\n')
@@ -604,7 +604,7 @@ func stop(c *cli.Context) error {
 }
 
 func restart(c *cli.Context) error {
-	if c.Args().First() == "all" {
+	if len(c.Args()) == 0 {
 		restartAll()
 		return nil
 	}
