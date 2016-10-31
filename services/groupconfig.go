@@ -118,17 +118,21 @@ func (sg *ServiceGroupConfig) IsSudo() bool {
 	return false
 }
 
-func (s *ServiceGroupConfig) GetWatchDirs() map[string]*ServiceConfig {
-	watchMap := make(map[string]*ServiceConfig)
-	for _, service := range s.Services {
-		for watch, s := range service.GetWatchDirs() {
-			watchMap[watch] = s
+func (sg *ServiceGroupConfig) Watch() ([]ServiceWatch, error) {
+	var watches []ServiceWatch
+	for _, service := range sg.Services {
+		sw, err := service.Watch()
+		if err != nil {
+			return nil, err
 		}
+		watches = append(watches, sw...)
 	}
-	for _, group := range s.Groups {
-		for watch, s := range group.GetWatchDirs() {
-			watchMap[watch] = s
+	for _, group := range sg.Groups {
+		gw, err := group.Watch()
+		if err != nil {
+			return nil, err
 		}
+		watches = append(watches, gw...)
 	}
-	return watchMap
+	return watches, nil
 }

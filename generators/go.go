@@ -78,14 +78,20 @@ func (v *GoGenerator) Found() []*services.ServiceConfig {
 }
 
 func goService(name, packagePath string) *services.ServiceConfig {
-	return &services.ServiceConfig{
-		Name:  name,
-		Path:  &packagePath,
-		Env:   []string{},
-		Watch: &packagePath,
+	service := &services.ServiceConfig{
+		Name: name,
+		Path: &packagePath,
+		Env:  []string{},
 		Commands: services.ServiceConfigCommands{
 			Build:  "go install",
 			Launch: name,
 		},
 	}
+
+	service.SetWatch(services.ServiceWatch{
+		Service:       service,
+		IncludedPaths: []string{packagePath},
+	})
+
+	return service
 }

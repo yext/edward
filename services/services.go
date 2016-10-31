@@ -16,5 +16,5 @@ type ServiceOrGroup interface {
 	Stop() error
 	Status() ([]ServiceStatus, error)
 	IsSudo() bool
-	GetWatchDirs() map[string]*ServiceConfig
+	Watch() ([]ServiceWatch, error)
 }

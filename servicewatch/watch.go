@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/juju/errgo"
@@ -20,9 +21,12 @@ func Begin(sgs []services.ServiceOrGroup) error {
 	hasWatch := false
 
 	for _, s := range sgs {
-		watches := s.GetWatchDirs()
-		for dir, service := range watches {
-			watcher, err := startWatch(dir, service)
+		watches, err := s.Watch()
+		if err != nil {
+			return err
+		}
+		for _, watch := range watches {
+			watcher, err := startWatch(&watch)
 			if err != nil {
 				return err
 			}
@@ -49,8 +53,8 @@ func Begin(sgs []services.ServiceOrGroup) error {
 	return nil
 }
 
-func startWatch(dir string, service *services.ServiceConfig) (*fsnotify.Watcher, error) {
-	fmt.Printf("Watching '%v' for service %v\n", dir, service.GetName())
+func startWatch(watches *services.ServiceWatch) (*fsnotify.Watcher, error) {
+	fmt.Printf("Watching %v paths for service %v\n", len(watches.IncludedPaths), watches.Service.GetName())
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, errgo.Mask(err)
@@ -61,10 +65,24 @@ func startWatch(dir string, service *services.ServiceConfig) (*fsnotify.Watcher,
 			select {
 			case event := <-watcher.Events:
 				if event.Op&fsnotify.Write == fsnotify.Write {
-					fmt.Printf("Rebuilding %v\n", service.GetName())
-					err := rebuildService(service)
+					fmt.Printf("File edited: %v\n", event.Name)
+
+					var wasExcluded bool
+					for _, excluded := range watches.ExcludedPaths {
+						if strings.HasPrefix(event.Name, excluded) {
+							fmt.Println("File is under excluded path:", excluded)
+							wasExcluded = true
+							break
+						}
+					}
+
+					if wasExcluded {
+						continue
+					}
+					fmt.Printf("Rebuilding %v\n", watches.Service.GetName())
+					err = rebuildService(watches.Service)
 					if err != nil {
-						fmt.Printf("Could not rebuild %v: %v\n", service.GetName(), err)
+						fmt.Printf("Could not rebuild %v: %v\n", watches.Service.GetName(), err)
 					}
 				}
 
@@ -76,9 +94,12 @@ func startWatch(dir string, service *services.ServiceConfig) (*fsnotify.Watcher,
 		}
 	}()
 
-	err = watcher.Add(dir)
-	if err != nil {
-		return nil, errgo.Mask(err)
+	for _, dir := range watches.IncludedPaths {
+		err = watcher.Add(dir)
+		if err != nil {
+			watcher.Close()
+			return nil, errgo.Mask(err)
+		}
 	}
 	return watcher, nil
 }

@@ -2,6 +2,7 @@ package services
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path"
@@ -41,7 +42,53 @@ type ServiceConfig struct {
 	Logger common.Logger `json:"-"`
 
 	// Path to watch for updates, relative to config file. If specified, will enable hot reloading.
-	Watch *string `json:"watch,omitempty"`
+	WatchJson json.RawMessage `json:"watch,omitempty"`
+}
+
+func (c *ServiceConfig) SetWatch(watch ServiceWatch) error {
+	msg, err := json.Marshal(watch)
+	if err != nil {
+		return err
+	}
+	c.WatchJson = json.RawMessage(msg)
+	return nil
+}
+
+func (c *ServiceConfig) Watch() ([]ServiceWatch, error) {
+	var watch ServiceWatch = ServiceWatch{
+		Service: c,
+	}
+
+	if len(c.WatchJson) == 0 {
+		return nil, nil
+	}
+
+	var err error
+
+	// Handle multiple
+	err = json.Unmarshal(c.WatchJson, &watch)
+	if err == nil {
+		return []ServiceWatch{watch}, nil
+	}
+
+	// Handle string version
+	var include string
+	err = json.Unmarshal(c.WatchJson, &include)
+	if err != nil {
+		return nil, err
+	}
+	if include != "" {
+		watch.IncludedPaths = append(watch.IncludedPaths, include)
+		return []ServiceWatch{watch}, nil
+	}
+
+	return nil, nil
+}
+
+type ServiceWatch struct {
+	Service       *ServiceConfig `json:"-"`
+	IncludedPaths []string       `json:"include,omitempty"`
+	ExcludedPaths []string       `json:"exclude,omitempty"`
 }
 
 // MatchesPlatform determines whether or not this service can be run on the current OS
@@ -325,11 +372,4 @@ func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 	// TODO: Set status
 
 	return command, nil
-}
-
-func (s *ServiceConfig) GetWatchDirs() map[string]*ServiceConfig {
-	if s.Watch != nil {
-		return map[string]*ServiceConfig{*s.Watch: s}
-	}
-	return map[string]*ServiceConfig{}
 }
