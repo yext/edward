@@ -1,10 +1,14 @@
 package generators
 
 import (
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/juju/errgo"
 	"github.com/yext/edward/services"
@@ -71,13 +75,17 @@ func (v *GoGenerator) Found() []*services.ServiceConfig {
 	var outServices []*services.ServiceConfig
 
 	for packageName, packagePath := range v.found {
-		outServices = append(outServices, goService(packageName, packagePath))
+		service, err := v.goService(packageName, packagePath)
+		if err == nil {
+			outServices = append(outServices, service)
+		}
+		// TODO: Log any error?
 	}
 
 	return outServices
 }
 
-func goService(name, packagePath string) *services.ServiceConfig {
+func (v *GoGenerator) goService(name, packagePath string) (*services.ServiceConfig, error) {
 	service := &services.ServiceConfig{
 		Name: name,
 		Path: &packagePath,
@@ -88,10 +96,53 @@ func goService(name, packagePath string) *services.ServiceConfig {
 		},
 	}
 
-	service.SetWatch(services.ServiceWatch{
-		Service:       service,
-		IncludedPaths: []string{packagePath},
-	})
+	watch, err := v.createWatch(service)
+	if err != nil {
+		return nil, errgo.Mask(err)
+	}
+	service.SetWatch(watch)
 
-	return service
+	return service, nil
+}
+
+func (v *GoGenerator) createWatch(service *services.ServiceConfig) (services.ServiceWatch, error) {
+	return services.ServiceWatch{
+		Service:       service,
+		IncludedPaths: v.getImportList(service),
+	}, nil
+}
+
+func (v *GoGenerator) getImportList(service *services.ServiceConfig) []string {
+	if service.Path == nil {
+		return nil
+	}
+
+	var imports = []string{}
+	cmd := exec.Command("go", "list", "-f", "{{ join .Imports \":\" }}")
+	cmd.Dir = *service.Path
+	var out bytes.Buffer
+	var errBuf bytes.Buffer
+	cmd.Stderr = &errBuf
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println(errBuf.String())
+		return []string{*service.Path}
+	}
+	imports = append(imports, strings.Split(out.String(), ":")...)
+
+	var checkedImports = []string{*service.Path}
+	for _, i := range imports {
+		path := os.ExpandEnv(fmt.Sprintf("$GOPATH/src/%v", i))
+		if _, err := os.Stat(path); err == nil {
+			rel, err := filepath.Rel(v.basePath, path)
+			if err != nil {
+				// TODO: Handle this error more effectively
+				fmt.Println(err)
+				continue
+			}
+			checkedImports = append(checkedImports, rel)
+		}
+	}
+	return checkedImports
 }
