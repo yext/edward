@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/juju/errgo"
@@ -117,6 +118,7 @@ func (v *GoGenerator) getImportList(service *services.ServiceConfig) []string {
 		return nil
 	}
 
+	// Get a list of imports using 'go list'
 	var imports = []string{}
 	cmd := exec.Command("go", "list", "-f", "{{ join .Imports \":\" }}")
 	cmd.Dir = *service.Path
@@ -131,6 +133,7 @@ func (v *GoGenerator) getImportList(service *services.ServiceConfig) []string {
 	}
 	imports = append(imports, strings.Split(out.String(), ":")...)
 
+	// Verify the import paths exist
 	var checkedImports = []string{*service.Path}
 	for _, i := range imports {
 		path := os.ExpandEnv(fmt.Sprintf("$GOPATH/src/%v", i))
@@ -144,5 +147,19 @@ func (v *GoGenerator) getImportList(service *services.ServiceConfig) []string {
 			checkedImports = append(checkedImports, rel)
 		}
 	}
-	return checkedImports
+	// Remove subpaths
+	sort.Strings(checkedImports)
+	var outImports []string
+	for i, path := range checkedImports {
+		include := true
+		for j, earlier := range checkedImports {
+			if i > j && strings.HasPrefix(path, earlier) {
+				include = false
+			}
+		}
+		if include {
+			outImports = append(outImports, path)
+		}
+	}
+	return outImports
 }
