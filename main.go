@@ -516,6 +516,7 @@ func status(c *cli.Context) error {
 		"Ports",
 		"Start Time",
 	})
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
 
 	for _, s := range sgs {
 		statuses, err := s.Status()

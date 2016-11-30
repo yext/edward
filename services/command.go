@@ -145,22 +145,29 @@ func (sc *ServiceCommand) checkForAnyPort(cancel <-chan struct{}, command *exec.
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		children, err := proc.Children()
-		if err != nil {
-			return errgo.Mask(err)
-		}
-
-		for _, connection := range connections {
-			if connection.Status == "LISTEN" {
-				for _, child := range children {
-					if connection.Pid == int32(child.Pid) {
-						return nil
-					}
-				}
-			}
+		if hasPort(proc, connections) {
+			return nil
 		}
 	}
 	return errors.New("exited check loop unexpectedly")
+}
+
+func hasPort(proc *process.Process, connections []net.ConnectionStat) bool {
+	for _, connection := range connections {
+		if connection.Status == "LISTEN" && connection.Pid == int32(proc.Pid) {
+			return true
+		}
+	}
+
+	children, err := proc.Children()
+	if err == nil {
+		for _, child := range children {
+			if hasPort(child, connections) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func cancelableWait(cancel chan struct{}, task func(cancel <-chan struct{}) error) <-chan struct{ error } {

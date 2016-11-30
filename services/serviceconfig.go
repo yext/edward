@@ -265,7 +265,7 @@ func (sc *ServiceConfig) Status() ([]ServiceStatus, error) {
 			return nil, errgo.Mask(err)
 		}
 		status.StartTime = time.Unix(epochStart/1000, 0)
-		status.Ports, err = sc.getPorts(proc, int32(command.Pid))
+		status.Ports, err = sc.getPorts(proc)
 		if err != nil {
 			return nil, errgo.Mask(err)
 		}
@@ -279,7 +279,7 @@ func (sc *ServiceConfig) Status() ([]ServiceStatus, error) {
 // Connection list cache, created once per session.
 var connectionsCache []net.ConnectionStat
 
-func (sc *ServiceConfig) getPorts(proc *process.Process, pid int32) ([]string, error) {
+func (sc *ServiceConfig) getPorts(proc *process.Process) ([]string, error) {
 	var err error
 	if len(connectionsCache) == 0 {
 		connectionsCache, err = net.Connections("all")
@@ -288,25 +288,26 @@ func (sc *ServiceConfig) getPorts(proc *process.Process, pid int32) ([]string, e
 		}
 	}
 
-	children, err := proc.Children()
-	if err != nil {
-		return nil, errgo.Mask(err)
-	}
-
 	var ports []string
 	for _, connection := range connectionsCache {
 		if connection.Status == "LISTEN" {
-			if connection.Pid == pid {
+			if connection.Pid == proc.Pid {
 				ports = append(ports, strconv.Itoa(int(connection.Laddr.Port)))
-			}
-			for _, child := range children {
-				if connection.Pid == int32(child.Pid) {
-					ports = append(ports, strconv.Itoa(int(connection.Laddr.Port)))
-				}
 			}
 		}
 	}
 
+	children, err := proc.Children()
+	// This will error out if the process has finished or has no children
+	if err != nil {
+		return ports, nil
+	}
+	for _, child := range children {
+		childPorts, err := sc.getPorts(child)
+		if err == nil {
+			ports = append(ports, childPorts...)
+		}
+	}
 	return ports, nil
 }
 
