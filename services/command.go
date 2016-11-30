@@ -151,9 +151,11 @@ func (sc *ServiceCommand) checkForAnyPort(cancel <-chan struct{}, command *exec.
 		}
 
 		for _, connection := range connections {
-			for _, child := range children {
-				if connection.Status == "LISTEN" && connection.Pid == int32(child.Pid) {
-					return nil
+			if connection.Status == "LISTEN" {
+				for _, child := range children {
+					if connection.Pid == int32(child.Pid) {
+						return nil
+					}
 				}
 			}
 		}

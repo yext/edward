@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/juju/errgo"
+	"github.com/shirou/gopsutil/net"
 	"github.com/shirou/gopsutil/process"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
@@ -264,11 +265,49 @@ func (sc *ServiceConfig) Status() ([]ServiceStatus, error) {
 			return nil, errgo.Mask(err)
 		}
 		status.StartTime = time.Unix(epochStart/1000, 0)
+		status.Ports, err = sc.getPorts(proc, int32(command.Pid))
+		if err != nil {
+			return nil, errgo.Mask(err)
+		}
 	}
 
 	return []ServiceStatus{
 		status,
 	}, nil
+}
+
+// Connection list cache, created once per session.
+var connectionsCache []net.ConnectionStat
+
+func (sc *ServiceConfig) getPorts(proc *process.Process, pid int32) ([]string, error) {
+	var err error
+	if len(connectionsCache) == 0 {
+		connectionsCache, err = net.Connections("all")
+		if err != nil {
+			return nil, errgo.Mask(err)
+		}
+	}
+
+	children, err := proc.Children()
+	if err != nil {
+		return nil, errgo.Mask(err)
+	}
+
+	var ports []string
+	for _, connection := range connectionsCache {
+		if connection.Status == "LISTEN" {
+			if connection.Pid == pid {
+				ports = append(ports, strconv.Itoa(int(connection.Laddr.Port)))
+			}
+			for _, child := range children {
+				if connection.Pid == int32(child.Pid) {
+					ports = append(ports, strconv.Itoa(int(connection.Laddr.Port)))
+				}
+			}
+		}
+	}
+
+	return ports, nil
 }
 
 func (sc *ServiceConfig) IsSudo() bool {

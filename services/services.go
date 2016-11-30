@@ -7,6 +7,7 @@ type ServiceStatus struct {
 	Status    string
 	Pid       int
 	StartTime time.Time
+	Ports     []string
 }
 
 type ServiceOrGroup interface {
