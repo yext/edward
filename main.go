@@ -659,13 +659,11 @@ func restartOneOrMoreServices(serviceNames []string) error {
 		if err != nil {
 			return err
 		}
-		if !flags.skipBuild {
-			err = s.Build()
-			if err != nil {
-				return err
-			}
+		if flags.skipBuild {
+			err = s.Launch()
+		} else {
+			err = s.Start()
 		}
-		err = s.Start()
 		if err != nil {
 			return err
 		}
