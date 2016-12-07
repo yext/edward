@@ -66,6 +66,25 @@ func (sg *ServiceGroupConfig) Start() error {
 	return outErr
 }
 
+func (sg *ServiceGroupConfig) Launch() error {
+	println("Starting group:", sg.Name)
+	for _, group := range sg.Groups {
+		err := group.Launch()
+		if err != nil {
+			// Always fail if any services in a dependant group failed
+			return err
+		}
+	}
+	var outErr error = nil
+	for _, service := range sg.Services {
+		err := service.Launch()
+		if err != nil {
+			return err
+		}
+	}
+	return outErr
+}
+
 func (sg *ServiceGroupConfig) Stop() error {
 	println("=== Group:", sg.Name, "===")
 	// TODO: Do this in reverse

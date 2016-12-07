@@ -1,0 +1,26 @@
+{
+    "groups": [
+      {
+        "name": "simple",
+        "children": ["simple1", "simple2"]
+      }
+    ],
+    "services": [
+        {
+            "name": "simple1",
+            "path": "simple1",
+            "commands": {
+                "build": "go install",
+                "launch": "simple1"
+            }
+        },
+        {
+            "name": "simple2",
+            "path": "simple2",
+            "commands": {
+                "build": "go install",
+                "launch": "simple2"
+            }
+        }
+    ]
+}

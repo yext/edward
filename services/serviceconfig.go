@@ -132,12 +132,21 @@ func (sc *ServiceConfig) Build() error {
 	return errgo.Mask(command.BuildSync(false))
 }
 
-func (sc *ServiceConfig) Start() error {
+func (sc *ServiceConfig) Launch() error {
 	command, err := sc.GetCommand()
 	if err != nil {
 		return errgo.Mask(err)
 	}
 	return errgo.Mask(command.StartAsync())
+}
+
+func (sc *ServiceConfig) Start() error {
+	err := sc.Build()
+	if err != nil {
+		return errgo.Mask(err)
+	}
+	err = sc.Launch()
+	return errgo.Mask(err)
 }
 
 func (sc *ServiceConfig) Stop() error {

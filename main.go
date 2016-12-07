@@ -552,15 +552,11 @@ func start(c *cli.Context) error {
 	}
 
 	for _, s := range sgs {
-		if !flags.skipBuild {
-			println("==== Build Phase ====")
-			err = s.Build()
-			if err != nil {
-				return errors.New("Error building " + s.GetName() + ": " + err.Error())
-			}
+		if flags.skipBuild {
+			err = s.Launch()
+		} else {
+			err = s.Start()
 		}
-		println("==== Launch Phase ====")
-		err = s.Start()
 		if err != nil {
 			return errors.New("Error launching " + s.GetName() + ": " + err.Error())
 		}
