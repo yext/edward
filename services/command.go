@@ -17,6 +17,7 @@ import (
 	"github.com/shirou/gopsutil/process"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
+	"github.com/yext/edward/warmup"
 )
 
 type ServiceCommand struct {
@@ -276,13 +277,12 @@ func (sc *ServiceCommand) StartAsync() error {
 	err = sc.waitUntilLive(cmd)
 	if err == nil {
 		tracker.Success()
-	} else {
-		tracker.Fail(errgo.New("Timed Out"))
-		err := sc.Service.Stop()
-		if err != nil {
-			return errgo.Mask(err)
-		}
+		warmup.Run(sc.Service.Name, sc.Service.Warmup)
+		return nil
 	}
+
+	tracker.Fail(errgo.New("Timed Out"))
+	err = sc.Service.Stop()
 	return errgo.Mask(err)
 }
 

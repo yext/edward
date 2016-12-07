@@ -29,6 +29,7 @@ import (
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/servicewatch"
 	"github.com/yext/edward/updates"
+	"github.com/yext/edward/warmup"
 )
 
 var logger *log.Logger
@@ -162,6 +163,8 @@ func main() {
 		fmt.Println(err)
 		logger.Println(err)
 	}
+
+	warmup.Wait()
 
 	updateAvailable := (<-checkUpdateChan).(bool)
 	if updateAvailable {

@@ -1,0 +1,15 @@
+{
+    "services": [
+        {
+            "name": "pause",
+            "path": "pause",
+            "commands": {
+                "build": "go install",
+                "launch": "pause"
+            },
+            "warmup": {
+              "url": "http://localhost:8080"
+            }
+        }
+    ]
+}

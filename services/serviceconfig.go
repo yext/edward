@@ -17,6 +17,7 @@ import (
 	"github.com/shirou/gopsutil/process"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
+	"github.com/yext/edward/warmup"
 )
 
 var _ ServiceOrGroup = &ServiceConfig{}
@@ -44,6 +45,9 @@ type ServiceConfig struct {
 
 	// Path to watch for updates, relative to config file. If specified, will enable hot reloading.
 	WatchJson json.RawMessage `json:"watch,omitempty"`
+
+	// Action for warming up this service
+	Warmup *warmup.Warmup `json:"warmup,omitempty"`
 }
 
 func (c *ServiceConfig) SetWatch(watch ServiceWatch) error {
@@ -137,7 +141,11 @@ func (sc *ServiceConfig) Launch() error {
 	if err != nil {
 		return errgo.Mask(err)
 	}
-	return errgo.Mask(command.StartAsync())
+	err = command.StartAsync()
+	if err != nil {
+		return errgo.Mask(err)
+	}
+	return nil
 }
 
 func (sc *ServiceConfig) Start() error {
