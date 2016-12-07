@@ -43,9 +43,9 @@ func main() {
 
 	logger = log.New(&lumberjack.Logger{
 		Filename:   filepath.Join(home.EdwardConfig.EdwardLogDir, "edward.log"),
-		MaxSize:    500, // megabytes
-		MaxBackups: 3,
-		MaxAge:     365, //days
+		MaxSize:    50, // megabytes
+		MaxBackups: 30,
+		MaxAge:     1, //days
 	}, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 
 	app := cli.NewApp()
