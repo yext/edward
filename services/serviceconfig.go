@@ -35,6 +35,9 @@ type ServiceConfig struct {
 	// Service state properties that can be obtained from logs
 	Properties *ServiceConfigProperties `json:"log_properties,omitempty"`
 
+	// One or more specific ports that are expected to be opened when this service starts
+	ExpectedPorts []int `json:"expected_port,omitempty"`
+
 	// Env holds environment variables for a service, for example: GOPATH=~/gocode/
 	// These will be added to the vars in the environment under which the Edward command was run
 	Env []string `json:"env,omitempty"`

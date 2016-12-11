@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/juju/errgo"
@@ -52,7 +53,7 @@ func (v *DockerGenerator) VisitDir(path string, f os.FileInfo, err error) error 
 		}
 
 		fPath := filepath.Join(path, f.Name())
-		portCommands, err := getPorts(fPath)
+		expectedPorts, portCommands, err := getPorts(fPath)
 		if err != nil {
 			return errgo.Mask(err)
 		}
@@ -67,6 +68,7 @@ func (v *DockerGenerator) VisitDir(path string, f os.FileInfo, err error) error 
 				Build:  "docker build -t " + tag + " .",
 				Launch: "docker run " + strings.Join(portCommands, " ") + " " + tag,
 			},
+			ExpectedPorts: expectedPorts,
 		}
 		v.foundServices = append(v.foundServices, service)
 		break
@@ -75,17 +77,23 @@ func (v *DockerGenerator) VisitDir(path string, f os.FileInfo, err error) error 
 	return nil
 }
 
-func getPorts(dockerFilePath string) ([]string, error) {
+func getPorts(dockerFilePath string) ([]int, []string, error) {
 	input, err := ioutil.ReadFile(dockerFilePath)
 	if err != nil {
-		return nil, errgo.Mask(err)
+		return nil, nil, errgo.Mask(err)
 	}
+	var ports []int
 	var portCommands []string
 	exposeExpr := regexp.MustCompile(`(?m)^(?:EXPOSE )([0-9]+)$`)
 	for _, match := range exposeExpr.FindAllStringSubmatch(string(input), -1) {
 		portCommands = append(portCommands, "-p "+match[1]+":"+match[1])
+		port, err := strconv.Atoi(match[1])
+		if err != nil {
+			return nil, nil, errgo.Mask(err)
+		}
+		ports = append(ports, port)
 	}
-	return portCommands, nil
+	return ports, portCommands, nil
 }
 
 func (v *DockerGenerator) Found() []*services.ServiceConfig {

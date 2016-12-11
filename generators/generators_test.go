@@ -106,8 +106,9 @@ func TestDockerGenerator(t *testing.T) {
 					Env:  []string{},
 					Commands: services.ServiceConfigCommands{
 						Build:  "docker build -t service:edward .",
-						Launch: "docker run -p 8080:8080 service:edward",
+						Launch: "docker run -p 80:80 service:edward",
 					},
+					ExpectedPorts: []int{80},
 				},
 			},
 			outErr: nil,
