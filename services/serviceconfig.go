@@ -300,6 +300,17 @@ func (sc *ServiceConfig) Status() ([]ServiceStatus, error) {
 var connectionsCache []net.ConnectionStat
 
 func (sc *ServiceConfig) getPorts(proc *process.Process) ([]string, error) {
+	ports, err := sc.doGetPorts(proc)
+	if err != nil {
+		return nil, errgo.Mask(err)
+	}
+	for _, port := range sc.ExpectedPorts {
+		ports = append(ports, strconv.Itoa(port))
+	}
+	return ports, nil
+}
+
+func (sc *ServiceConfig) doGetPorts(proc *process.Process) ([]string, error) {
 	var err error
 	if len(connectionsCache) == 0 {
 		connectionsCache, err = net.Connections("all")
@@ -309,9 +320,13 @@ func (sc *ServiceConfig) getPorts(proc *process.Process) ([]string, error) {
 	}
 
 	var ports []string
+	var knownPorts = make(map[int]struct{})
+	for _, port := range sc.ExpectedPorts {
+		knownPorts[port] = struct{}{}
+	}
 	for _, connection := range connectionsCache {
 		if connection.Status == "LISTEN" {
-			if connection.Pid == proc.Pid {
+			if _, ok := knownPorts[int(connection.Laddr.Port)]; connection.Pid == proc.Pid && !ok {
 				ports = append(ports, strconv.Itoa(int(connection.Laddr.Port)))
 			}
 		}
@@ -323,7 +338,7 @@ func (sc *ServiceConfig) getPorts(proc *process.Process) ([]string, error) {
 		return ports, nil
 	}
 	for _, child := range children {
-		childPorts, err := sc.getPorts(child)
+		childPorts, err := sc.doGetPorts(child)
 		if err == nil {
 			ports = append(ports, childPorts...)
 		}

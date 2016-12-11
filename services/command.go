@@ -127,7 +127,62 @@ func (sc *ServiceCommand) waitForLogText(line string, cancel <-chan struct{}) er
 	return nil
 }
 
-func (sc *ServiceCommand) checkForAnyPort(cancel <-chan struct{}, command *exec.Cmd) error {
+func (sc *ServiceCommand) areAnyListeningPortsOpen(ports []int) (bool, error) {
+
+	var matchedPorts = make(map[int]struct{})
+	for _, port := range ports {
+		matchedPorts[port] = struct{}{}
+	}
+
+	connections, err := net.Connections("all")
+	if err != nil {
+		return false, errgo.Mask(err)
+	}
+	for _, connection := range connections {
+		if connection.Status == "LISTEN" {
+			if _, ok := matchedPorts[int(connection.Laddr.Port)]; ok {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+func (sc *ServiceCommand) waitForListeningPorts(ports []int, cancel <-chan struct{}, command *exec.Cmd) error {
+	for true {
+		time.Sleep(100 * time.Millisecond)
+
+		select {
+		case <-cancel:
+			return nil
+		default:
+		}
+
+		var matchedPorts = make(map[int]struct{})
+
+		connections, err := net.Connections("all")
+		if err != nil {
+			return errgo.Mask(err)
+		}
+		for _, connection := range connections {
+			if connection.Status == "LISTEN" {
+				matchedPorts[int(connection.Laddr.Port)] = struct{}{}
+			}
+		}
+		allMatched := true
+		for _, port := range ports {
+			if _, ok := matchedPorts[port]; !ok {
+				allMatched = false
+			}
+		}
+		if allMatched {
+			return nil
+		}
+	}
+	return errors.New("exited check loop unexpectedly")
+}
+
+func (sc *ServiceCommand) waitForAnyPort(cancel <-chan struct{}, command *exec.Cmd) error {
 	for true {
 		time.Sleep(100 * time.Millisecond)
 
@@ -190,9 +245,13 @@ func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 		startCheck = func(cancel <-chan struct{}) error {
 			return sc.waitForLogText(sc.Service.Properties.Started, cancel)
 		}
+	} else if len(sc.Service.ExpectedPorts) > 0 {
+		startCheck = func(cancel <-chan struct{}) error {
+			return sc.waitForListeningPorts(sc.Service.ExpectedPorts, cancel, command)
+		}
 	} else {
 		startCheck = func(cancel <-chan struct{}) error {
-			return sc.checkForAnyPort(cancel, command)
+			return sc.waitForAnyPort(cancel, command)
 		}
 	}
 
@@ -240,6 +299,16 @@ func (sc *ServiceCommand) StartAsync() error {
 	if sc.Scripts.Launch == "" {
 		tracker.SoftFail(errgo.New("No launch"))
 		return nil
+	}
+
+	if len(sc.Service.ExpectedPorts) > 0 {
+		inUse, err := sc.areAnyListeningPortsOpen(sc.Service.ExpectedPorts)
+		if err != nil {
+			return errgo.Mask(err)
+		}
+		if inUse {
+			return errgo.New("one or more of the ports required by this service are in use")
+		}
 	}
 
 	// Clear logs
