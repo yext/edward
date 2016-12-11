@@ -1,0 +1,12 @@
+{
+    "services": [
+        {
+            "name": "simple",
+            "path": "simple",
+            "commands": {
+                "build": "docker build -t simple:edward .",
+                "launch": "docker run -p 80:80 simple:edward"
+            }
+        }
+    ]
+}
