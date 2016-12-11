@@ -112,7 +112,7 @@ func (sc *ServiceCommand) waitForLogText(line string, cancel <-chan struct{}) er
 	if err != nil {
 		return errgo.Mask(err)
 	}
-	for line := range t.Lines {
+	for logLine := range t.Lines {
 
 		select {
 		case <-cancel:
@@ -120,7 +120,7 @@ func (sc *ServiceCommand) waitForLogText(line string, cancel <-chan struct{}) er
 		default:
 		}
 
-		if strings.Contains(line.Text, sc.Service.Properties.Started) {
+		if strings.Contains(logLine.Text, line) {
 			return nil
 		}
 	}
@@ -241,13 +241,13 @@ func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 	sc.printf("Waiting for %v to start.\n", sc.Service.Name)
 
 	var startCheck func(cancel <-chan struct{}) error
-	if sc.Service.Properties != nil && len(sc.Service.Properties.Started) > 0 {
+	if sc.Service.LaunchChecks != nil && len(sc.Service.LaunchChecks.LogText) > 0 {
 		startCheck = func(cancel <-chan struct{}) error {
-			return sc.waitForLogText(sc.Service.Properties.Started, cancel)
+			return sc.waitForLogText(sc.Service.LaunchChecks.LogText, cancel)
 		}
-	} else if len(sc.Service.ExpectedPorts) > 0 {
+	} else if sc.Service.LaunchChecks != nil && len(sc.Service.LaunchChecks.Ports) > 0 {
 		startCheck = func(cancel <-chan struct{}) error {
-			return sc.waitForListeningPorts(sc.Service.ExpectedPorts, cancel, command)
+			return sc.waitForListeningPorts(sc.Service.LaunchChecks.Ports, cancel, command)
 		}
 	} else {
 		startCheck = func(cancel <-chan struct{}) error {
@@ -301,8 +301,8 @@ func (sc *ServiceCommand) StartAsync() error {
 		return nil
 	}
 
-	if len(sc.Service.ExpectedPorts) > 0 {
-		inUse, err := sc.areAnyListeningPortsOpen(sc.Service.ExpectedPorts)
+	if sc.Service.LaunchChecks != nil && len(sc.Service.LaunchChecks.Ports) > 0 {
+		inUse, err := sc.areAnyListeningPortsOpen(sc.Service.LaunchChecks.Ports)
 		if err != nil {
 			return errgo.Mask(err)
 		}

@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path"
@@ -32,11 +33,9 @@ type ServiceConfig struct {
 	RequiresSudo bool `json:"requiresSudo,omitempty"`
 	// Commands for managing the service
 	Commands ServiceConfigCommands `json:"commands"`
-	// Service state properties that can be obtained from logs
-	Properties *ServiceConfigProperties `json:"log_properties,omitempty"`
 
-	// One or more specific ports that are expected to be opened when this service starts
-	ExpectedPorts []int `json:"expected_port,omitempty"`
+	// Checks to perform to ensure that a service has started correctly
+	LaunchChecks *LaunchChecks `json:"launch_checks"`
 
 	// Env holds environment variables for a service, for example: GOPATH=~/gocode/
 	// These will be added to the vars in the environment under which the Edward command was run
@@ -51,6 +50,41 @@ type ServiceConfig struct {
 
 	// Action for warming up this service
 	Warmup *warmup.Warmup `json:"warmup,omitempty"`
+}
+
+// Handle legacy fields
+func (sc *ServiceConfig) UnmarshalJSON(data []byte) error {
+	type Alias ServiceConfig
+	aux := &struct {
+		Properties *ServiceConfigProperties `json:"log_properties,omitempty"`
+		*Alias
+	}{
+		Alias: (*Alias)(sc),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if aux.Properties != nil {
+		if sc.LaunchChecks != nil {
+			sc.LaunchChecks.LogText = aux.Properties.Started
+		} else {
+			sc.LaunchChecks = &LaunchChecks{
+				LogText: aux.Properties.Started,
+			}
+		}
+	}
+
+	return sc.validate()
+}
+
+// validate checks if this config is allowed
+func (sc *ServiceConfig) validate() error {
+	if sc.LaunchChecks != nil {
+		if len(sc.LaunchChecks.LogText) > 0 && len(sc.LaunchChecks.Ports) > 0 {
+			return errors.New("cannot specify both a log and port launch check")
+		}
+	}
+	return nil
 }
 
 func (c *ServiceConfig) SetWatch(watch ServiceWatch) error {
@@ -111,6 +145,15 @@ func (c *ServiceConfig) printf(format string, v ...interface{}) {
 	c.Logger.Printf(format, v...)
 }
 
+type LaunchChecks struct {
+	// A string to look for in the service's logs that indicates it has completed startup
+	LogText string `json:"log_text,omitempty"`
+	// One or more specific ports that are expected to be opened when this service starts
+	Ports []int `json:"ports,omitempty"`
+}
+
+// ServiceConfigProperties provides a set of regexes to detect properties of a service
+// Deprecated: This has been dropped in favour of LaunchChecks
 type ServiceConfigProperties struct {
 	// Regex to detect a line indicating the service has started successfully
 	Started string `json:"started,omitempty"`
@@ -304,8 +347,10 @@ func (sc *ServiceConfig) getPorts(proc *process.Process) ([]string, error) {
 	if err != nil {
 		return nil, errgo.Mask(err)
 	}
-	for _, port := range sc.ExpectedPorts {
-		ports = append(ports, strconv.Itoa(port))
+	if sc.LaunchChecks != nil {
+		for _, port := range sc.LaunchChecks.Ports {
+			ports = append(ports, strconv.Itoa(port))
+		}
 	}
 	return ports, nil
 }
@@ -321,8 +366,10 @@ func (sc *ServiceConfig) doGetPorts(proc *process.Process) ([]string, error) {
 
 	var ports []string
 	var knownPorts = make(map[int]struct{})
-	for _, port := range sc.ExpectedPorts {
-		knownPorts[port] = struct{}{}
+	if sc.LaunchChecks != nil {
+		for _, port := range sc.LaunchChecks.Ports {
+			knownPorts[port] = struct{}{}
+		}
 	}
 	for _, connection := range connectionsCache {
 		if connection.Status == "LISTEN" {

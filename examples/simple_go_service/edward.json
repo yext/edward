@@ -6,6 +6,12 @@
             "commands": {
                 "build": "go install",
                 "launch": "simple"
+            },
+            "launch_checks": null,
+            "watch": {
+                "include": [
+                    "simple"
+                ]
             }
         }
     ]

@@ -23,8 +23,8 @@ var service1 = services.ServiceConfig{
 		Launch: "launchCmd",
 		Stop:   "stopCmd",
 	},
-	Properties: &services.ServiceConfigProperties{
-		Started: "startedProperty",
+	LaunchChecks: &services.LaunchChecks{
+		LogText: "startedProperty",
 	},
 	Logger: common.NullLogger{},
 }
@@ -63,8 +63,8 @@ var service3 = services.ServiceConfig{
 		Launch: "launchCmd",
 		Stop:   "stopCmd",
 	},
-	Properties: &services.ServiceConfigProperties{
-		Started: "startedProperty",
+	LaunchChecks: &services.LaunchChecks{
+		LogText: "startedProperty",
 	},
 	Logger: common.NullLogger{},
 }

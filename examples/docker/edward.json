@@ -7,9 +7,11 @@
                 "build": "docker build -t simple:edward .",
                 "launch": "docker run -p 80:80 simple:edward"
             },
-            "expected_port": [
-                80
-            ]
+            "launch_checks": {
+                "ports": [
+                    80
+                ]
+            }
         }
     ]
 }

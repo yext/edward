@@ -68,7 +68,9 @@ func (v *DockerGenerator) VisitDir(path string, f os.FileInfo, err error) error 
 				Build:  "docker build -t " + tag + " .",
 				Launch: "docker run " + strings.Join(portCommands, " ") + " " + tag,
 			},
-			ExpectedPorts: expectedPorts,
+			LaunchChecks: &services.LaunchChecks{
+				Ports: expectedPorts,
+			},
 		}
 		v.foundServices = append(v.foundServices, service)
 		break
