@@ -30,12 +30,7 @@ type ServiceCommand struct {
 		Launch Script
 		Stop   Script
 	}
-	Pid  int
-	Logs struct {
-		Build string
-		Run   string
-		Stop  string
-	}
+	Pid    int
 	Logger common.Logger
 }
 
@@ -170,7 +165,7 @@ func (sc *ServiceCommand) deleteScript(scriptType string) error {
 func (sc *ServiceCommand) BuildSync(force bool) error {
 	tracker := CommandTracker{
 		Name:       "Building " + sc.Service.Name,
-		OutputFile: sc.Logs.Build,
+		OutputFile: sc.Scripts.Build.Log,
 		Logger:     sc.Logger,
 	}
 	tracker.Start()
@@ -199,7 +194,7 @@ func (sc *ServiceCommand) waitForLogText(line string, cancel <-chan struct{}) er
 	// Read output until we get the success
 	var t *tail.Tail
 	var err error
-	t, err = tail.TailFile(sc.Logs.Run, tail.Config{Follow: true, Logger: tail.DiscardingLogger})
+	t, err = tail.TailFile(sc.Scripts.Launch.Log, tail.Config{Follow: true, Logger: tail.DiscardingLogger})
 	if err != nil {
 		return errgo.Mask(err)
 	}
@@ -377,7 +372,7 @@ func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 func (sc *ServiceCommand) StartAsync() error {
 	tracker := CommandTracker{
 		Name:       "Launching " + sc.Service.Name,
-		OutputFile: sc.Logs.Run,
+		OutputFile: sc.Scripts.Launch.Log,
 		Logger:     sc.Logger,
 	}
 	tracker.Start()
@@ -403,7 +398,7 @@ func (sc *ServiceCommand) StartAsync() error {
 	}
 
 	// Clear logs
-	os.Remove(sc.Logs.Run)
+	os.Remove(sc.Scripts.Launch.Log)
 
 	cmd, err := sc.Scripts.Launch.GetCommand()
 	if err != nil {

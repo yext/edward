@@ -688,7 +688,7 @@ func doLog(c *cli.Context) error {
 		if err != nil {
 			return errgo.Mask(err)
 		}
-		runLog := command.Logs.Run
+		runLog := command.Scripts.Launch.Log
 		t, err := tail.TailFile(runLog, tail.Config{Follow: true})
 		if err != nil {
 			return nil

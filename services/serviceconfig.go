@@ -440,7 +440,6 @@ func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 				Log:     logs.Stop,
 			},
 		},
-		Logs:   logs,
 		Logger: s.Logger,
 	}
 
