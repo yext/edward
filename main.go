@@ -76,6 +76,7 @@ func main() {
 		},
 	}
 	app.Commands = []cli.Command{
+		runnerCommand,
 		{
 			Name:   "list",
 			Usage:  "List available services",

@@ -1,7 +1,6 @@
 package services
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -217,7 +216,7 @@ func (sc *ServiceConfig) Stop() error {
 	}
 
 	var scriptErr error = nil
-	if command.Scripts.Stop != "" {
+	if command.Scripts.Stop.WillRun() {
 		sc.printf("Running stop script for %v.\n", sc.Name)
 		scriptErr = command.StopScript()
 	}
@@ -397,27 +396,6 @@ func (sc *ServiceConfig) IsSudo() bool {
 	return sc.RequiresSudo
 }
 
-func (s *ServiceConfig) makeScript(command string, logPath string) string {
-	if command == "" {
-		return ""
-	}
-
-	var buffer bytes.Buffer
-	buffer.WriteString("#!/bin/bash\n")
-	if s.Path != nil {
-		buffer.WriteString("cd ")
-		buffer.WriteString(*s.Path)
-		buffer.WriteString("\n")
-	}
-	buffer.WriteString(command)
-	buffer.WriteString(" > ")
-	buffer.WriteString(logPath)
-	buffer.WriteString(" 2>&1")
-	buffer.WriteString("\n")
-
-	return buffer.String()
-}
-
 func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 
 	s.printf("Building control command for: %v\n", s.Name)
@@ -434,19 +412,33 @@ func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 		Stop:  path.Join(dir, s.Name+"-stop.log"),
 	}
 
-	buildScript := s.makeScript(s.Commands.Build, logs.Build)
-	startScript := s.makeScript(s.Commands.Launch, logs.Run)
-	stopScript := s.makeScript(s.Commands.Stop, logs.Stop)
+	path := ""
+	if s.Path != nil {
+		path = *s.Path
+	}
+
 	command := &ServiceCommand{
 		Service: s,
 		Scripts: struct {
-			Build  string
-			Launch string
-			Stop   string
+			Build  Script
+			Launch Script
+			Stop   Script
 		}{
-			Build:  buildScript,
-			Launch: startScript,
-			Stop:   stopScript,
+			Build: Script{
+				Path:    path,
+				Command: s.Commands.Build,
+				Log:     logs.Build,
+			},
+			Launch: Script{
+				Path:    path,
+				Command: s.Commands.Launch,
+				Log:     logs.Run,
+			},
+			Stop: Script{
+				Path:    path,
+				Command: s.Commands.Stop,
+				Log:     logs.Stop,
+			},
 		},
 		Logs:   logs,
 		Logger: s.Logger,

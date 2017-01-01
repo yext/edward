@@ -1,0 +1,22 @@
+{
+    "services": [
+        {
+            "name": "simple",
+            "path": "simple",
+            "commands": {
+                "build": "go install",
+                "launch": "sudo simple"
+            },
+            "requiresSudo": true,
+            "launch_checks": null,
+            "watch": {
+                "include": [
+                    "simple"
+                ]
+            },
+            "log_properties": {
+              "started": "Starting to listen"
+            }
+        }
+    ]
+}

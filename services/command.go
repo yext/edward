@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -25,9 +26,9 @@ type ServiceCommand struct {
 	Service *ServiceConfig
 	// Path to string
 	Scripts struct {
-		Build  string
-		Launch string
-		Stop   string
+		Build  Script
+		Launch Script
+		Stop   Script
 	}
 	Pid  int
 	Logs struct {
@@ -36,6 +37,105 @@ type ServiceCommand struct {
 		Stop  string
 	}
 	Logger common.Logger
+}
+
+type Script struct {
+	Path    string
+	Command string
+	Log     string
+}
+
+func (s *Script) WillRun() bool {
+	return s.Command != ""
+}
+
+func (s *Script) GetCommand() (*exec.Cmd, error) {
+	command, following, err := parseCommand(s.Command)
+	if err != nil {
+		return nil, err
+	}
+	args := []string{
+		"run",
+		s.Path,
+		s.Log,
+		command,
+	}
+	args = append(args, following...)
+
+	cmd := exec.Command(os.Args[0], args...)
+	cmd.Stderr = os.Stderr
+	return cmd, nil
+}
+
+func (s *Script) Run() error {
+	cmd, err := s.GetCommand()
+	if err != nil {
+		return err
+	}
+	return cmd.Run()
+}
+
+// Returns the executable path and arguments
+// TODO: Clean this up
+func parseCommand(cmd string) (string, []string, error) {
+	var args []string
+	state := "start"
+	current := ""
+	quote := "\""
+	for i := 0; i < len(cmd); i++ {
+		c := cmd[i]
+
+		if state == "quotes" {
+			if string(c) != quote {
+				current += string(c)
+			} else {
+				args = append(args, current)
+				current = ""
+				state = "start"
+			}
+			continue
+		}
+
+		if c == '"' || c == '\'' {
+			state = "quotes"
+			quote = string(c)
+			continue
+		}
+
+		if state == "arg" {
+			if c == ' ' || c == '\t' {
+				args = append(args, current)
+				current = ""
+				state = "start"
+			} else {
+				current += string(c)
+			}
+			continue
+		}
+
+		if c != ' ' && c != '\t' {
+			state = "arg"
+			current += string(c)
+		}
+	}
+
+	if state == "quotes" {
+		return "", []string{}, errors.New(fmt.Sprintf("Unclosed quote in command line: %s", cmd))
+	}
+
+	if current != "" {
+		args = append(args, current)
+	}
+
+	if len(args) <= 0 {
+		return "", []string{}, errors.New("Empty command line")
+	}
+
+	if len(args) == 1 {
+		return args[0], []string{}, nil
+	}
+
+	return args[0], args[1:], nil
 }
 
 func (c *ServiceCommand) printf(format string, v ...interface{}) {
@@ -80,27 +180,18 @@ func (sc *ServiceCommand) BuildSync(force bool) error {
 		return nil
 	}
 
-	if sc.Scripts.Build == "" {
+	if !sc.Scripts.Build.WillRun() {
 		tracker.SoftFail(errgo.New("No build"))
 		return nil
 	}
 
-	file, err := sc.createScript(sc.Scripts.Build, "Build")
-	// Build the project and wait for completion
-	if err != nil {
-		return err
-	}
-	defer sc.deleteScript("Build")
-
-	cmd := exec.Command(file.Name())
-	err = cmd.Run()
+	err := sc.Scripts.Build.Run()
 	if err != nil {
 		tracker.Fail(err)
 		return errgo.Mask(err)
 	}
 
 	tracker.Success()
-
 	return nil
 }
 
@@ -296,7 +387,7 @@ func (sc *ServiceCommand) StartAsync() error {
 		return nil
 	}
 
-	if sc.Scripts.Launch == "" {
+	if !sc.Scripts.Launch.WillRun() {
 		tracker.SoftFail(errgo.New("No launch"))
 		return nil
 	}
@@ -314,14 +405,11 @@ func (sc *ServiceCommand) StartAsync() error {
 	// Clear logs
 	os.Remove(sc.Logs.Run)
 
-	// Start the project and get the PID
-	file, err := sc.createScript(sc.Scripts.Launch, "Launch")
+	cmd, err := sc.Scripts.Launch.GetCommand()
 	if err != nil {
-		return err
+		printResult("Failed", color.FgRed)
+		return errgo.Mask(err)
 	}
-	//defer os.Remove(file.Name())
-
-	cmd := exec.Command(file.Name())
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, sc.Service.Env...)
@@ -359,14 +447,10 @@ func (sc *ServiceCommand) StopScript() error {
 
 	sc.printf("Running stop script for %v\n", sc.Service.Name)
 
-	// Start the project and get the PID
-	file, err := sc.createScript(sc.Scripts.Stop, "Stop")
+	cmd, err := sc.Scripts.Stop.GetCommand()
 	if err != nil {
 		return err
 	}
-	defer os.Remove(file.Name())
-
-	cmd := exec.Command(file.Name())
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	err = cmd.Run()
 	return err
