@@ -59,6 +59,7 @@ func (s *Script) GetCommand() (*exec.Cmd, error) {
 
 	cmd := exec.Command(os.Args[0], args...)
 	cmd.Stderr = os.Stderr
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	return cmd, nil
 }
 
@@ -405,7 +406,6 @@ func (sc *ServiceCommand) StartAsync() error {
 		printResult("Failed", color.FgRed)
 		return errgo.Mask(err)
 	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, sc.Service.Env...)
 	err = cmd.Start()
@@ -439,16 +439,8 @@ func (sc *ServiceCommand) StartAsync() error {
 }
 
 func (sc *ServiceCommand) StopScript() error {
-
 	sc.printf("Running stop script for %v\n", sc.Service.Name)
-
-	cmd, err := sc.Scripts.Stop.GetCommand()
-	if err != nil {
-		return err
-	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	err = cmd.Run()
-	return err
+	return sc.Scripts.Stop.Run()
 }
 
 func (sc *ServiceCommand) clearPid() {
