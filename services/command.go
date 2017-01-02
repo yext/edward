@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -44,18 +43,17 @@ func (s *Script) WillRun() bool {
 	return s.Command != ""
 }
 
-func (s *Script) GetCommand() (*exec.Cmd, error) {
-	command, following, err := parseCommand(s.Command)
-	if err != nil {
-		return nil, err
-	}
+func (s *Script) GetCommand(logger common.Logger) (*exec.Cmd, error) {
 	args := []string{
 		"run",
 		s.Path,
 		s.Log,
-		command,
+		s.Command,
 	}
-	args = append(args, following...)
+
+	if logger != nil {
+		logger.Printf("Generating script command: %v %v", os.Args[0], args)
+	}
 
 	cmd := exec.Command(os.Args[0], args...)
 	cmd.Stderr = os.Stderr
@@ -63,75 +61,12 @@ func (s *Script) GetCommand() (*exec.Cmd, error) {
 	return cmd, nil
 }
 
-func (s *Script) Run() error {
-	cmd, err := s.GetCommand()
+func (s *Script) Run(logger common.Logger) error {
+	cmd, err := s.GetCommand(logger)
 	if err != nil {
 		return err
 	}
 	return cmd.Run()
-}
-
-// Returns the executable path and arguments
-// TODO: Clean this up
-func parseCommand(cmd string) (string, []string, error) {
-	var args []string
-	state := "start"
-	current := ""
-	quote := "\""
-	for i := 0; i < len(cmd); i++ {
-		c := cmd[i]
-
-		if state == "quotes" {
-			if string(c) != quote {
-				current += string(c)
-			} else {
-				args = append(args, current)
-				current = ""
-				state = "start"
-			}
-			continue
-		}
-
-		if c == '"' || c == '\'' {
-			state = "quotes"
-			quote = string(c)
-			continue
-		}
-
-		if state == "arg" {
-			if c == ' ' || c == '\t' {
-				args = append(args, current)
-				current = ""
-				state = "start"
-			} else {
-				current += string(c)
-			}
-			continue
-		}
-
-		if c != ' ' && c != '\t' {
-			state = "arg"
-			current += string(c)
-		}
-	}
-
-	if state == "quotes" {
-		return "", []string{}, errors.New(fmt.Sprintf("Unclosed quote in command line: %s", cmd))
-	}
-
-	if current != "" {
-		args = append(args, current)
-	}
-
-	if len(args) <= 0 {
-		return "", []string{}, errors.New("Empty command line")
-	}
-
-	if len(args) == 1 {
-		return args[0], []string{}, nil
-	}
-
-	return args[0], args[1:], nil
 }
 
 func (c *ServiceCommand) printf(format string, v ...interface{}) {
@@ -181,7 +116,7 @@ func (sc *ServiceCommand) BuildSync(force bool) error {
 		return nil
 	}
 
-	err := sc.Scripts.Build.Run()
+	err := sc.Scripts.Build.Run(sc.Logger)
 	if err != nil {
 		tracker.Fail(err)
 		return errgo.Mask(err)
@@ -401,7 +336,7 @@ func (sc *ServiceCommand) StartAsync() error {
 	// Clear logs
 	os.Remove(sc.Scripts.Launch.Log)
 
-	cmd, err := sc.Scripts.Launch.GetCommand()
+	cmd, err := sc.Scripts.Launch.GetCommand(sc.Logger)
 	if err != nil {
 		printResult("Failed", color.FgRed)
 		return errgo.Mask(err)
@@ -440,7 +375,7 @@ func (sc *ServiceCommand) StartAsync() error {
 
 func (sc *ServiceCommand) StopScript() error {
 	sc.printf("Running stop script for %v\n", sc.Service.Name)
-	return sc.Scripts.Stop.Run()
+	return sc.Scripts.Stop.Run(sc.Logger)
 }
 
 func (sc *ServiceCommand) clearPid() {
