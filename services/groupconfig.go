@@ -67,7 +67,7 @@ func (sg *ServiceGroupConfig) Start() error {
 }
 
 func (sg *ServiceGroupConfig) Launch() error {
-	println("Starting group:", sg.Name)
+	println("Launching group:", sg.Name)
 	for _, group := range sg.Groups {
 		err := group.Launch()
 		if err != nil {

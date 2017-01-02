@@ -186,11 +186,7 @@ func (sc *ServiceConfig) Launch() error {
 	if err != nil {
 		return errgo.Mask(err)
 	}
-	err = command.StartAsync()
-	if err != nil {
-		return errgo.Mask(err)
-	}
-	return nil
+	return errgo.Mask(command.StartAsync())
 }
 
 func (sc *ServiceConfig) Start() error {

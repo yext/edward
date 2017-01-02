@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/hpcloud/tail"
 	"github.com/juju/errgo"
 	"github.com/shirou/gopsutil/net"
@@ -56,6 +55,7 @@ func (s *Script) GetCommand(logger common.Logger) (*exec.Cmd, error) {
 	}
 
 	cmd := exec.Command(os.Args[0], args...)
+	// TODO: Cache all output from the command and output it on failure as needed
 	cmd.Stderr = os.Stderr
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	return cmd, nil
@@ -326,10 +326,13 @@ func (sc *ServiceCommand) StartAsync() error {
 	if sc.Service.LaunchChecks != nil && len(sc.Service.LaunchChecks.Ports) > 0 {
 		inUse, err := sc.areAnyListeningPortsOpen(sc.Service.LaunchChecks.Ports)
 		if err != nil {
+			tracker.Fail(err)
 			return errgo.Mask(err)
 		}
 		if inUse {
-			return errgo.New("one or more of the ports required by this service are in use")
+			inUseErr := errgo.New("one or more of the ports required by this service are in use")
+			tracker.Fail(inUseErr)
+			return inUseErr
 		}
 	}
 
@@ -338,14 +341,14 @@ func (sc *ServiceCommand) StartAsync() error {
 
 	cmd, err := sc.Scripts.Launch.GetCommand(sc.Logger)
 	if err != nil {
-		printResult("Failed", color.FgRed)
+		tracker.Fail(err)
 		return errgo.Mask(err)
 	}
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, sc.Service.Env...)
 	err = cmd.Start()
 	if err != nil {
-		printResult("Failed", color.FgRed)
+		tracker.Fail(err)
 		return errgo.Mask(err)
 	}
 
@@ -368,8 +371,11 @@ func (sc *ServiceCommand) StartAsync() error {
 		return nil
 	}
 
-	tracker.Fail(errgo.New("Timed Out"))
-	err = sc.Service.Stop()
+	tracker.Fail(err)
+	stopErr := sc.Service.Stop()
+	if stopErr != nil {
+		return errgo.Mask(stopErr)
+	}
 	return errgo.Mask(err)
 }
 
