@@ -620,8 +620,7 @@ func restart(c *cli.Context) error {
 		restartAll()
 		return nil
 	}
-	restartOneOrMoreServices(c.Args())
-	return nil
+	return restartOneOrMoreServices(c.Args())
 }
 
 func restartAll() error {
