@@ -109,7 +109,7 @@ func javaService(path, name string) *services.ServiceConfig {
 		Env:  []string{},
 		Commands: services.ServiceConfigCommands{
 			Build:  "python tools/icbm/build.py :" + name,
-			Launch: "JVM_ARGS='-Xmx3G' build/" + name + "/" + name,
+			Launch: "build/" + name + "/" + name,
 		},
 	}
 }

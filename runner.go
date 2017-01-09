@@ -20,9 +20,9 @@ func run(c *cli.Context) error {
 	if len(args) < 3 {
 		return errors.New("a directory, log file and command is required")
 	}
-	workingDir := args[0]
-	logFile := args[1]
-	fullCommand := args[2]
+	workingDir := os.ExpandEnv(args[0])
+	logFile := os.ExpandEnv(args[1])
+	fullCommand := os.ExpandEnv(args[2])
 
 	command, cmdArgs, err := parseCommand(fullCommand)
 	if err != nil {
