@@ -167,8 +167,8 @@ func main() {
 
 	warmup.Wait()
 
-	updateAvailable := (<-checkUpdateChan).(bool)
-	if updateAvailable {
+	updateAvailable, ok := (<-checkUpdateChan).(bool)
+	if ok && updateAvailable {
 		latestVersion := (<-checkUpdateChan).(string)
 		fmt.Printf("A new version of Edward is available (%v), update with:\n\tgo get -u github.com/yext/edward\n", latestVersion)
 	}
@@ -179,8 +179,7 @@ func checkUpdateAvailable(checkUpdateChan chan interface{}) {
 	defer close(checkUpdateChan)
 	updateAvailable, latestVersion, err := updates.UpdateAvailable("github.com/yext/edward", edwardVersion, filepath.Join(home.EdwardConfig.Dir, ".updatecache"), logger)
 	if err != nil {
-		fmt.Println(err)
-		logger.Println(err)
+		logger.Println("Error checking for updates:", err)
 		return
 	}
 
