@@ -674,6 +674,9 @@ func restartOneOrMoreServices(serviceNames []string) error {
 }
 
 func doLog(c *cli.Context) error {
+	if len(c.Args()) == 0 {
+		return errors.New("edward log requires a service name")
+	}
 	if len(c.Args()) > 1 {
 		return errors.New("Cannot output multiple service logs")
 	}
