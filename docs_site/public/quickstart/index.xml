@@ -2,25 +2,25 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Quickstarts on Edward Docs</title>
-    <link>https://yext.github.io/edward/quickstart/index.xml</link>
+    <link>http://engblog.yext.com/edward/quickstart/index.xml</link>
     <description>Recent content in Quickstarts on Edward Docs</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>Released under the MIT license</copyright>
     <lastBuildDate>Wed, 09 Mar 2016 00:11:02 +0100</lastBuildDate>
-    <atom:link href="https://yext.github.io/edward/quickstart/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://engblog.yext.com/edward/quickstart/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Getting started</title>
-      <link>https://yext.github.io/edward/quickstart/</link>
+      <link>http://engblog.yext.com/edward/quickstart/</link>
       <pubDate>Wed, 09 Mar 2016 00:11:02 +0100</pubDate>
       
-      <guid>https://yext.github.io/edward/quickstart/</guid>
+      <guid>http://engblog.yext.com/edward/quickstart/</guid>
       <description>
 
 &lt;h2 id=&#34;setup&#34;&gt;Setup&lt;/h2&gt;
 
-&lt;p&gt;Before starting with these instructions, make sure you&amp;rsquo;ve &lt;a href=&#34;https://yext.github.io/edward/installation/&#34;&gt;installed Edward&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Before starting with these instructions, make sure you&amp;rsquo;ve &lt;a href=&#34;http://engblog.yext.com/edward/installation/&#34;&gt;installed Edward&lt;/a&gt;.&lt;/p&gt;
 
 &lt;p&gt;To get you started with Edward, we&amp;rsquo;re going to create a few simple services
 and groups. Our example services will all be written in Go.&lt;/p&gt;

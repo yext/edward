@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Edward Docs</title>
-    <link>https://yext.github.io/edward/index.xml</link>
+    <link>http://engblog.yext.com/edward/index.xml</link>
     <description>Recent content on Edward Docs</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>Released under the MIT license</copyright>
     <lastBuildDate>Wed, 09 Mar 2016 00:11:02 +0100</lastBuildDate>
-    <atom:link href="https://yext.github.io/edward/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://engblog.yext.com/edward/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Getting started</title>
-      <link>https://yext.github.io/edward/installation/</link>
+      <link>http://engblog.yext.com/edward/installation/</link>
       <pubDate>Wed, 09 Mar 2016 00:11:02 +0100</pubDate>
       
-      <guid>https://yext.github.io/edward/installation/</guid>
+      <guid>http://engblog.yext.com/edward/installation/</guid>
       <description>
 
 &lt;h2 id=&#34;requirements&#34;&gt;Requirements&lt;/h2&gt;
@@ -45,15 +45,15 @@ advising you to update.&lt;/p&gt;
     
     <item>
       <title>Getting started</title>
-      <link>https://yext.github.io/edward/quickstart/</link>
+      <link>http://engblog.yext.com/edward/quickstart/</link>
       <pubDate>Wed, 09 Mar 2016 00:11:02 +0100</pubDate>
       
-      <guid>https://yext.github.io/edward/quickstart/</guid>
+      <guid>http://engblog.yext.com/edward/quickstart/</guid>
       <description>
 
 &lt;h2 id=&#34;setup&#34;&gt;Setup&lt;/h2&gt;
 
-&lt;p&gt;Before starting with these instructions, make sure you&amp;rsquo;ve &lt;a href=&#34;https://yext.github.io/edward/installation/&#34;&gt;installed Edward&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Before starting with these instructions, make sure you&amp;rsquo;ve &lt;a href=&#34;http://engblog.yext.com/edward/installation/&#34;&gt;installed Edward&lt;/a&gt;.&lt;/p&gt;
 
 &lt;p&gt;To get you started with Edward, we&amp;rsquo;re going to create a few simple services
 and groups. Our example services will all be written in Go.&lt;/p&gt;
@@ -325,10 +325,10 @@ the alias &lt;code&gt;edward tail&lt;/code&gt;.&lt;/p&gt;
     
     <item>
       <title>Roadmap</title>
-      <link>https://yext.github.io/edward/roadmap/</link>
+      <link>http://engblog.yext.com/edward/roadmap/</link>
       <pubDate>Wed, 09 Mar 2016 20:08:11 +0100</pubDate>
       
-      <guid>https://yext.github.io/edward/roadmap/</guid>
+      <guid>http://engblog.yext.com/edward/roadmap/</guid>
       <description>
 
 &lt;h2 id=&#34;planned-features&#34;&gt;Planned Features&lt;/h2&gt;
@@ -352,10 +352,10 @@ the alias &lt;code&gt;edward tail&lt;/code&gt;.&lt;/p&gt;
     
     <item>
       <title>License</title>
-      <link>https://yext.github.io/edward/license/</link>
+      <link>http://engblog.yext.com/edward/license/</link>
       <pubDate>Wed, 09 Mar 2016 20:10:46 +0100</pubDate>
       
-      <guid>https://yext.github.io/edward/license/</guid>
+      <guid>http://engblog.yext.com/edward/license/</guid>
       <description>&lt;p&gt;The MIT License (MIT)&lt;/p&gt;
 
 &lt;p&gt;Copyright &amp;copy; 2016 Yext&lt;/p&gt;
@@ -382,10 +382,10 @@ SOFTWARE.&lt;/p&gt;
     
     <item>
       <title>Autocompletion</title>
-      <link>https://yext.github.io/edward/autocompletion/</link>
+      <link>http://engblog.yext.com/edward/autocompletion/</link>
       <pubDate>Sun, 15 Jan 2017 22:29:28 -0500</pubDate>
       
-      <guid>https://yext.github.io/edward/autocompletion/</guid>
+      <guid>http://engblog.yext.com/edward/autocompletion/</guid>
       <description>&lt;p&gt;To enable bash autocompletion, create a file with the following:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code&gt;#! /bin/bash
@@ -415,10 +415,10 @@ _cli_bash_autocomplete() {
     
     <item>
       <title>Sudo</title>
-      <link>https://yext.github.io/edward/sudo/</link>
+      <link>http://engblog.yext.com/edward/sudo/</link>
       <pubDate>Sun, 15 Jan 2017 22:16:39 -0500</pubDate>
       
-      <guid>https://yext.github.io/edward/sudo/</guid>
+      <guid>http://engblog.yext.com/edward/sudo/</guid>
       <description>&lt;p&gt;Edward will not run if you try to launch it with sudo, but it may ask you to provide your password so that certain services can be run with elevated priviledges. The password request is triggered through a bash script that calls a command with sudo, to ensure that your bash session can make further sudo calls without prompting.&lt;/p&gt;
 
 &lt;p&gt;This has only been tested in one bash environment, so your mileage may vary. If services hang when starting (waiting for their log), this may be an indicator that they are waiting for a password prompt that isn&amp;rsquo;t redirected anywhere.&lt;/p&gt;
@@ -427,10 +427,10 @@ _cli_bash_autocomplete() {
     
     <item>
       <title>About Edward</title>
-      <link>https://yext.github.io/edward/</link>
+      <link>http://engblog.yext.com/edward/</link>
       <pubDate>Tue, 08 Mar 2016 21:07:13 +0100</pubDate>
       
-      <guid>https://yext.github.io/edward/</guid>
+      <guid>http://engblog.yext.com/edward/</guid>
       <description>
 
 &lt;p&gt;A command line tool for managing local instances of microservices.&lt;/p&gt;

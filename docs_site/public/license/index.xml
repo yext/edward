@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Licenses on Edward Docs</title>
-    <link>https://yext.github.io/edward/license/index.xml</link>
+    <link>http://engblog.yext.com/edward/license/index.xml</link>
     <description>Recent content in Licenses on Edward Docs</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>Released under the MIT license</copyright>
     <lastBuildDate>Wed, 09 Mar 2016 20:10:46 +0100</lastBuildDate>
-    <atom:link href="https://yext.github.io/edward/license/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://engblog.yext.com/edward/license/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>License</title>
-      <link>https://yext.github.io/edward/license/</link>
+      <link>http://engblog.yext.com/edward/license/</link>
       <pubDate>Wed, 09 Mar 2016 20:10:46 +0100</pubDate>
       
-      <guid>https://yext.github.io/edward/license/</guid>
+      <guid>http://engblog.yext.com/edward/license/</guid>
       <description>&lt;p&gt;The MIT License (MIT)&lt;/p&gt;
 
 &lt;p&gt;Copyright &amp;copy; 2016 Yext&lt;/p&gt;

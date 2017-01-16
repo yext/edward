@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Autocompletions on Edward Docs</title>
-    <link>https://yext.github.io/edward/autocompletion/index.xml</link>
+    <link>http://engblog.yext.com/edward/autocompletion/index.xml</link>
     <description>Recent content in Autocompletions on Edward Docs</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>Released under the MIT license</copyright>
     <lastBuildDate>Sun, 15 Jan 2017 22:29:28 -0500</lastBuildDate>
-    <atom:link href="https://yext.github.io/edward/autocompletion/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://engblog.yext.com/edward/autocompletion/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Autocompletion</title>
-      <link>https://yext.github.io/edward/autocompletion/</link>
+      <link>http://engblog.yext.com/edward/autocompletion/</link>
       <pubDate>Sun, 15 Jan 2017 22:29:28 -0500</pubDate>
       
-      <guid>https://yext.github.io/edward/autocompletion/</guid>
+      <guid>http://engblog.yext.com/edward/autocompletion/</guid>
       <description>&lt;p&gt;To enable bash autocompletion, create a file with the following:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code&gt;#! /bin/bash

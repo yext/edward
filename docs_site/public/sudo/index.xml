@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Sudos on Edward Docs</title>
-    <link>https://yext.github.io/edward/sudo/index.xml</link>
+    <link>http://engblog.yext.com/edward/sudo/index.xml</link>
     <description>Recent content in Sudos on Edward Docs</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>Released under the MIT license</copyright>
     <lastBuildDate>Sun, 15 Jan 2017 22:16:39 -0500</lastBuildDate>
-    <atom:link href="https://yext.github.io/edward/sudo/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://engblog.yext.com/edward/sudo/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Sudo</title>
-      <link>https://yext.github.io/edward/sudo/</link>
+      <link>http://engblog.yext.com/edward/sudo/</link>
       <pubDate>Sun, 15 Jan 2017 22:16:39 -0500</pubDate>
       
-      <guid>https://yext.github.io/edward/sudo/</guid>
+      <guid>http://engblog.yext.com/edward/sudo/</guid>
       <description>&lt;p&gt;Edward will not run if you try to launch it with sudo, but it may ask you to provide your password so that certain services can be run with elevated priviledges. The password request is triggered through a bash script that calls a command with sudo, to ensure that your bash session can make further sudo calls without prompting.&lt;/p&gt;
 
 &lt;p&gt;This has only been tested in one bash environment, so your mileage may vary. If services hang when starting (waiting for their log), this may be an indicator that they are waiting for a password prompt that isn&amp;rsquo;t redirected anywhere.&lt;/p&gt;

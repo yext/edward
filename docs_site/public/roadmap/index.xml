@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Roadmaps on Edward Docs</title>
-    <link>https://yext.github.io/edward/roadmap/index.xml</link>
+    <link>http://engblog.yext.com/edward/roadmap/index.xml</link>
     <description>Recent content in Roadmaps on Edward Docs</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>Released under the MIT license</copyright>
     <lastBuildDate>Wed, 09 Mar 2016 20:08:11 +0100</lastBuildDate>
-    <atom:link href="https://yext.github.io/edward/roadmap/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://engblog.yext.com/edward/roadmap/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Roadmap</title>
-      <link>https://yext.github.io/edward/roadmap/</link>
+      <link>http://engblog.yext.com/edward/roadmap/</link>
       <pubDate>Wed, 09 Mar 2016 20:08:11 +0100</pubDate>
       
-      <guid>https://yext.github.io/edward/roadmap/</guid>
+      <guid>http://engblog.yext.com/edward/roadmap/</guid>
       <description>
 
 &lt;h2 id=&#34;planned-features&#34;&gt;Planned Features&lt;/h2&gt;

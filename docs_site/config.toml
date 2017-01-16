@@ -1,4 +1,4 @@
-baseurl = "https://yext.github.io/edward"
+baseurl = "http://engblog.yext.com/edward/"
 languageCode = "en-us"
 title = "Edward Docs"
 theme = "hugo-material-docs"
