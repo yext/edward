@@ -14,4 +14,4 @@ docs:
 	cd docs_site && hugo
 
 pushdocs:
-	./push_docs.sh
+	git subtree push --prefix docs_site/public origin gh-pages
