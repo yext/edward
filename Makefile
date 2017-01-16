@@ -9,3 +9,6 @@ build:
 test:
 	go test ./generators
 	go test ./config
+
+docs:
+	./push_docs.sh
