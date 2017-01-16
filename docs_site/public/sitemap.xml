@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <url>
+    <loc>https://yext.github.io/edward/installation/</loc>
+    <lastmod>2016-03-09T00:11:02+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://yext.github.io/edward/quickstart/</loc>
+    <lastmod>2016-03-09T00:11:02+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://yext.github.io/edward/roadmap/</loc>
+    <lastmod>2016-03-09T20:08:11+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://yext.github.io/edward/license/</loc>
+    <lastmod>2016-03-09T20:10:46+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://yext.github.io/edward/autocompletion/</loc>
+    <lastmod>2017-01-15T22:29:28-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://yext.github.io/edward/sudo/</loc>
+    <lastmod>2017-01-15T22:16:39-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://yext.github.io/edward/</loc>
+    <lastmod>2016-03-08T21:07:13+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://yext.github.io/edward/autocompletion/</loc>
+    <lastmod>2017-01-15T22:29:28-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://yext.github.io/edward/</loc>
+    <lastmod>2016-03-09T00:11:02+01:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://yext.github.io/edward/installation/</loc>
+    <lastmod>2016-03-09T00:11:02+01:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://yext.github.io/edward/license/</loc>
+    <lastmod>2016-03-09T20:10:46+01:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://yext.github.io/edward/quickstart/</loc>
+    <lastmod>2016-03-09T00:11:02+01:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://yext.github.io/edward/roadmap/</loc>
+    <lastmod>2016-03-09T20:08:11+01:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://yext.github.io/edward/sudo/</loc>
+    <lastmod>2017-01-15T22:16:39-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+</urlset>

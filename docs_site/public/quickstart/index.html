@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+  
+  
+  
+  
+   <html class="no-js"> 
+
+  <head lang="en-us">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=10" />
+    <title>Getting started - Edward Docs</title>
+    <meta name="generator" content="Hugo 0.18.1" />
+
+    
+    <meta name="description" content="A command line tool for managing local instances of microservices.">
+    
+    <link rel="canonical" href="https://yext.github.io/edward/quickstart/">
+    
+    <meta name="author" content="Tom Elliott">
+    
+
+    <meta property="og:url" content="https://yext.github.io/edward/quickstart/">
+    <meta property="og:title" content="Edward Docs">
+    
+    <meta name="apple-mobile-web-app-title" content="Edward Docs">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link rel="shortcut icon" type="image/x-icon" href="https://yext.github.io/edward/images/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="https://yext.github.io/edward/images/favicon.ico">
+
+    <style>
+      @font-face {
+        font-family: 'Icon';
+        src: url('https://yext.github.io/edward/fonts/icon.eot');
+        src: url('https://yext.github.io/edward/fonts/icon.eot')
+               format('embedded-opentype'),
+             url('https://yext.github.io/edward/fonts/icon.woff')
+               format('woff'),
+             url('https://yext.github.io/edward/fonts/icon.ttf')
+               format('truetype'),
+             url('https://yext.github.io/edward/fonts/icon.svg')
+               format('svg');
+        font-weight: normal;
+        font-style: normal;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://yext.github.io/edward/stylesheets/application.css">
+    <link rel="stylesheet" href="https://yext.github.io/edward/stylesheets/temporary.css">
+    <link rel="stylesheet" href="https://yext.github.io/edward/stylesheets/palettes.css">
+    <link rel="stylesheet" href="https://yext.github.io/edward/stylesheets/highlight/highlight.css">
+
+    
+    
+    
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Ubuntu:400,700|Ubuntu&#43;Mono">
+    <style>
+      body, input {
+        font-family: 'Ubuntu', Helvetica, Arial, sans-serif;
+      }
+      pre, code {
+        font-family: 'Ubuntu Mono', 'Courier New', 'Courier', monospace;
+      }
+    </style>
+
+    
+    <script src="https://yext.github.io/edward/javascripts/modernizr.js"></script>
+
+    
+
+  </head>
+  <body class="palette-primary-indigo palette-accent-blue">
+
+
+
+	
+	
+
+
+<div class="backdrop">
+	<div class="backdrop-paper"></div>
+</div>
+
+<input class="toggle" type="checkbox" id="toggle-drawer">
+<input class="toggle" type="checkbox" id="toggle-search">
+<label class="toggle-button overlay" for="toggle-drawer"></label>
+
+<header class="header">
+	<nav aria-label="Header">
+  <div class="bar default">
+    <div class="button button-menu" role="button" aria-label="Menu">
+      <label class="toggle-button icon icon-menu" for="toggle-drawer">
+        <span></span>
+      </label>
+    </div>
+    <div class="stretch">
+      <div class="title">
+        Getting started
+      </div>
+    </div>
+
+    
+
+    
+    <div class="button button-github" role="button" aria-label="GitHub">
+      <a href="https://github.com/yext" title="@yext on GitHub" target="_blank" class="toggle-button icon icon-github"></a>
+    </div>
+    
+    
+        
+  </div>
+  <div class="bar search">
+    <div class="button button-close" role="button" aria-label="Close">
+      <label class="toggle-button icon icon-back" for="toggle-search"></label>
+    </div>
+    <div class="stretch">
+      <div class="field">
+        <input class="query" type="text" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck>
+      </div>
+    </div>
+    <div class="button button-reset" role="button" aria-label="Search">
+      <button class="toggle-button icon icon-close" id="reset-search"></button>
+    </div>
+  </div>
+</nav>
+</header>
+
+<main class="main">
+	<div class="drawer">
+		<nav aria-label="Navigation">
+  <a href="https://github.com/yext/edward" class="project">
+    <div class="banner">
+      
+      <div class="name">
+        <strong>Edward Docs <span class="version">1.6.2</span></strong>
+        
+          <br>
+          yext/edward
+        
+      </div>
+    </div>
+  </a>
+
+  <div class="scrollable">
+    <div class="wrapper">
+      
+        <ul class="repo">
+          <li class="repo-download">
+            <a href="https://github.com/yext/edward/archive/master.zip" target="_blank" title="Download" data-action="download">
+              <i class="icon icon-download"></i> Download
+            </a>
+          </li>
+          <li class="repo-stars">
+            <a href="https://github.com/yext/edward/stargazers" target="_blank" title="Stargazers" data-action="star">
+              <i class="icon icon-star"></i> Stars
+              <span class="count">&ndash;</span>
+            </a>
+          </li>
+        </ul>
+        <hr>
+      
+
+      <div class="toc">
+        
+        <ul>
+          
+
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="About Edward" href="https://yext.github.io/edward/">
+	
+	About Edward
+</a>
+
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="Installation" href="https://yext.github.io/edward/installation/">
+	
+	Installation
+</a>
+
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a class="current" title="Quickstart" href="https://yext.github.io/edward/quickstart/">
+	
+	Quickstart
+</a>
+
+
+<ul id="scrollspy">
+</ul>
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="Autocompletion" href="https://yext.github.io/edward/autocompletion/">
+	
+	Autocompletion
+</a>
+
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="Sudo" href="https://yext.github.io/edward/sudo/">
+	
+	Sudo
+</a>
+
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="Roadmap" href="https://yext.github.io/edward/roadmap/">
+	
+	Roadmap
+</a>
+
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="License" href="https://yext.github.io/edward/license/">
+	
+	License
+</a>
+
+
+
+  
+</li>
+
+
+        </ul>
+        
+
+        
+        <hr>
+        <span class="section">The author</span>
+        
+        <ul>
+          
+
+          
+          <li>
+            <a href="https://github.com/yext" target="_blank" title="@yext on GitHub">
+              @yext on GitHub
+            </a>
+          </li>
+          
+
+          
+          <li>
+            <a href="mailto:telliott@yext.com" title="Email of telliott@yext.com">
+              Contact via email
+            </a>
+          </li>
+          
+        </ul>
+        
+      </div>
+    </div>
+  </div>
+</nav>
+
+	</div>
+
+	<article class="article">
+		<div class="wrapper">
+			<h1>Getting started </h1>
+
+			
+
+<h2 id="setup">Setup</h2>
+
+<p>Before starting with these instructions, make sure you&rsquo;ve <a href="https://yext.github.io/edward/installation/">installed Edward</a>.</p>
+
+<p>To get you started with Edward, we&rsquo;re going to create a few simple services
+and groups. Our example services will all be written in Go.</p>
+
+<p>These instructions assume a bash terminal.</p>
+
+<p>First off, let&rsquo;s create a parent folder for our services. This is where the Edward
+config file will live. In your <em>GOPATH</em>, create a folder called <em>edward_quickstart</em>:</p>
+
+<pre><code class="language-sh">mkdir $GOPATH/edward_quickstart
+</code></pre>
+
+<p>If you prefer, you can also create this folder under your GitHub username, to fit
+in with your other projects: <em>$GOPATH/github.com/user/edward_quickstart</em>. The
+following instructions will assume <em>$GOPATH/edward_quickstart</em> for brevity.</p>
+
+<h2 id="creating-your-first-service">Creating Your First Service</h2>
+
+<p>Your first service will be a classic &ldquo;Hello, world!&rdquo; HTTP server.
+This service will sit under <em>edward_quickstart</em> and will consist of a single file,
+<em>main.go</em>. Let&rsquo;s create that directory and file now:</p>
+
+<pre><code class="language-sh">mkdir $GOPATH/edward_quickstart/hello
+touch $GOPATH/edward_quickstart/hello/main.go
+</code></pre>
+
+<p>Open the main.go file you just created and add this code:</p>
+
+<pre><code class="language-go">package main
+
+import (
+	&quot;flag&quot;
+	&quot;fmt&quot;
+	&quot;net/http&quot;
+)
+
+var port = flag.Int(&quot;port&quot;, 8080, &quot;Port number for service&quot;)
+
+func main() {
+	flag.Parse()
+	http.HandleFunc(&quot;/&quot;, func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, &quot;Hello, world!&quot;)
+	})
+	http.ListenAndServe(fmt.Sprintf(&quot;:%v&quot;, *port), nil)
+}
+</code></pre>
+
+<p>This service will listen on port 8080 by default, and return &ldquo;Hello, world!&rdquo; in
+the body of every response. But we&rsquo;re not going to run it quite yet, first we&rsquo;re
+going to generate a config so we can launch this service with Edward.</p>
+
+<h2 id="generating-an-edward-config">Generating an Edward Config</h2>
+
+<p>Edward includes a generator for go services which will automatically create config
+for any go services found under the current working directory. If we run <code>edward generate</code>
+it will create a config for our new service:</p>
+
+<pre><code class="language-sh">cd $GOPATH/edward_quickstart/hello
+edward generate
+</code></pre>
+
+<p>You will see a message letting you know that config for the service <em>hello</em> will
+be generated and you will be asked to confirm. Type <code>y</code> to confirm.</p>
+
+<p>A file called <em>edward.json</em> will be created in the <em>hello</em> directory. You can check
+that <em>hello</em> is available as a service by listing all available services.</p>
+
+<pre><code class="language-sh">edward list
+</code></pre>
+
+<p>You should see a list that only includes the <em>hello</em> service.</p>
+
+<h2 id="starting-your-service">Starting your Service</h2>
+
+<p>Now we have our configuration set up, we can run the hello service with this command:</p>
+
+<pre><code class="language-sh">edward start hello
+</code></pre>
+
+<p>This will build and launch the hello service. Once the command completes, open
+a browser and go to <em><a href="http://localhost:8080/">http://localhost:8080/</a></em>, you should see the message
+<strong>Hello, world!</strong>.</p>
+
+<h2 id="stopping-your-service">Stopping your Service</h2>
+
+<p>Your service is now running in the background, you can stop it with the <code>stop</code> command:</p>
+
+<pre><code class="language-sh">edward stop hello
+</code></pre>
+
+<p>If you now try to browse to <em><a href="http://localhost:8080/">http://localhost:8080/</a></em>, you will see an error message,
+as the server is no longer running.</p>
+
+<p>When running more than one service, you can stop all services at once with <code>edward stop</code>.</p>
+
+<h2 id="restarting-your-service">Restarting your Service</h2>
+
+<p>If you&rsquo;ve made changes to a service, you can restart it to trigger a rebuild.
+To try this out, first start the service again.</p>
+
+<pre><code class="language-sh">edward start hello
+</code></pre>
+
+<p>Now, while the service is running, open the <em>main.go</em> file you created earlier, and change:</p>
+
+<pre><code class="language-go">fmt.Fprintf(w, &quot;Hello, world!&quot;)
+</code></pre>
+
+<p>to:</p>
+
+<pre><code class="language-go">fmt.Fprintf(w, &quot;Greetings, world!&quot;)
+</code></pre>
+
+<p>To apply this change to your service, run the command:</p>
+
+<pre><code class="language-sh">edward restart hello
+</code></pre>
+
+<p>This will stop the service, then build and launch it again. If you browse to
+<em><a href="http://localhost:8080/">http://localhost:8080/</a></em> again, you will see that the message has changed to <em>Greetings, world!</em>.</p>
+
+<h2 id="modifying-the-edward-config">Modifying the Edward Config</h2>
+
+<p>The Edward config you generated can be found at <em>$GOPATH/edward_quickstart/edward.json</em>.
+We&rsquo;re going to edit this file to have the hello service listen on a different port.</p>
+
+<p>Open <em>edward.json</em>, you will see the hello service defined as the only entry in the <em>services</em> array.
+Under <em>commands</em>, you will see two string values, <em>build</em> and <em>launch</em>.
+These define the commands used to build and launch your service, respectively.</p>
+
+<p>We&rsquo;re going to change the launch command to use a different port. Change:</p>
+
+<pre><code class="language-json">&quot;launch&quot;: &quot;hello&quot;
+</code></pre>
+
+<p>To:</p>
+
+<pre><code class="language-json">&quot;launch&quot;: &quot;hello -port=8081&quot;
+</code></pre>
+
+<p>Save the config file, and restart the hello service as you did earlier.</p>
+
+<p>The URL <em><a href="http://localhost:8080/">http://localhost:8080/</a></em> will now no longer work, but <em><a href="http://localhost:8081/">http://localhost:8081/</a></em>
+will show the message as expected.</p>
+
+<h2 id="adding-a-second-service">Adding a Second Service</h2>
+
+<p>To complement the hello service, let&rsquo;s add a goodbye service. First, create a directory
+and source file:</p>
+
+<pre><code class="language-sh">mkdir $GOPATH/edward_quickstart/goodbye
+touch $GOPATH/edward_quickstart/goodbye/main.go
+</code></pre>
+
+<p>Edit <em>$GOPATH/edward_quickstart/goodbye/main.go</em> and add the following code:</p>
+
+<pre><code class="language-go">package main
+
+import (
+	&quot;flag&quot;
+	&quot;fmt&quot;
+	&quot;net/http&quot;
+)
+
+var port = flag.Int(&quot;port&quot;, 8082, &quot;Port number for service&quot;)
+
+func main() {
+	flag.Parse()
+	http.HandleFunc(&quot;/&quot;, func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, &quot;Goodbye, world!&quot;)
+    fmt.Println(&quot;Received request&quot;)
+	})
+	http.ListenAndServe(fmt.Sprintf(&quot;:%v&quot;, *port), nil)
+}
+</code></pre>
+
+<p>If you run <code>edward generate</code> now, it will create the goodbye service (you may be
+prompted for both services, don&rsquo;t worry, just confirm), but the hello service&rsquo;s
+config will not be changed.</p>
+
+<p>Run <code>edward list</code> to confirm that both services are available.</p>
+
+<p>We can start our new service in the same way we started hello:</p>
+
+<pre><code class="language-sh">edward start goodbye
+</code></pre>
+
+<p>And can view the goodbye message at <em><a href="http://localhost:8082/">http://localhost:8082/</a></em>.</p>
+
+<p>We can also start both services at once. First, stop everything by running <code>edward stop</code>.
+Then run a start command specifying both services.</p>
+
+<pre><code class="language-sh">edward start hello goodbye
+</code></pre>
+
+<p>Both services will now be running. You can test at their URLs, but you can also
+see a summary of all your running services with:</p>
+
+<pre><code class="language-sh">edward status
+</code></pre>
+
+<p>This will show that both services are running, along with the port on which they are running, which
+should be 8081 for hello and 8082 for goodbye.</p>
+
+<h2 id="creating-a-group">Creating a Group</h2>
+
+<p>Specifying every service you want to start can be useful for one or two services,
+but can get tedious for more complicated setups.</p>
+
+<p>To simplify the workflow, you can create groups of services which can be started
+all at once from a single name.</p>
+
+<p>Open your <em>edward.json</em> file and add a <em>groups</em> array as follows:</p>
+
+<pre><code class="language-json">{
+    &quot;groups&quot;: [
+      {
+        &quot;name&quot;: &quot;salutations&quot;,
+        &quot;children&quot;: [&quot;hello&quot;, &quot;goodbye&quot;]
+      }
+    ],
+    &quot;services&quot;: [
+      ...
+    ]
+}
+</code></pre>
+
+<p>Save the file and you will now see <em>salutations</em> under the groups list when
+you run <code>edward list</code>.</p>
+
+<p>Stop any running services, then start the group:</p>
+
+<pre><code class="language-sh">edward start salutations
+</code></pre>
+
+<p>This will build and launch both services, which you can confirm with <code>edward status</code>.</p>
+
+<h2 id="viewing-logs">Viewing Logs</h2>
+
+<p>For debugging, you&rsquo;ll need to be able to view the output from your services. You can
+follow the output from one service using the <code>log</code> command.</p>
+
+<p>Make sure your services are still running, and run the log command to see the output for
+the goodbye service:</p>
+
+<pre><code class="language-sh">edward log goodbye
+</code></pre>
+
+<p>This will begin following the output from goodbye. If you visit <em><a href="http://localhost:8082/">http://localhost:8082/</a></em>,
+you will see the message &ldquo;Received request&rdquo; in the output. You can stop following
+the log by pressing <code>Ctrl+c</code> to interrupt the command.</p>
+
+<p>Running <code>edward log</code> will show both standard and error output. You can also use
+the alias <code>edward tail</code>.</p>
+
+<h2 id="summary">Summary</h2>
+
+<p>After this guide, you should now be able to use Edward to:</p>
+
+<ul>
+<li>Start, stop and restart services and groups</li>
+<li>Generate config for go services</li>
+<li>Set up groups</li>
+<li>View service status</li>
+<li>Follow service output</li>
+</ul>
+
+
+			<aside class="copyright" role="note">
+				
+				&copy; 2017 Released under the MIT license &ndash;
+				
+				Documentation built with
+				<a href="https://www.gohugo.io" target="_blank">Hugo</a>
+				using the
+				<a href="http://github.com/digitalcraftsman/hugo-material-docs" target="_blank">Material</a> theme.
+			</aside>
+
+			<footer class="footer">
+				
+
+<nav class="pagination" aria-label="Footer">
+  <div class="previous">
+  
+      <a href="https://yext.github.io/edward/installation/" title="Getting started">
+        <span class="direction">
+          Previous
+        </span>
+        <div class="page">
+          <div class="button button-previous" role="button" aria-label="Previous">
+            <i class="icon icon-back"></i>
+          </div>
+          <div class="stretch">
+            <div class="title">
+              Getting started
+            </div>
+          </div>
+        </div>
+      </a>
+  
+  </div>
+
+  <div class="next">
+  
+      <a href="https://yext.github.io/edward/roadmap/" title="Roadmap">
+        <span class="direction">
+          Next
+        </span>
+        <div class="page">
+          <div class="stretch">
+            <div class="title">
+              Roadmap
+            </div>
+          </div>
+          <div class="button button-next" role="button" aria-label="Next">
+            <i class="icon icon-forward"></i>
+          </div>
+        </div>
+      </a>
+  
+  </div>
+</nav>
+
+
+
+
+
+			</footer>
+		</div>
+	</article>
+
+	<div class="results" role="status" aria-live="polite">
+		<div class="scrollable">
+			<div class="wrapper">
+				<div class="meta"></div>
+				<div class="list"></div>
+			</div>
+		</div>
+	</div>
+</main>
+
+    <script>
+    
+      var base_url = 'https:\/\/yext.github.io\/edward';
+      var repo_id  = 'yext\/edward';
+    
+    </script>
+
+    <script src="https://yext.github.io/edward/javascripts/application.js"></script>
+    
+
+    <script>
+      /* Add headers to scrollspy */
+      var headers   = document.getElementsByTagName("h2");
+      var scrollspy = document.getElementById('scrollspy');
+
+      if(scrollspy) {
+        if(headers.length > 0) {
+          for(var i = 0; i < headers.length; i++) {
+            var li = document.createElement("li");
+            li.setAttribute("class", "anchor");
+
+            var a  = document.createElement("a");
+            a.setAttribute("href", "#" + headers[i].id);
+            a.setAttribute("title", headers[i].innerHTML);
+            a.innerHTML = headers[i].innerHTML;
+
+            li.appendChild(a)
+            scrollspy.appendChild(li);
+          }
+        } else {
+          scrollspy.parentElement.removeChild(scrollspy)
+        }
+
+
+        /* Add permanent link next to the headers */
+        var headers = document.querySelectorAll("h1, h2, h3, h4, h5, h6");
+
+        for(var i = 0; i < headers.length; i++) {
+            var a = document.createElement("a");
+            a.setAttribute("class", "headerlink");
+            a.setAttribute("href", "#" + headers[i].id);
+            a.setAttribute("title", "Permanent link")
+            a.innerHTML = "#";
+            headers[i].appendChild(a);
+        }
+      }
+    </script>
+
+    
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+  </body>
+</html>
+

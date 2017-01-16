@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Quickstarts on Edward Docs</title>
+    <link>https://yext.github.io/edward/quickstart/index.xml</link>
+    <description>Recent content in Quickstarts on Edward Docs</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>Released under the MIT license</copyright>
+    <lastBuildDate>Wed, 09 Mar 2016 00:11:02 +0100</lastBuildDate>
+    <atom:link href="https://yext.github.io/edward/quickstart/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Getting started</title>
+      <link>https://yext.github.io/edward/quickstart/</link>
+      <pubDate>Wed, 09 Mar 2016 00:11:02 +0100</pubDate>
+      
+      <guid>https://yext.github.io/edward/quickstart/</guid>
+      <description>
+
+&lt;h2 id=&#34;setup&#34;&gt;Setup&lt;/h2&gt;
+
+&lt;p&gt;Before starting with these instructions, make sure you&amp;rsquo;ve &lt;a href=&#34;https://yext.github.io/edward/installation/&#34;&gt;installed Edward&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;To get you started with Edward, we&amp;rsquo;re going to create a few simple services
+and groups. Our example services will all be written in Go.&lt;/p&gt;
+
+&lt;p&gt;These instructions assume a bash terminal.&lt;/p&gt;
+
+&lt;p&gt;First off, let&amp;rsquo;s create a parent folder for our services. This is where the Edward
+config file will live. In your &lt;em&gt;GOPATH&lt;/em&gt;, create a folder called &lt;em&gt;edward_quickstart&lt;/em&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;mkdir $GOPATH/edward_quickstart
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If you prefer, you can also create this folder under your GitHub username, to fit
+in with your other projects: &lt;em&gt;$GOPATH/github.com/user/edward_quickstart&lt;/em&gt;. The
+following instructions will assume &lt;em&gt;$GOPATH/edward_quickstart&lt;/em&gt; for brevity.&lt;/p&gt;
+
+&lt;h2 id=&#34;creating-your-first-service&#34;&gt;Creating Your First Service&lt;/h2&gt;
+
+&lt;p&gt;Your first service will be a classic &amp;ldquo;Hello, world!&amp;rdquo; HTTP server.
+This service will sit under &lt;em&gt;edward_quickstart&lt;/em&gt; and will consist of a single file,
+&lt;em&gt;main.go&lt;/em&gt;. Let&amp;rsquo;s create that directory and file now:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;mkdir $GOPATH/edward_quickstart/hello
+touch $GOPATH/edward_quickstart/hello/main.go
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Open the main.go file you just created and add this code:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;package main
+
+import (
+	&amp;quot;flag&amp;quot;
+	&amp;quot;fmt&amp;quot;
+	&amp;quot;net/http&amp;quot;
+)
+
+var port = flag.Int(&amp;quot;port&amp;quot;, 8080, &amp;quot;Port number for service&amp;quot;)
+
+func main() {
+	flag.Parse()
+	http.HandleFunc(&amp;quot;/&amp;quot;, func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, &amp;quot;Hello, world!&amp;quot;)
+	})
+	http.ListenAndServe(fmt.Sprintf(&amp;quot;:%v&amp;quot;, *port), nil)
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This service will listen on port 8080 by default, and return &amp;ldquo;Hello, world!&amp;rdquo; in
+the body of every response. But we&amp;rsquo;re not going to run it quite yet, first we&amp;rsquo;re
+going to generate a config so we can launch this service with Edward.&lt;/p&gt;
+
+&lt;h2 id=&#34;generating-an-edward-config&#34;&gt;Generating an Edward Config&lt;/h2&gt;
+
+&lt;p&gt;Edward includes a generator for go services which will automatically create config
+for any go services found under the current working directory. If we run &lt;code&gt;edward generate&lt;/code&gt;
+it will create a config for our new service:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;cd $GOPATH/edward_quickstart/hello
+edward generate
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;You will see a message letting you know that config for the service &lt;em&gt;hello&lt;/em&gt; will
+be generated and you will be asked to confirm. Type &lt;code&gt;y&lt;/code&gt; to confirm.&lt;/p&gt;
+
+&lt;p&gt;A file called &lt;em&gt;edward.json&lt;/em&gt; will be created in the &lt;em&gt;hello&lt;/em&gt; directory. You can check
+that &lt;em&gt;hello&lt;/em&gt; is available as a service by listing all available services.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;edward list
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;You should see a list that only includes the &lt;em&gt;hello&lt;/em&gt; service.&lt;/p&gt;
+
+&lt;h2 id=&#34;starting-your-service&#34;&gt;Starting your Service&lt;/h2&gt;
+
+&lt;p&gt;Now we have our configuration set up, we can run the hello service with this command:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;edward start hello
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This will build and launch the hello service. Once the command completes, open
+a browser and go to &lt;em&gt;&lt;a href=&#34;http://localhost:8080/&#34;&gt;http://localhost:8080/&lt;/a&gt;&lt;/em&gt;, you should see the message
+&lt;strong&gt;Hello, world!&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;h2 id=&#34;stopping-your-service&#34;&gt;Stopping your Service&lt;/h2&gt;
+
+&lt;p&gt;Your service is now running in the background, you can stop it with the &lt;code&gt;stop&lt;/code&gt; command:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;edward stop hello
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If you now try to browse to &lt;em&gt;&lt;a href=&#34;http://localhost:8080/&#34;&gt;http://localhost:8080/&lt;/a&gt;&lt;/em&gt;, you will see an error message,
+as the server is no longer running.&lt;/p&gt;
+
+&lt;p&gt;When running more than one service, you can stop all services at once with &lt;code&gt;edward stop&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&#34;restarting-your-service&#34;&gt;Restarting your Service&lt;/h2&gt;
+
+&lt;p&gt;If you&amp;rsquo;ve made changes to a service, you can restart it to trigger a rebuild.
+To try this out, first start the service again.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;edward start hello
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now, while the service is running, open the &lt;em&gt;main.go&lt;/em&gt; file you created earlier, and change:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;fmt.Fprintf(w, &amp;quot;Hello, world!&amp;quot;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;to:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;fmt.Fprintf(w, &amp;quot;Greetings, world!&amp;quot;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;To apply this change to your service, run the command:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;edward restart hello
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This will stop the service, then build and launch it again. If you browse to
+&lt;em&gt;&lt;a href=&#34;http://localhost:8080/&#34;&gt;http://localhost:8080/&lt;/a&gt;&lt;/em&gt; again, you will see that the message has changed to &lt;em&gt;Greetings, world!&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h2 id=&#34;modifying-the-edward-config&#34;&gt;Modifying the Edward Config&lt;/h2&gt;
+
+&lt;p&gt;The Edward config you generated can be found at &lt;em&gt;$GOPATH/edward_quickstart/edward.json&lt;/em&gt;.
+We&amp;rsquo;re going to edit this file to have the hello service listen on a different port.&lt;/p&gt;
+
+&lt;p&gt;Open &lt;em&gt;edward.json&lt;/em&gt;, you will see the hello service defined as the only entry in the &lt;em&gt;services&lt;/em&gt; array.
+Under &lt;em&gt;commands&lt;/em&gt;, you will see two string values, &lt;em&gt;build&lt;/em&gt; and &lt;em&gt;launch&lt;/em&gt;.
+These define the commands used to build and launch your service, respectively.&lt;/p&gt;
+
+&lt;p&gt;We&amp;rsquo;re going to change the launch command to use a different port. Change:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;launch&amp;quot;: &amp;quot;hello&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;To:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;launch&amp;quot;: &amp;quot;hello -port=8081&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Save the config file, and restart the hello service as you did earlier.&lt;/p&gt;
+
+&lt;p&gt;The URL &lt;em&gt;&lt;a href=&#34;http://localhost:8080/&#34;&gt;http://localhost:8080/&lt;/a&gt;&lt;/em&gt; will now no longer work, but &lt;em&gt;&lt;a href=&#34;http://localhost:8081/&#34;&gt;http://localhost:8081/&lt;/a&gt;&lt;/em&gt;
+will show the message as expected.&lt;/p&gt;
+
+&lt;h2 id=&#34;adding-a-second-service&#34;&gt;Adding a Second Service&lt;/h2&gt;
+
+&lt;p&gt;To complement the hello service, let&amp;rsquo;s add a goodbye service. First, create a directory
+and source file:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;mkdir $GOPATH/edward_quickstart/goodbye
+touch $GOPATH/edward_quickstart/goodbye/main.go
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Edit &lt;em&gt;$GOPATH/edward_quickstart/goodbye/main.go&lt;/em&gt; and add the following code:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;package main
+
+import (
+	&amp;quot;flag&amp;quot;
+	&amp;quot;fmt&amp;quot;
+	&amp;quot;net/http&amp;quot;
+)
+
+var port = flag.Int(&amp;quot;port&amp;quot;, 8082, &amp;quot;Port number for service&amp;quot;)
+
+func main() {
+	flag.Parse()
+	http.HandleFunc(&amp;quot;/&amp;quot;, func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, &amp;quot;Goodbye, world!&amp;quot;)
+    fmt.Println(&amp;quot;Received request&amp;quot;)
+	})
+	http.ListenAndServe(fmt.Sprintf(&amp;quot;:%v&amp;quot;, *port), nil)
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If you run &lt;code&gt;edward generate&lt;/code&gt; now, it will create the goodbye service (you may be
+prompted for both services, don&amp;rsquo;t worry, just confirm), but the hello service&amp;rsquo;s
+config will not be changed.&lt;/p&gt;
+
+&lt;p&gt;Run &lt;code&gt;edward list&lt;/code&gt; to confirm that both services are available.&lt;/p&gt;
+
+&lt;p&gt;We can start our new service in the same way we started hello:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;edward start goodbye
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;And can view the goodbye message at &lt;em&gt;&lt;a href=&#34;http://localhost:8082/&#34;&gt;http://localhost:8082/&lt;/a&gt;&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;We can also start both services at once. First, stop everything by running &lt;code&gt;edward stop&lt;/code&gt;.
+Then run a start command specifying both services.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;edward start hello goodbye
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Both services will now be running. You can test at their URLs, but you can also
+see a summary of all your running services with:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;edward status
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This will show that both services are running, along with the port on which they are running, which
+should be 8081 for hello and 8082 for goodbye.&lt;/p&gt;
+
+&lt;h2 id=&#34;creating-a-group&#34;&gt;Creating a Group&lt;/h2&gt;
+
+&lt;p&gt;Specifying every service you want to start can be useful for one or two services,
+but can get tedious for more complicated setups.&lt;/p&gt;
+
+&lt;p&gt;To simplify the workflow, you can create groups of services which can be started
+all at once from a single name.&lt;/p&gt;
+
+&lt;p&gt;Open your &lt;em&gt;edward.json&lt;/em&gt; file and add a &lt;em&gt;groups&lt;/em&gt; array as follows:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;groups&amp;quot;: [
+      {
+        &amp;quot;name&amp;quot;: &amp;quot;salutations&amp;quot;,
+        &amp;quot;children&amp;quot;: [&amp;quot;hello&amp;quot;, &amp;quot;goodbye&amp;quot;]
+      }
+    ],
+    &amp;quot;services&amp;quot;: [
+      ...
+    ]
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Save the file and you will now see &lt;em&gt;salutations&lt;/em&gt; under the groups list when
+you run &lt;code&gt;edward list&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Stop any running services, then start the group:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;edward start salutations
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This will build and launch both services, which you can confirm with &lt;code&gt;edward status&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&#34;viewing-logs&#34;&gt;Viewing Logs&lt;/h2&gt;
+
+&lt;p&gt;For debugging, you&amp;rsquo;ll need to be able to view the output from your services. You can
+follow the output from one service using the &lt;code&gt;log&lt;/code&gt; command.&lt;/p&gt;
+
+&lt;p&gt;Make sure your services are still running, and run the log command to see the output for
+the goodbye service:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;edward log goodbye
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This will begin following the output from goodbye. If you visit &lt;em&gt;&lt;a href=&#34;http://localhost:8082/&#34;&gt;http://localhost:8082/&lt;/a&gt;&lt;/em&gt;,
+you will see the message &amp;ldquo;Received request&amp;rdquo; in the output. You can stop following
+the log by pressing &lt;code&gt;Ctrl+c&lt;/code&gt; to interrupt the command.&lt;/p&gt;
+
+&lt;p&gt;Running &lt;code&gt;edward log&lt;/code&gt; will show both standard and error output. You can also use
+the alias &lt;code&gt;edward tail&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&#34;summary&#34;&gt;Summary&lt;/h2&gt;
+
+&lt;p&gt;After this guide, you should now be able to use Edward to:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Start, stop and restart services and groups&lt;/li&gt;
+&lt;li&gt;Generate config for go services&lt;/li&gt;
+&lt;li&gt;Set up groups&lt;/li&gt;
+&lt;li&gt;View service status&lt;/li&gt;
+&lt;li&gt;Follow service output&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
