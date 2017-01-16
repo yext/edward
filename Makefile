@@ -11,4 +11,7 @@ test:
 	go test ./config
 
 docs:
+	cd docs_site && hugo
+
+pushdocs:
 	./push_docs.sh
