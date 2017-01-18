@@ -742,6 +742,7 @@ func createScriptFile(suffix string, content string) (*os.File, error) {
 }
 
 func ensureSudoAble() error {
+	fmt.Println("One or more services use sudo. You may be prompted for your password.")
 	var buffer bytes.Buffer
 
 	buffer.WriteString("#!/bin/bash\n")
