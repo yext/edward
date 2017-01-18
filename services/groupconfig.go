@@ -30,16 +30,20 @@ func (sg *ServiceGroupConfig) GetName() string {
 	return sg.Name
 }
 
-func (sg *ServiceGroupConfig) Build() error {
+func (sg *ServiceGroupConfig) Build(cfg OperationConfig) error {
+	if cfg.IsExcluded(sg) {
+		return nil
+	}
+
 	println("Building group: ", sg.Name)
 	for _, group := range sg.Groups {
-		err := group.Build()
+		err := group.Build(cfg)
 		if err != nil {
 			return err
 		}
 	}
 	for _, service := range sg.Services {
-		err := service.Build()
+		err := service.Build(cfg)
 		if err != nil {
 			return err
 		}
@@ -47,10 +51,14 @@ func (sg *ServiceGroupConfig) Build() error {
 	return nil
 }
 
-func (sg *ServiceGroupConfig) Start() error {
+func (sg *ServiceGroupConfig) Start(cfg OperationConfig) error {
+	if cfg.IsExcluded(sg) {
+		return nil
+	}
+
 	println("Starting group:", sg.Name)
 	for _, group := range sg.Groups {
-		err := group.Start()
+		err := group.Start(cfg)
 		if err != nil {
 			// Always fail if any services in a dependant group failed
 			return err
@@ -58,7 +66,7 @@ func (sg *ServiceGroupConfig) Start() error {
 	}
 	var outErr error = nil
 	for _, service := range sg.Services {
-		err := service.Start()
+		err := service.Start(cfg)
 		if err != nil {
 			return err
 		}
@@ -66,10 +74,14 @@ func (sg *ServiceGroupConfig) Start() error {
 	return outErr
 }
 
-func (sg *ServiceGroupConfig) Launch() error {
+func (sg *ServiceGroupConfig) Launch(cfg OperationConfig) error {
+	if cfg.IsExcluded(sg) {
+		return nil
+	}
+
 	println("Launching group:", sg.Name)
 	for _, group := range sg.Groups {
-		err := group.Launch()
+		err := group.Launch(cfg)
 		if err != nil {
 			// Always fail if any services in a dependant group failed
 			return err
@@ -77,7 +89,7 @@ func (sg *ServiceGroupConfig) Launch() error {
 	}
 	var outErr error = nil
 	for _, service := range sg.Services {
-		err := service.Launch()
+		err := service.Launch(cfg)
 		if err != nil {
 			return err
 		}
@@ -85,17 +97,21 @@ func (sg *ServiceGroupConfig) Launch() error {
 	return outErr
 }
 
-func (sg *ServiceGroupConfig) Stop() error {
+func (sg *ServiceGroupConfig) Stop(cfg OperationConfig) error {
+	if cfg.IsExcluded(sg) {
+		return nil
+	}
+
 	println("=== Group:", sg.Name, "===")
 	// TODO: Do this in reverse
 	for _, service := range sg.Services {
-		err := service.Stop()
+		err := service.Stop(cfg)
 		if err != nil {
 			return errgo.Mask(err)
 		}
 	}
 	for _, group := range sg.Groups {
-		err := group.Stop()
+		err := group.Stop(cfg)
 		if err != nil {
 			return errgo.Mask(err)
 		}

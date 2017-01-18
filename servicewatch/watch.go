@@ -13,7 +13,7 @@ import (
 	fsnotify "gopkg.in/fsnotify.v1"
 )
 
-func Begin(sgs []services.ServiceOrGroup) error {
+func Begin(sgs []services.ServiceOrGroup, cfg services.OperationConfig) error {
 	if len(sgs) == 0 {
 		return errgo.New("no services")
 	}
@@ -26,7 +26,7 @@ func Begin(sgs []services.ServiceOrGroup) error {
 			return err
 		}
 		for _, watch := range watches {
-			watcher, err := startWatch(&watch)
+			watcher, err := startWatch(&watch, cfg)
 			if err != nil {
 				return err
 			}
@@ -53,7 +53,7 @@ func Begin(sgs []services.ServiceOrGroup) error {
 	return nil
 }
 
-func startWatch(watches *services.ServiceWatch) (*fsnotify.Watcher, error) {
+func startWatch(watches *services.ServiceWatch, cfg services.OperationConfig) (*fsnotify.Watcher, error) {
 	fmt.Printf("Watching %v paths for service %v\n", len(watches.IncludedPaths), watches.Service.GetName())
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -80,7 +80,7 @@ func startWatch(watches *services.ServiceWatch) (*fsnotify.Watcher, error) {
 						continue
 					}
 					fmt.Printf("Rebuilding %v\n", watches.Service.GetName())
-					err = rebuildService(watches.Service)
+					err = rebuildService(watches.Service, cfg)
 					if err != nil {
 						fmt.Printf("Could not rebuild %v: %v\n", watches.Service.GetName(), err)
 					}
@@ -104,7 +104,7 @@ func startWatch(watches *services.ServiceWatch) (*fsnotify.Watcher, error) {
 	return watcher, nil
 }
 
-func rebuildService(service *services.ServiceConfig) error {
+func rebuildService(service *services.ServiceConfig, cfg services.OperationConfig) error {
 	command, err := service.GetCommand()
 	if err != nil {
 		return errgo.Mask(err)
@@ -113,11 +113,11 @@ func rebuildService(service *services.ServiceConfig) error {
 	if err != nil {
 		return errgo.Mask(err)
 	}
-	err = service.Stop()
+	err = service.Stop(cfg)
 	if err != nil {
 		return errgo.Mask(err)
 	}
-	err = service.Start()
+	err = service.Start(cfg)
 	if err != nil {
 		return errgo.Mask(err)
 	}

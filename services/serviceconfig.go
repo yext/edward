@@ -173,7 +173,11 @@ func (sc *ServiceConfig) GetName() string {
 	return sc.Name
 }
 
-func (sc *ServiceConfig) Build() error {
+func (sc *ServiceConfig) Build(cfg OperationConfig) error {
+	if cfg.IsExcluded(sc) {
+		return nil
+	}
+
 	command, err := sc.GetCommand()
 	if err != nil {
 		return errgo.Mask(err)
@@ -181,24 +185,36 @@ func (sc *ServiceConfig) Build() error {
 	return errgo.Mask(command.BuildSync(false))
 }
 
-func (sc *ServiceConfig) Launch() error {
+func (sc *ServiceConfig) Launch(cfg OperationConfig) error {
+	if cfg.IsExcluded(sc) {
+		return nil
+	}
+
 	command, err := sc.GetCommand()
 	if err != nil {
 		return errgo.Mask(err)
 	}
-	return errgo.Mask(command.StartAsync())
+	return errgo.Mask(command.StartAsync(cfg))
 }
 
-func (sc *ServiceConfig) Start() error {
-	err := sc.Build()
+func (sc *ServiceConfig) Start(cfg OperationConfig) error {
+	if cfg.IsExcluded(sc) {
+		return nil
+	}
+
+	err := sc.Build(cfg)
 	if err != nil {
 		return errgo.Mask(err)
 	}
-	err = sc.Launch()
+	err = sc.Launch(cfg)
 	return errgo.Mask(err)
 }
 
-func (sc *ServiceConfig) Stop() error {
+func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
+	if cfg.IsExcluded(sc) {
+		return nil
+	}
+
 	tracker := CommandTracker{
 		Name:       "Stopping " + sc.Name,
 		Logger:     sc.Logger,

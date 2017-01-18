@@ -305,7 +305,7 @@ func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 
 }
 
-func (sc *ServiceCommand) StartAsync() error {
+func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 	tracker := CommandTracker{
 		Name:       "Launching " + sc.Service.Name,
 		OutputFile: sc.Scripts.Launch.Log,
@@ -372,7 +372,7 @@ func (sc *ServiceCommand) StartAsync() error {
 	}
 
 	tracker.Fail(err)
-	stopErr := sc.Service.Stop()
+	stopErr := sc.Service.Stop(cfg)
 	if stopErr != nil {
 		return errgo.Mask(stopErr)
 	}

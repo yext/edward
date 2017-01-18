@@ -68,6 +68,13 @@ func main() {
 
 		return nil
 	}
+
+	excludeFlag := cli.StringSliceFlag{
+		Name:  "exclude, e",
+		Usage: "Exclude `SERVICE` from this operation",
+		Value: &(flags.exclude),
+	}
+
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:        "config, c",
@@ -112,6 +119,7 @@ func main() {
 			Action:       start,
 			BashComplete: autocompleteServicesAndGroups,
 			Flags: []cli.Flag{
+				excludeFlag,
 				cli.BoolFlag{
 					Name:        "skip-build, s",
 					Usage:       "Skip the build phase",
@@ -129,6 +137,9 @@ func main() {
 			Usage:        "Stop a service",
 			Action:       stop,
 			BashComplete: autocompleteServicesAndGroups,
+			Flags: []cli.Flag{
+				excludeFlag,
+			},
 		},
 		{
 			Name:         "restart",
@@ -136,6 +147,7 @@ func main() {
 			Action:       restart,
 			BashComplete: autocompleteServicesAndGroups,
 			Flags: []cli.Flag{
+				excludeFlag,
 				cli.BoolFlag{
 					Name:        "skip-build, s",
 					Usage:       "Skip the build phase",
@@ -393,7 +405,7 @@ func generate(c *cli.Context) error {
 
 	// Prompt user to confirm the list of services that will be generated
 	if !flags.noPrompt {
-		fmt.Println("The following list of services will be generated:\n")
+		fmt.Println("The following list of services will be generated:")
 		var goServices []string
 		var icbmServices []string
 		for _, service := range foundServices {
@@ -556,9 +568,9 @@ func start(c *cli.Context) error {
 
 	for _, s := range sgs {
 		if flags.skipBuild {
-			err = s.Launch()
+			err = s.Launch(getOperationConfig())
 		} else {
-			err = s.Start()
+			err = s.Start(getOperationConfig())
 		}
 		if err != nil {
 			return errors.New("Error launching " + s.GetName() + ": " + err.Error())
@@ -567,7 +579,7 @@ func start(c *cli.Context) error {
 
 	if flags.watch {
 		println("==== Watch ====")
-		return errgo.Mask(servicewatch.Begin(sgs))
+		return errgo.Mask(servicewatch.Begin(sgs, getOperationConfig()))
 	}
 
 	return nil
@@ -610,7 +622,7 @@ func stop(c *cli.Context) error {
 	}
 
 	for _, s := range sgs {
-		_ = s.Stop()
+		_ = s.Stop(getOperationConfig())
 	}
 	return nil
 }
@@ -657,14 +669,14 @@ func restartOneOrMoreServices(serviceNames []string) error {
 		return errgo.Mask(err)
 	}
 	for _, s := range sgs {
-		err = s.Stop()
+		err = s.Stop(getOperationConfig())
 		if err != nil {
 			return err
 		}
 		if flags.skipBuild {
-			err = s.Launch()
+			err = s.Launch(getOperationConfig())
 		} else {
-			err = s.Start()
+			err = s.Start(getOperationConfig())
 		}
 		if err != nil {
 			return err
@@ -791,7 +803,14 @@ var flags = struct {
 	skipBuild bool
 	watch     bool
 	noPrompt  bool
+	exclude   cli.StringSlice
 }{}
+
+func getOperationConfig() services.OperationConfig {
+	return services.OperationConfig{
+		Exclusions: []string(flags.exclude),
+	}
+}
 
 type serviceOrGroupByName []services.ServiceOrGroup
 
