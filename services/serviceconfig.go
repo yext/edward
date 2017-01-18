@@ -238,7 +238,7 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 		return nil
 	}
 
-	stopped, err := sc.stopProcess(command, true)
+	stopped, err := sc.stopProcess(cfg, command, true)
 	if err != nil {
 		tracker.Fail(err)
 		return nil
@@ -252,7 +252,7 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 			return nil
 		}
 		if !stopped {
-			stopped, err := sc.stopProcess(command, false)
+			stopped, err := sc.stopProcess(cfg, command, false)
 			if err != nil {
 				tracker.Fail(err)
 				return nil
@@ -278,7 +278,7 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 	return nil
 }
 
-func (sc *ServiceConfig) stopProcess(command *ServiceCommand, graceful bool) (success bool, err error) {
+func (sc *ServiceConfig) stopProcess(cfg OperationConfig, command *ServiceCommand, graceful bool) (success bool, err error) {
 	pgid, err := syscall.Getpgid(command.Pid)
 	if err != nil {
 		return false, errgo.Mask(err)
@@ -288,7 +288,7 @@ func (sc *ServiceConfig) stopProcess(command *ServiceCommand, graceful bool) (su
 		return false, errgo.Mask(errgo.New("suspect pgid: " + strconv.Itoa(pgid)))
 	}
 
-	err = command.killGroup(pgid, graceful)
+	err = command.killGroup(cfg, pgid, graceful)
 	if err != nil {
 		return false, errgo.Mask(err)
 	}
@@ -404,7 +404,11 @@ func (sc *ServiceConfig) doGetPorts(proc *process.Process) ([]string, error) {
 	return ports, nil
 }
 
-func (sc *ServiceConfig) IsSudo() bool {
+func (sc *ServiceConfig) IsSudo(cfg OperationConfig) bool {
+	if cfg.IsExcluded(sc) {
+		return false
+	}
+
 	return sc.RequiresSudo
 }
 

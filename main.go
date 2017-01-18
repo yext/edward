@@ -281,7 +281,7 @@ func loadConfig() error {
 
 func sudoIfNeeded(sgs []services.ServiceOrGroup) error {
 	for _, sg := range sgs {
-		if sg.IsSudo() {
+		if sg.IsSudo(getOperationConfig()) {
 			logger.Printf("sudo required for %v\n", sg.GetName())
 			return errgo.Mask(prepareForSudo())
 		}

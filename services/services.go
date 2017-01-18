@@ -33,6 +33,6 @@ type ServiceOrGroup interface {
 	Launch(cfg OperationConfig) error // Launch this service/group without building
 	Stop(cfg OperationConfig) error
 	Status() ([]ServiceStatus, error)
-	IsSudo() bool
+	IsSudo(cfg OperationConfig) bool
 	Watch() ([]ServiceWatch, error)
 }

@@ -138,14 +138,17 @@ func (sg *ServiceGroupConfig) Status() ([]ServiceStatus, error) {
 	return outStatus, nil
 }
 
-func (sg *ServiceGroupConfig) IsSudo() bool {
+func (sg *ServiceGroupConfig) IsSudo(cfg OperationConfig) bool {
+	if cfg.IsExcluded(sg) {
+		return false
+	}
 	for _, service := range sg.Services {
-		if service.IsSudo() {
+		if service.IsSudo(cfg) {
 			return true
 		}
 	}
 	for _, group := range sg.Groups {
-		if group.IsSudo() {
+		if group.IsSudo(cfg) {
 			return true
 		}
 	}

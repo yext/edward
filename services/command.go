@@ -401,9 +401,9 @@ func (sc *ServiceCommand) getPidPath() string {
 	return path.Join(dir, sc.Service.Name+".pid")
 }
 
-func (sc *ServiceCommand) killGroup(pgid int, graceful bool) error {
+func (sc *ServiceCommand) killGroup(cfg OperationConfig, pgid int, graceful bool) error {
 	killScript := "#!/bin/bash\n"
-	if sc.Service.IsSudo() {
+	if sc.Service.IsSudo(cfg) {
 		killScript += "sudo "
 	}
 	if graceful {
