@@ -11,7 +11,4 @@ test:
 	go test ./config
 
 docs:
-	cd docs_site && hugo
-
-pushdocs:
-	git subtree push --prefix docs_site/public origin gh-pages
+	cd docs_src && hugo
