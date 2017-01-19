@@ -1,4 +1,9 @@
 language: go
 
+install:
+  - wget https://github.com/spf13/hugo/archive/v0.18.1.tar.gz
+  - tar -xzvf v0.18.1.tar.gz
+  - pushd v0.18.1 && make install && popd
+
 go:
     - 1.7
