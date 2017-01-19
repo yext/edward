@@ -1,9 +1,10 @@
 language: go
 
-install:
-  - wget https://github.com/spf13/hugo/archive/v0.18.1.tar.gz
-  - tar -xzvf v0.18.1.tar.gz
-  - pushd hugo-0.18.1 && make install && popd
+before_script:
+  - wget https://github.com/spf13/hugo/releases/download/v0.18.1/hugo_0.18.1_Linux-64bit.tar.gz -O /tmp/hugo.tar.gz
+  - tar -xvf /tmp/hugo.tar.gz
+  - mv $PWD/hugo_0.18.1_linux_amd64/hugo_0.18.1_linux_amd64 $PWD/hugo_0.18.1_linux_amd64/hugo
+  - export PATH=$PATH:$PWD/hugo_0.18.1_linux_amd64/
 
 go:
     - 1.7
