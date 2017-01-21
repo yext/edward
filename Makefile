@@ -4,7 +4,7 @@ install:
 	go install
 
 build:
-	go build
+	./build.sh
 
 test:
 	go test ./generators
@@ -15,3 +15,5 @@ checkdocs:
 
 docs:
 	cd docs_src && hugo
+
+.PHONY: build
