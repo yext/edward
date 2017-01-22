@@ -64,22 +64,22 @@ publishDir = "../docs"
 	[[menu.main]]
 		name   = "Autocompletion"
 		url    = "autocompletion/"
-		weight = 22
+		weight = 30
 
 [[menu.main]]
 	name   = "Sudo"
 	url    = "sudo/"
-	weight = 25
+	weight = 40
 
 [[menu.main]]
 	name   = "Roadmap"
 	url    = "roadmap/"
-	weight = 30
+	weight = 50
 
 [[menu.main]]
 	name   = "License"
 	url    = "license/"
-	weight = 40
+	weight = 60
 
 
 [blackfriday]
