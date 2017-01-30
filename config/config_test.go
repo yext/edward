@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -88,7 +87,7 @@ var basicTests = []struct {
 		inJson:        "",
 		outServiceMap: nil,
 		outGroupMap:   nil,
-		outErr:        io.EOF,
+		outErr:        errors.New("could not parse config file: unexpected end of JSON input"),
 	},
 	{
 		name:          "Valid, empty",

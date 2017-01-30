@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"os"
@@ -70,12 +71,22 @@ func loadConfigContents(reader io.Reader, workingDir string, logger common.Logge
 	log := common.MaskLogger(logger)
 	log.Printf("Loading config with working dir %v.\n", workingDir)
 
-	var config Config
-	dec := json.NewDecoder(reader)
-	err := dec.Decode(&config)
-
+	buf := new(bytes.Buffer)
+	_, err := buf.ReadFrom(reader)
 	if err != nil {
-		return Config{}, errors.WithStack(err)
+		return Config{}, errors.Wrap(err, "could not read config")
+	}
+
+	data := buf.Bytes()
+	var config Config
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		if syntax, ok := err.(*json.SyntaxError); ok && syntax.Offset != 0 {
+			start := strings.LastIndex(string(data[:syntax.Offset]), "\n") + 1
+			line, pos := strings.Count(string(data[:start]), "\n"), int(syntax.Offset)-start-1
+			return Config{}, errors.Wrapf(err, "could not parse config file (line %v, char %v)", line, pos)
+		}
+		return Config{}, errors.Wrap(err, "could not parse config file")
 	}
 
 	config.workingDir = workingDir
