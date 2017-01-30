@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -686,37 +687,69 @@ func restartOneOrMoreServices(serviceNames []string) error {
 }
 
 func doLog(c *cli.Context) error {
-	if len(c.Args()) == 0 {
-		return errors.New("edward log requires a service name")
+	sgs, err := getServicesOrGroups(c.Args())
+	if err != nil {
+		return errors.WithStack(err)
 	}
-	if len(c.Args()) > 1 {
-		return errors.New("Cannot output multiple service logs")
+
+	count := services.CountServices(sgs)
+
+	var wait sync.WaitGroup
+
+	for _, sg := range sgs {
+		switch v := sg.(type) {
+		case *services.ServiceConfig:
+			followServiceLog(v, count > 1, &wait)
+		case *services.ServiceGroupConfig:
+			followGroupLog(v, count > 1, &wait)
+		}
 	}
-	name := c.Args()[0]
-	if _, ok := groupMap[name]; ok {
-		return errors.New("Cannot output group logs")
+
+	wait.Wait()
+
+	return nil
+}
+
+func followGroupLog(group *services.ServiceGroupConfig, multiple bool, wait *sync.WaitGroup) error {
+	for _, group := range group.Groups {
+		followGroupLog(group, multiple, wait)
 	}
-	if service, ok := serviceMap[name]; ok {
-		command, err := service.GetCommand()
+	for _, service := range group.Services {
+		followServiceLog(service, multiple, wait)
+	}
+	return nil
+}
+
+func followServiceLog(service *services.ServiceConfig, multiple bool, wait *sync.WaitGroup) error {
+	wait.Add(1)
+	go doFollowServiceLog(service, multiple, wait)
+	return nil
+}
+
+func doFollowServiceLog(service *services.ServiceConfig, multiple bool, wait *sync.WaitGroup) error {
+	command, err := service.GetCommand()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	runLog := command.Scripts.Launch.Log
+	t, err := tail.TailFile(runLog, tail.Config{Follow: true})
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	for line := range t.Lines {
+		var lineData LogLine
+		err = json.Unmarshal([]byte(line.Text), &lineData)
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		runLog := command.Scripts.Launch.Log
-		t, err := tail.TailFile(runLog, tail.Config{Follow: true})
-		if err != nil {
-			return errors.WithStack(err)
+		if multiple {
+			fmt.Printf("%v: %v\n", service.Name, lineData.Message)
+		} else {
+			fmt.Printf("%v\n", lineData.Message)
 		}
-		for line := range t.Lines {
-			var lineData LogLine
-			err = json.Unmarshal([]byte(line.Text), &lineData)
-			if err != nil {
-				return errors.WithStack(err)
-			}
-			println(lineData.Message)
-		}
-		return nil
 	}
-	return errors.New("Service not found: " + name)
+	wait.Done()
+	return nil
 }
 
 func checkNotSudo() error {

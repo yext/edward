@@ -36,3 +36,25 @@ type ServiceOrGroup interface {
 	IsSudo(cfg OperationConfig) bool
 	Watch() ([]ServiceWatch, error)
 }
+
+func CountServices(sgs []ServiceOrGroup) int {
+	var count int
+	for _, sg := range sgs {
+		switch v := sg.(type) {
+		case *ServiceConfig:
+			count++
+		case *ServiceGroupConfig:
+			count += countGroupServices(v)
+		}
+	}
+	return count
+}
+
+func countGroupServices(group *ServiceGroupConfig) int {
+	var count int
+	for _, g := range group.Groups {
+		count += countGroupServices(g)
+	}
+	count += len(group.Services)
+	return count
+}
