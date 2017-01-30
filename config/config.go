@@ -83,7 +83,7 @@ func loadConfigContents(reader io.Reader, workingDir string, logger common.Logge
 	if err != nil {
 		if syntax, ok := err.(*json.SyntaxError); ok && syntax.Offset != 0 {
 			start := strings.LastIndex(string(data[:syntax.Offset]), "\n") + 1
-			line, pos := strings.Count(string(data[:start]), "\n"), int(syntax.Offset)-start-1
+			line, pos := strings.Count(string(data[:start]), "\n")+1, int(syntax.Offset)-start-1
 			return Config{}, errors.Wrapf(err, "could not parse config file (line %v, char %v)", line, pos)
 		}
 		return Config{}, errors.Wrap(err, "could not parse config file")
