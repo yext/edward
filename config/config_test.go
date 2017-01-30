@@ -97,6 +97,13 @@ var basicTests = []struct {
 		outErr:        nil,
 	},
 	{
+		name:          "Invalid, multi-line",
+		inJson:        "{\n   invalid\n}",
+		outServiceMap: make(map[string]*services.ServiceConfig),
+		outGroupMap:   make(map[string]*services.ServiceGroupConfig),
+		outErr:        errors.New("could not parse config file (line 2, char 3): invalid character 'i' looking for beginning of object key string"),
+	},
+	{
 		name: "Valid, services and groups",
 		inJson: `
 		{
