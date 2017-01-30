@@ -2,7 +2,6 @@ package services
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"os"
 	"path"
@@ -12,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/juju/errgo"
+	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/net"
 	"github.com/shirou/gopsutil/process"
 	"github.com/yext/edward/common"
@@ -61,7 +60,7 @@ func (sc *ServiceConfig) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(sc),
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
+		return errors.Wrap(err, "could not parse service config")
 	}
 	if aux.Properties != nil {
 		if sc.LaunchChecks != nil {
@@ -73,7 +72,7 @@ func (sc *ServiceConfig) UnmarshalJSON(data []byte) error {
 		}
 	}
 
-	return sc.validate()
+	return errors.WithStack(sc.validate())
 }
 
 // validate checks if this config is allowed
@@ -89,7 +88,7 @@ func (sc *ServiceConfig) validate() error {
 func (c *ServiceConfig) SetWatch(watch ServiceWatch) error {
 	msg, err := json.Marshal(watch)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	c.WatchJson = json.RawMessage(msg)
 	return nil
@@ -180,9 +179,9 @@ func (sc *ServiceConfig) Build(cfg OperationConfig) error {
 
 	command, err := sc.GetCommand()
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
-	return errgo.Mask(command.BuildSync(false))
+	return errors.WithStack(command.BuildSync(false))
 }
 
 func (sc *ServiceConfig) Launch(cfg OperationConfig) error {
@@ -192,9 +191,9 @@ func (sc *ServiceConfig) Launch(cfg OperationConfig) error {
 
 	command, err := sc.GetCommand()
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
-	return errgo.Mask(command.StartAsync(cfg))
+	return errors.WithStack(command.StartAsync(cfg))
 }
 
 func (sc *ServiceConfig) Start(cfg OperationConfig) error {
@@ -204,10 +203,10 @@ func (sc *ServiceConfig) Start(cfg OperationConfig) error {
 
 	err := sc.Build(cfg)
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 	err = sc.Launch(cfg)
-	return errgo.Mask(err)
+	return errors.WithStack(err)
 }
 
 func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
@@ -224,7 +223,7 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 
 	command, err := sc.GetCommand()
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	var scriptErr error = nil
@@ -234,7 +233,7 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 	}
 
 	if command.Pid == 0 {
-		tracker.SoftFail(errgo.New("Not running"))
+		tracker.SoftFail(errors.New("Not running"))
 		return nil
 	}
 
@@ -258,10 +257,10 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 				return nil
 			}
 			if stopped {
-				tracker.SoftFail(errgo.New("Killed"))
+				tracker.SoftFail(errors.New("Killed"))
 				return nil
 			}
-			tracker.Fail(errgo.New("Process was not killed"))
+			tracker.Fail(errors.New("Process was not killed"))
 			return nil
 		}
 	}
@@ -272,7 +271,7 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 	if scriptErr == nil {
 		tracker.Success()
 	} else {
-		tracker.SoftFail(errgo.New("Script failed, kill signal succeeded"))
+		tracker.SoftFail(errors.New("Script failed, kill signal succeeded"))
 	}
 
 	return nil
@@ -281,22 +280,22 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 func (sc *ServiceConfig) stopProcess(cfg OperationConfig, command *ServiceCommand, graceful bool) (success bool, err error) {
 	pgid, err := syscall.Getpgid(command.Pid)
 	if err != nil {
-		return false, errgo.Mask(err)
+		return false, errors.WithStack(err)
 	}
 
 	if pgid == 0 || pgid == 1 {
-		return false, errgo.Mask(errgo.New("suspect pgid: " + strconv.Itoa(pgid)))
+		return false, errors.WithStack(errors.New("suspect pgid: " + strconv.Itoa(pgid)))
 	}
 
 	err = command.killGroup(cfg, pgid, graceful)
 	if err != nil {
-		return false, errgo.Mask(err)
+		return false, errors.WithStack(err)
 	}
 
 	// Check to see if the process is still running
 	exists, err := process.PidExists(int32(command.Pid))
 	if err != nil {
-		return false, errgo.Mask(err)
+		return false, errors.WithStack(err)
 	}
 
 	return !exists, nil
@@ -306,7 +305,7 @@ func waitForTerm(command *ServiceCommand, timeout time.Duration) (bool, error) {
 	for elapsed := time.Duration(0); elapsed <= timeout; elapsed += time.Millisecond * 100 {
 		exists, err := process.PidExists(int32(command.Pid))
 		if err != nil {
-			return false, errgo.Mask(err)
+			return false, errors.WithStack(err)
 		}
 		if !exists {
 			return true, nil
@@ -319,7 +318,7 @@ func waitForTerm(command *ServiceCommand, timeout time.Duration) (bool, error) {
 func (sc *ServiceConfig) Status() ([]ServiceStatus, error) {
 	command, err := sc.GetCommand()
 	if err != nil {
-		return nil, errgo.Mask(err)
+		return nil, errors.WithStack(err)
 	}
 
 	status := ServiceStatus{
@@ -332,16 +331,16 @@ func (sc *ServiceConfig) Status() ([]ServiceStatus, error) {
 		status.Pid = command.Pid
 		proc, err := process.NewProcess(int32(command.Pid))
 		if err != nil {
-			return nil, errgo.Mask(err)
+			return nil, errors.WithStack(err)
 		}
 		epochStart, err := proc.CreateTime()
 		if err != nil {
-			return nil, errgo.Mask(err)
+			return nil, errors.WithStack(err)
 		}
 		status.StartTime = time.Unix(epochStart/1000, 0)
 		status.Ports, err = sc.getPorts(proc)
 		if err != nil {
-			return nil, errgo.Mask(err)
+			return nil, errors.WithStack(err)
 		}
 	}
 
@@ -356,7 +355,7 @@ var connectionsCache []net.ConnectionStat
 func (sc *ServiceConfig) getPorts(proc *process.Process) ([]string, error) {
 	ports, err := sc.doGetPorts(proc)
 	if err != nil {
-		return nil, errgo.Mask(err)
+		return nil, errors.WithStack(err)
 	}
 	if sc.LaunchChecks != nil {
 		for _, port := range sc.LaunchChecks.Ports {
@@ -371,7 +370,7 @@ func (sc *ServiceConfig) doGetPorts(proc *process.Process) ([]string, error) {
 	if len(connectionsCache) == 0 {
 		connectionsCache, err = net.Connections("all")
 		if err != nil {
-			return nil, errgo.Mask(err)
+			return nil, errors.WithStack(err)
 		}
 	}
 
@@ -465,17 +464,17 @@ func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 	if _, err := os.Stat(pidFile); err == nil {
 		dat, err := ioutil.ReadFile(pidFile)
 		if err != nil {
-			return nil, errgo.Mask(err)
+			return nil, errors.WithStack(err)
 		}
 		pid, err := strconv.Atoi(string(dat))
 		if err != nil {
-			return nil, errgo.Mask(err)
+			return nil, errors.WithStack(err)
 		}
 		command.Pid = pid
 
 		exists, err := process.PidExists(int32(command.Pid))
 		if err != nil {
-			return nil, errgo.Mask(err)
+			return nil, errors.WithStack(err)
 		}
 		if !exists {
 			s.printf("Process for %v was not found, resetting.\n", s.Name)
@@ -484,11 +483,11 @@ func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 
 		proc, err := process.NewProcess(int32(command.Pid))
 		if err != nil {
-			return nil, errgo.Mask(err)
+			return nil, errors.WithStack(err)
 		}
 		cmdline, err := proc.Cmdline()
 		if err != nil {
-			return nil, errgo.Mask(err)
+			return nil, errors.WithStack(err)
 		}
 		if !strings.Contains(cmdline, s.Name) {
 			s.printf("Process for %v was not as expected (found %v), resetting.\n", s.Name, cmdline)

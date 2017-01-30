@@ -1,11 +1,11 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
 
@@ -26,12 +26,12 @@ func run(c *cli.Context) error {
 
 	command, cmdArgs, err := parseCommand(fullCommand)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	log, err := os.Create(logFile)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	cmd := exec.Command(command, cmdArgs...)

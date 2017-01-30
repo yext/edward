@@ -1,7 +1,6 @@
 package services
 
 import (
-	"errors"
 	"os"
 	"os/exec"
 	"path"
@@ -11,7 +10,7 @@ import (
 	"time"
 
 	"github.com/hpcloud/tail"
-	"github.com/juju/errgo"
+	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/net"
 	"github.com/shirou/gopsutil/process"
 	"github.com/yext/edward/common"
@@ -64,7 +63,7 @@ func (s *Script) GetCommand(logger common.Logger) (*exec.Cmd, error) {
 func (s *Script) Run(logger common.Logger) error {
 	cmd, err := s.GetCommand(logger)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	return cmd.Run()
 }
@@ -93,7 +92,11 @@ func (sc *ServiceCommand) createScript(content string, scriptType string) (*os.F
 }
 
 func (sc *ServiceCommand) deleteScript(scriptType string) error {
-	return os.Remove(path.Join(home.EdwardConfig.ScriptDir, sc.Service.Name+"-"+scriptType))
+	return errors.WithStack(
+		os.Remove(
+			path.Join(home.EdwardConfig.ScriptDir, sc.Service.Name+"-"+scriptType),
+		),
+	)
 }
 
 // BuildSync will buid the service synchronously.
@@ -107,19 +110,19 @@ func (sc *ServiceCommand) BuildSync(force bool) error {
 	tracker.Start()
 
 	if !force && sc.Pid != 0 {
-		tracker.SoftFail(errgo.New("Already running"))
+		tracker.SoftFail(errors.New("Already running"))
 		return nil
 	}
 
 	if !sc.Scripts.Build.WillRun() {
-		tracker.SoftFail(errgo.New("No build"))
+		tracker.SoftFail(errors.New("No build"))
 		return nil
 	}
 
 	err := sc.Scripts.Build.Run(sc.Logger)
 	if err != nil {
 		tracker.Fail(err)
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	tracker.Success()
@@ -132,7 +135,7 @@ func (sc *ServiceCommand) waitForLogText(line string, cancel <-chan struct{}) er
 	var err error
 	t, err = tail.TailFile(sc.Scripts.Launch.Log, tail.Config{Follow: true, Logger: tail.DiscardingLogger})
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 	for logLine := range t.Lines {
 
@@ -158,7 +161,7 @@ func (sc *ServiceCommand) areAnyListeningPortsOpen(ports []int) (bool, error) {
 
 	connections, err := net.Connections("all")
 	if err != nil {
-		return false, errgo.Mask(err)
+		return false, errors.WithStack(err)
 	}
 	for _, connection := range connections {
 		if connection.Status == "LISTEN" {
@@ -184,7 +187,7 @@ func (sc *ServiceCommand) waitForListeningPorts(ports []int, cancel <-chan struc
 
 		connections, err := net.Connections("all")
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 		for _, connection := range connections {
 			if connection.Status == "LISTEN" {
@@ -216,12 +219,12 @@ func (sc *ServiceCommand) waitForAnyPort(cancel <-chan struct{}, command *exec.C
 
 		connections, err := net.Connections("all")
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 
 		proc, err := process.NewProcess(int32(command.Process.Pid))
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 		if hasPort(proc, connections) {
 			return nil
@@ -265,15 +268,21 @@ func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 	var startCheck func(cancel <-chan struct{}) error
 	if sc.Service.LaunchChecks != nil && len(sc.Service.LaunchChecks.LogText) > 0 {
 		startCheck = func(cancel <-chan struct{}) error {
-			return sc.waitForLogText(sc.Service.LaunchChecks.LogText, cancel)
+			return errors.WithStack(
+				sc.waitForLogText(sc.Service.LaunchChecks.LogText, cancel),
+			)
 		}
 	} else if sc.Service.LaunchChecks != nil && len(sc.Service.LaunchChecks.Ports) > 0 {
 		startCheck = func(cancel <-chan struct{}) error {
-			return sc.waitForListeningPorts(sc.Service.LaunchChecks.Ports, cancel, command)
+			return errors.WithStack(
+				sc.waitForListeningPorts(sc.Service.LaunchChecks.Ports, cancel, command),
+			)
 		}
 	} else {
 		startCheck = func(cancel <-chan struct{}) error {
-			return sc.waitForAnyPort(cancel, command)
+			return errors.WithStack(
+				sc.waitForAnyPort(cancel, command),
+			)
 		}
 	}
 
@@ -296,9 +305,9 @@ func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 
 	select {
 	case result := <-cancelableWait(done, startCheck):
-		return result.error
+		return errors.WithStack(result.error)
 	case result := <-cancelableWait(done, processFinished):
-		return result.error
+		return errors.WithStack(result.error)
 	case <-timeout.C:
 		return errors.New("Waiting for service timed out")
 	}
@@ -314,12 +323,12 @@ func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 	tracker.Start()
 
 	if sc.Pid != 0 {
-		tracker.SoftFail(errgo.New("Already running"))
+		tracker.SoftFail(errors.New("Already running"))
 		return nil
 	}
 
 	if !sc.Scripts.Launch.WillRun() {
-		tracker.SoftFail(errgo.New("No launch"))
+		tracker.SoftFail(errors.New("No launch"))
 		return nil
 	}
 
@@ -327,12 +336,12 @@ func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 		inUse, err := sc.areAnyListeningPortsOpen(sc.Service.LaunchChecks.Ports)
 		if err != nil {
 			tracker.Fail(err)
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 		if inUse {
-			inUseErr := errgo.New("one or more of the ports required by this service are in use")
+			inUseErr := errors.New("one or more of the ports required by this service are in use")
 			tracker.Fail(inUseErr)
-			return inUseErr
+			return errors.WithStack(inUseErr)
 		}
 	}
 
@@ -342,14 +351,14 @@ func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 	cmd, err := sc.Scripts.Launch.GetCommand(sc.Logger)
 	if err != nil {
 		tracker.Fail(err)
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, sc.Service.Env...)
 	err = cmd.Start()
 	if err != nil {
 		tracker.Fail(err)
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	pid := cmd.Process.Pid
@@ -359,7 +368,7 @@ func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 	pidStr := strconv.Itoa(pid)
 	f, err := os.Create(sc.getPidPath())
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	f.WriteString(pidStr)
 	f.Close()
@@ -374,14 +383,16 @@ func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 	tracker.Fail(err)
 	stopErr := sc.Service.Stop(cfg)
 	if stopErr != nil {
-		return errgo.Mask(stopErr)
+		return errors.WithStack(stopErr)
 	}
-	return errgo.Mask(err)
+	return errors.WithStack(err)
 }
 
 func (sc *ServiceCommand) StopScript() error {
 	sc.printf("Running stop script for %v\n", sc.Service.Name)
-	return sc.Scripts.Stop.Run(sc.Logger)
+	return errors.WithStack(
+		sc.Scripts.Stop.Run(sc.Logger),
+	)
 }
 
 func (sc *ServiceCommand) clearPid() {
@@ -414,12 +425,12 @@ func (sc *ServiceCommand) killGroup(cfg OperationConfig, pgid int, graceful bool
 	killScript += strconv.Itoa(pgid)
 	killSignalScript, err := sc.createScript(killScript, "Kill")
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 	defer os.Remove(killSignalScript.Name())
 
 	cmd := exec.Command(killSignalScript.Name())
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	err = cmd.Run()
-	return errgo.Mask(err)
+	return errors.WithStack(err)
 }

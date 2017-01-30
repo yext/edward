@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/juju/errgo"
+	"github.com/pkg/errors"
 	"github.com/yext/edward/services"
 )
 
@@ -38,11 +38,11 @@ func (v *GoGenerator) StopWalk() {
 
 func (v *GoGenerator) VisitDir(path string, f os.FileInfo, err error) error {
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	if _, err := os.Stat(path); err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	files, _ := ioutil.ReadDir(path)
@@ -54,7 +54,7 @@ func (v *GoGenerator) VisitDir(path string, f os.FileInfo, err error) error {
 
 		input, err := ioutil.ReadFile(fPath)
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 
 		packageExpr := regexp.MustCompile(`package main\n`)
@@ -62,7 +62,7 @@ func (v *GoGenerator) VisitDir(path string, f os.FileInfo, err error) error {
 			packageName := filepath.Base(path)
 			packagePath, err := filepath.Rel(v.basePath, path)
 			if err != nil {
-				return errgo.Mask(err)
+				return errors.WithStack(err)
 			}
 			v.found[packageName] = packagePath
 		}
@@ -99,7 +99,7 @@ func (v *GoGenerator) goService(name, packagePath string) (*services.ServiceConf
 
 	watch, err := v.createWatch(service)
 	if err != nil {
-		return nil, errgo.Mask(err)
+		return nil, errors.WithStack(err)
 	}
 	service.SetWatch(watch)
 

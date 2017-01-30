@@ -1,0 +1,24 @@
+{
+	"services": [
+		{
+			"name": "echo",
+			"path": ".",
+			"commands": {
+				"launch": "env"
+			},
+			"log_properties": {
+				"started": "This will always fail"
+			}
+		},
+			"name": "echosudo",
+			"requiresSudo": true,
+			"path": ".",
+			"commands": {
+				"launch": "sudo -E env"
+			},
+			"log_properties": {
+				"started": "This will always fail"
+			}
+		}
+	]
+}

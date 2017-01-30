@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -20,8 +19,8 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/hpcloud/tail"
-	"github.com/juju/errgo"
 	"github.com/olekukonko/tablewriter"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/generators"
@@ -39,7 +38,7 @@ const edwardVersion = "1.6.4"
 func main() {
 
 	if err := home.EdwardConfig.Initialize(); err != nil {
-		log.Fatal(err)
+		fmt.Printf("%+v", err)
 	}
 
 	logger = log.New(&lumberjack.Logger{
@@ -60,7 +59,7 @@ func main() {
 		if command != "generate" {
 			err := loadConfig()
 			if err != nil {
-				return errgo.Mask(err)
+				return errors.WithStack(err)
 			}
 		} else {
 			initEmptyConfig()
@@ -173,8 +172,8 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Println(err)
-		logger.Println(err)
+		fmt.Printf("%+v", err)
+		logger.Printf("%+v", err)
 	}
 
 	warmup.Wait()
@@ -263,11 +262,11 @@ func loadConfig() error {
 	if configPath != "" {
 		r, err := os.Open(configPath)
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 		cfg, err := config.LoadConfigWithDir(r, filepath.Dir(configPath), edwardVersion, logger)
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 
 		serviceMap = cfg.ServiceMap
@@ -275,7 +274,7 @@ func loadConfig() error {
 		return nil
 	}
 
-	return errgo.New("No config file found")
+	return errors.New("No config file found")
 
 }
 
@@ -283,7 +282,7 @@ func sudoIfNeeded(sgs []services.ServiceOrGroup) error {
 	for _, sg := range sgs {
 		if sg.IsSudo(getOperationConfig()) {
 			logger.Printf("sudo required for %v\n", sg.GetName())
-			return errgo.Mask(prepareForSudo())
+			return errors.WithStack(prepareForSudo())
 		}
 	}
 	logger.Printf("sudo not required for any services/groups\n")
@@ -383,11 +382,11 @@ func generate(c *cli.Context) error {
 
 		r, err := os.Open(configPath)
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 		cfg, err = config.LoadConfigWithDir(r, filepath.Dir(configPath), edwardVersion, logger)
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 	} else {
 		cfg = config.EmptyConfig(filepath.Dir(configPath), logger)
@@ -395,12 +394,12 @@ func generate(c *cli.Context) error {
 
 	wd, err := os.Getwd()
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	foundServices, serviceToGenerator, err := generators.GenerateServices(wd, c.Args())
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	// Prompt user to confirm the list of services that will be generated
@@ -440,16 +439,16 @@ func generate(c *cli.Context) error {
 
 	foundServices, err = cfg.NormalizeServicePaths(wd, foundServices)
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 	err = cfg.AppendServices(foundServices)
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	f, err := os.Create(configPath)
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	defer f.Close()
@@ -457,11 +456,11 @@ func generate(c *cli.Context) error {
 	w := bufio.NewWriter(f)
 	err = cfg.Save(w)
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 	err = w.Flush()
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	fmt.Println("Wrote to:", configPath)
@@ -498,7 +497,7 @@ func status(c *cli.Context) error {
 		for _, service := range allSrv {
 			s, err := service.Status()
 			if err != nil {
-				return errgo.Mask(err)
+				return errors.WithStack(err)
 			}
 			for _, status := range s {
 				if status.Status != "STOPPED" {
@@ -514,7 +513,7 @@ func status(c *cli.Context) error {
 
 		sgs, err = getServicesOrGroups(c.Args())
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 
@@ -536,7 +535,7 @@ func status(c *cli.Context) error {
 	for _, s := range sgs {
 		statuses, err := s.Status()
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 		for _, status := range statuses {
 			table.Append([]string{
@@ -559,11 +558,11 @@ func messages(c *cli.Context) error {
 func start(c *cli.Context) error {
 	sgs, err := getServicesOrGroups(c.Args())
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	err = sudoIfNeeded(sgs)
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	for _, s := range sgs {
@@ -579,7 +578,7 @@ func start(c *cli.Context) error {
 
 	if flags.watch {
 		println("==== Watch ====")
-		return errgo.Mask(servicewatch.Begin(sgs, getOperationConfig()))
+		return errors.WithStack(servicewatch.Begin(sgs, getOperationConfig()))
 	}
 
 	return nil
@@ -602,7 +601,7 @@ func stop(c *cli.Context) error {
 		for _, service := range allSrv {
 			s, err := service.Status()
 			if err != nil {
-				return errgo.Mask(err)
+				return errors.WithStack(err)
 			}
 			for _, status := range s {
 				if status.Status != "STOPPED" {
@@ -613,12 +612,12 @@ func stop(c *cli.Context) error {
 	} else {
 		sgs, err = getServicesOrGroups(c.Args())
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 	err = sudoIfNeeded(sgs)
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	for _, s := range sgs {
@@ -632,7 +631,7 @@ func restart(c *cli.Context) error {
 		restartAll()
 		return nil
 	}
-	return restartOneOrMoreServices(c.Args())
+	return errors.WithStack(restartOneOrMoreServices(c.Args()))
 }
 
 func restartAll() error {
@@ -641,7 +640,7 @@ func restartAll() error {
 	for _, service := range serviceMap {
 		s, err := service.Status()
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 		for _, status := range s {
 			if status.Status != "STOPPED" {
@@ -656,22 +655,22 @@ func restartAll() error {
 		serviceNames = append(serviceNames, service.Name)
 	}
 
-	return restartOneOrMoreServices(serviceNames)
+	return errors.WithStack(restartOneOrMoreServices(serviceNames))
 }
 
 func restartOneOrMoreServices(serviceNames []string) error {
 	sgs, err := getServicesOrGroups(serviceNames)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	err = sudoIfNeeded(sgs)
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 	for _, s := range sgs {
 		err = s.Stop(getOperationConfig())
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 		if flags.skipBuild {
 			err = s.Launch(getOperationConfig())
@@ -679,7 +678,7 @@ func restartOneOrMoreServices(serviceNames []string) error {
 			err = s.Start(getOperationConfig())
 		}
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 	return nil
@@ -699,7 +698,7 @@ func doLog(c *cli.Context) error {
 	if service, ok := serviceMap[name]; ok {
 		command, err := service.GetCommand()
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 		runLog := command.Scripts.Launch.Log
 		t, err := tail.TailFile(runLog, tail.Config{Follow: true})
@@ -717,10 +716,10 @@ func doLog(c *cli.Context) error {
 func checkNotSudo() error {
 	user, err := user.Current()
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 	if user.Uid == "0" {
-		return errgo.New("edward should not be fun with sudo")
+		return errors.New("edward should not be fun with sudo")
 	}
 	return nil
 }
@@ -754,13 +753,13 @@ func ensureSudoAble() error {
 	logger.Printf("Writing sudoAbility script\n")
 	file, err := createScriptFile("sudoAbility", buffer.String())
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	logger.Printf("Launching sudoAbility script: %v\n", file.Name())
 	err = syscall.Exec(file.Name(), []string{file.Name()}, os.Environ())
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 	return nil
 }
@@ -768,12 +767,12 @@ func ensureSudoAble() error {
 func prepareForSudo() error {
 	err := checkNotSudo()
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	isChild := os.Getenv("ISCHILD")
 	if isChild == "" {
-		return errgo.Mask(ensureSudoAble())
+		return errors.WithStack(ensureSudoAble())
 	} else {
 		logger.Println("Child process, sudo should be available")
 	}
@@ -783,17 +782,17 @@ func prepareForSudo() error {
 func RemoveContents(dir string) error {
 	d, err := os.Open(dir)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	defer d.Close()
 	names, err := d.Readdirnames(-1)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	for _, name := range names {
 		err = os.RemoveAll(filepath.Join(dir, name))
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 	return nil

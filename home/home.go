@@ -4,6 +4,8 @@ import (
 	"os"
 	"os/user"
 	"path"
+
+	"github.com/pkg/errors"
 )
 
 type EdwardConfiguration struct {
@@ -25,7 +27,7 @@ func createDirIfNeeded(path string) {
 func (e *EdwardConfiguration) Initialize() error {
 	user, err := user.Current()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	e.Dir = path.Join(user.HomeDir, ".edward")
 	createDirIfNeeded(e.Dir)

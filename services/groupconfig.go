@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/juju/errgo"
+	"github.com/pkg/errors"
 	"github.com/yext/edward/common"
 )
 
@@ -39,13 +39,13 @@ func (sg *ServiceGroupConfig) Build(cfg OperationConfig) error {
 	for _, group := range sg.Groups {
 		err := group.Build(cfg)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 	for _, service := range sg.Services {
 		err := service.Build(cfg)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 	return nil
@@ -61,14 +61,14 @@ func (sg *ServiceGroupConfig) Start(cfg OperationConfig) error {
 		err := group.Start(cfg)
 		if err != nil {
 			// Always fail if any services in a dependant group failed
-			return err
+			return errors.WithStack(err)
 		}
 	}
 	var outErr error = nil
 	for _, service := range sg.Services {
 		err := service.Start(cfg)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 	return outErr
@@ -84,14 +84,14 @@ func (sg *ServiceGroupConfig) Launch(cfg OperationConfig) error {
 		err := group.Launch(cfg)
 		if err != nil {
 			// Always fail if any services in a dependant group failed
-			return err
+			return errors.WithStack(err)
 		}
 	}
 	var outErr error = nil
 	for _, service := range sg.Services {
 		err := service.Launch(cfg)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 	return outErr
@@ -107,13 +107,13 @@ func (sg *ServiceGroupConfig) Stop(cfg OperationConfig) error {
 	for _, service := range sg.Services {
 		err := service.Stop(cfg)
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 	}
 	for _, group := range sg.Groups {
 		err := group.Stop(cfg)
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 	}
 	return nil
@@ -124,14 +124,14 @@ func (sg *ServiceGroupConfig) Status() ([]ServiceStatus, error) {
 	for _, service := range sg.Services {
 		statuses, err := service.Status()
 		if err != nil {
-			return outStatus, errgo.Mask(err)
+			return outStatus, errors.WithStack(err)
 		}
 		outStatus = append(outStatus, statuses...)
 	}
 	for _, group := range sg.Groups {
 		statuses, err := group.Status()
 		if err != nil {
-			return outStatus, errgo.Mask(err)
+			return outStatus, errors.WithStack(err)
 		}
 		outStatus = append(outStatus, statuses...)
 	}

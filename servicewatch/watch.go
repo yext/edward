@@ -8,14 +8,14 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/juju/errgo"
+	"github.com/pkg/errors"
 	"github.com/yext/edward/services"
 	fsnotify "gopkg.in/fsnotify.v1"
 )
 
 func Begin(sgs []services.ServiceOrGroup, cfg services.OperationConfig) error {
 	if len(sgs) == 0 {
-		return errgo.New("no services")
+		return errors.New("no services")
 	}
 
 	hasWatch := false
@@ -23,12 +23,12 @@ func Begin(sgs []services.ServiceOrGroup, cfg services.OperationConfig) error {
 	for _, s := range sgs {
 		watches, err := s.Watch()
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 		for _, watch := range watches {
 			watcher, err := startWatch(&watch, cfg)
 			if err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 			defer watcher.Close()
 			hasWatch = true
@@ -57,7 +57,7 @@ func startWatch(watches *services.ServiceWatch, cfg services.OperationConfig) (*
 	fmt.Printf("Watching %v paths for service %v\n", len(watches.IncludedPaths), watches.Service.GetName())
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		return nil, errgo.Mask(err)
+		return nil, errors.WithStack(err)
 	}
 
 	go func() {
@@ -98,7 +98,7 @@ func startWatch(watches *services.ServiceWatch, cfg services.OperationConfig) (*
 		err = watcher.Add(dir)
 		if err != nil {
 			watcher.Close()
-			return nil, errgo.Mask(err)
+			return nil, errors.WithStack(err)
 		}
 	}
 	return watcher, nil
@@ -107,19 +107,19 @@ func startWatch(watches *services.ServiceWatch, cfg services.OperationConfig) (*
 func rebuildService(service *services.ServiceConfig, cfg services.OperationConfig) error {
 	command, err := service.GetCommand()
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 	err = command.BuildSync(true)
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 	err = service.Stop(cfg)
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 	err = service.Start(cfg)
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 	return nil
 }

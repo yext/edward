@@ -63,12 +63,6 @@
 			"revisionTime": "2016-05-19T21:27:29Z"
 		},
 		{
-			"checksumSHA1": "nZU++ikynPXLr18xbGKiUOw575Y=",
-			"path": "github.com/juju/errgo",
-			"revision": "08cceb5d0b5331634b9826762a8fd53b29b86ad8",
-			"revisionTime": "2014-09-25T10:02:37Z"
-		},
-		{
 			"checksumSHA1": "WRd3nGkS1rG/XE/Uph++tX9P5Nc=",
 			"path": "github.com/kylelemons/godebug/diff",
 			"revision": "eadb3ce320cbab8393bea5ca17bebac3f78a021b",
@@ -91,6 +85,12 @@
 			"path": "github.com/olekukonko/tablewriter",
 			"revision": "daf2955e742cf123959884fdff4685aa79b63135",
 			"revisionTime": "2016-06-21T09:30:29Z"
+		},
+		{
+			"checksumSHA1": "ynJSWoF6v+3zMnh9R0QmmG6iGV8=",
+			"path": "github.com/pkg/errors",
+			"revision": "248dadf4e9068a0b3e79f02ed0a610d935de5302",
+			"revisionTime": "2016-10-29T09:36:37Z"
 		},
 		{
 			"checksumSHA1": "u7qSU5PvTxCAYjTHec2g87Nxce4=",

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	version "github.com/hashicorp/go-version"
-	"github.com/juju/errgo"
+	"github.com/pkg/errors"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
 )
@@ -36,33 +36,33 @@ type GroupDef struct {
 
 func LoadConfig(reader io.Reader, edwardVersion string, logger common.Logger) (Config, error) {
 	outCfg, err := LoadConfigWithDir(reader, "", edwardVersion, logger)
-	return outCfg, errgo.Mask(err)
+	return outCfg, errors.WithStack(err)
 }
 
 func LoadConfigWithDir(reader io.Reader, workingDir string, edwardVersion string, logger common.Logger) (Config, error) {
 	config, err := loadConfigContents(reader, workingDir, logger)
 	if err != nil {
-		return Config{}, errgo.Mask(err)
+		return Config{}, errors.WithStack(err)
 	}
 	if config.MinEdwardVersion != "" && edwardVersion != "" {
 		// Check that this config is supported by this version
 		minVersion, err1 := version.NewVersion(config.MinEdwardVersion)
 		if err1 != nil {
-			return Config{}, errgo.Mask(err)
+			return Config{}, errors.WithStack(err)
 		}
 		currentVersion, err2 := version.NewVersion(edwardVersion)
 		if err2 != nil {
-			return Config{}, errgo.Mask(err)
+			return Config{}, errors.WithStack(err)
 		}
 		if currentVersion.LessThan(minVersion) {
-			return Config{}, errgo.New("this config requires at least version " + config.MinEdwardVersion)
+			return Config{}, errors.New("this config requires at least version " + config.MinEdwardVersion)
 		}
 	}
 	err = config.initMaps()
 
 	config.printf("Config loaded with: %d groups and %d services\n", len(config.GroupMap), len(config.ServiceMap))
 
-	return config, errgo.Mask(err)
+	return config, errors.WithStack(err)
 }
 
 // Reader from os.Open
@@ -75,14 +75,14 @@ func loadConfigContents(reader io.Reader, workingDir string, logger common.Logge
 	err := dec.Decode(&config)
 
 	if err != nil {
-		return Config{}, errgo.Mask(err)
+		return Config{}, errors.WithStack(err)
 	}
 
 	config.workingDir = workingDir
 
 	err = config.loadImports()
 	if err != nil {
-		return Config{}, errgo.Mask(err)
+		return Config{}, errors.WithStack(err)
 	}
 
 	config.Logger = log
@@ -94,10 +94,10 @@ func (c Config) Save(writer io.Writer) error {
 	c.printf("Saving config")
 	content, err := json.MarshalIndent(c, "", "    ")
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	_, err = writer.Write(content)
-	return err
+	return errors.WithStack(err)
 }
 
 func NewConfig(newServices []services.ServiceConfig, newGroups []services.ServiceGroupConfig, logger common.Logger) Config {
@@ -159,7 +159,7 @@ func (cfg *Config) NormalizeServicePaths(searchPath string, newServices []*servi
 		fullPath := filepath.Join(searchPath, *curService.Path)
 		relPath, err := filepath.Rel(cfg.workingDir, fullPath)
 		if err != nil {
-			return outServices, errgo.Mask(err)
+			return outServices, errors.WithStack(err)
 		}
 		curService.Path = &relPath
 		outServices = append(outServices, &curService)
@@ -218,16 +218,16 @@ func (c *Config) loadImports() error {
 
 		r, err := os.Open(cPath)
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 		cfg, err := loadConfigContents(r, filepath.Dir(cPath), c.Logger)
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 
 		err = c.importConfig(cfg)
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 	}
 	return nil
@@ -260,7 +260,7 @@ func (c *Config) initMaps() error {
 		sc.Env = append(sc.Env, c.Env...)
 		if sc.MatchesPlatform() {
 			if _, exists := svcs[sc.Name]; exists {
-				return errgo.New("Service name already exists: " + sc.Name)
+				return errors.New("Service name already exists: " + sc.Name)
 			}
 			svcs[sc.Name] = &sc
 		} else {
@@ -286,7 +286,7 @@ func (c *Config) initMaps() error {
 		}
 
 		if _, exists := groups[g.Name]; exists {
-			return errgo.New("Group name already exists: " + g.Name)
+			return errors.New("Group name already exists: " + g.Name)
 		}
 
 		groups[g.Name] = &services.ServiceGroupConfig{
@@ -307,7 +307,7 @@ func (c *Config) initMaps() error {
 				childGroups = append(childGroups, gr)
 			}
 			if hasChildCycle(groups[g.Name], childGroups) {
-				return errgo.New("group cycle: " + g.Name)
+				return errors.New("group cycle: " + g.Name)
 			}
 		}
 		groups[g.Name].Groups = childGroups
@@ -318,7 +318,7 @@ func (c *Config) initMaps() error {
 		for k := range orphanNames {
 			keys = append(keys, k)
 		}
-		return errgo.New("A service or group could not be found for the following names: " + strings.Join(keys, ", "))
+		return errors.New("A service or group could not be found for the following names: " + strings.Join(keys, ", "))
 	}
 
 	c.ServiceMap = svcs

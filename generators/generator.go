@@ -1,13 +1,12 @@
 package generators
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 
-	"github.com/juju/errgo"
+	"github.com/pkg/errors"
 	"github.com/sabhiram/go-git-ignore"
 	"github.com/yext/edward/services"
 )
@@ -37,11 +36,11 @@ func loadIgnores(path string, currentIgnores *ignore.GitIgnore) (*ignore.GitIgno
 		if os.IsNotExist(err) {
 			return currentIgnores, nil
 		}
-		return currentIgnores, errgo.Mask(err)
+		return currentIgnores, errors.WithStack(err)
 	}
 
 	ignores, err := ignore.CompileIgnoreFile(ignoreFile)
-	return ignores, errgo.Mask(err)
+	return ignores, errors.WithStack(err)
 }
 
 func shouldIgnore(basePath, path string, ignores *ignore.GitIgnore) bool {
@@ -72,7 +71,7 @@ func GenerateServices(path string, targets []string) ([]*services.ServiceConfig,
 	// TODO: Create a stack of ignore files to handle ignores in subdirs
 	ignores, err := loadIgnores(path, nil)
 	if err != nil {
-		return nil, nil, errgo.Mask(err)
+		return nil, nil, errors.WithStack(err)
 	}
 
 	for name, generator := range Generators {
@@ -82,7 +81,7 @@ func GenerateServices(path string, targets []string) ([]*services.ServiceConfig,
 				if os.IsNotExist(err) {
 					return nil
 				}
-				return errgo.Mask(err)
+				return errors.WithStack(err)
 			}
 
 			if !f.Mode().IsDir() || shouldIgnore(path, curPath, ignores) {
@@ -91,9 +90,9 @@ func GenerateServices(path string, targets []string) ([]*services.ServiceConfig,
 
 			err = generator.VisitDir(curPath, f, err)
 			if err == filepath.SkipDir {
-				return err
+				return errors.WithStack(err)
 			}
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		})
 		generator.StopWalk()
 		if err != nil {
@@ -125,7 +124,7 @@ func GenerateServices(path string, targets []string) ([]*services.ServiceConfig,
 	}
 
 	if len(filteredServices) == 0 {
-		return nil, nil, errgo.New("No matching services found")
+		return nil, nil, errors.New("No matching services found")
 	}
 
 	sort.Sort(ByName(filteredServices))

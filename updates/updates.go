@@ -12,32 +12,32 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
-	"github.com/juju/errgo"
+	"github.com/pkg/errors"
 	"github.com/yext/edward/common"
 )
 
 func UpdateAvailable(repo, currentVersion, cachePath string, logger common.Logger) (bool, string, error) {
 	output, err := exec.Command("git", "ls-remote", "-t", "git://"+repo).CombinedOutput()
 	if err != nil {
-		return false, "", errgo.Mask(err)
+		return false, "", errors.WithStack(err)
 	}
 
 	printf(logger, "Checking for cached version at %v", cachePath)
 	isCached, latestVersion, err := getCachedVersion(cachePath)
 	if err != nil {
-		return false, "", errgo.Mask(err)
+		return false, "", errors.WithStack(err)
 	}
 
 	if !isCached {
 		printf(logger, "No cached version, requesting from Git\n")
 		latestVersion, err = findLatestVersionTag(output)
 		if err != nil {
-			return false, "", errgo.Mask(err)
+			return false, "", errors.WithStack(err)
 		}
 		printf(logger, "Caching version: %v", latestVersion)
 		err = cacheVersion(cachePath, latestVersion)
 		if err != nil {
-			return false, "", errgo.Mask(err)
+			return false, "", errors.WithStack(err)
 		}
 	} else {
 		printf(logger, "Found cached version\n")
@@ -49,10 +49,10 @@ func UpdateAvailable(repo, currentVersion, cachePath string, logger common.Logge
 	cv, err2 := version.NewVersion(currentVersion)
 
 	if err1 != nil {
-		return false, latestVersion, errgo.Mask(err)
+		return false, latestVersion, errors.WithStack(err)
 	}
 	if err2 != nil {
-		return true, latestVersion, errgo.Mask(err)
+		return true, latestVersion, errors.WithStack(err)
 	}
 
 	return cv.LessThan(lv), latestVersion, nil
@@ -85,7 +85,7 @@ func getCachedVersion(cachePath string) (wasCached bool, cachedVersion string, e
 		if os.IsNotExist(err) {
 			return false, "", nil
 		}
-		return false, "", errgo.Mask(err)
+		return false, "", errors.WithStack(err)
 	}
 	duration := time.Since(info.ModTime())
 	if duration.Hours() >= 1 {
@@ -93,14 +93,14 @@ func getCachedVersion(cachePath string) (wasCached bool, cachedVersion string, e
 	}
 	content, err := ioutil.ReadFile(cachePath)
 	if err != nil {
-		return false, "", errgo.Mask(err)
+		return false, "", errors.WithStack(err)
 	}
 	return true, string(content), nil
 }
 
 func cacheVersion(cachePath, versionToCache string) error {
 	err := ioutil.WriteFile(cachePath, []byte(versionToCache), 0644)
-	return errgo.Mask(err)
+	return errors.WithStack(err)
 }
 
 func printf(logger common.Logger, f string, v ...interface{}) {

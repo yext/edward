@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/juju/errgo"
+	"github.com/pkg/errors"
 	"github.com/yext/edward/services"
 )
 
@@ -37,17 +37,17 @@ func (v *IcbmGenerator) VisitDir(path string, f os.FileInfo, err error) error {
 	if _, err := os.Stat(buildFilePath); os.IsNotExist(err) {
 		return nil
 	} else if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	specData, err := ioutil.ReadFile(buildFilePath)
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	relPath, err := filepath.Rel(v.basePath, path)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	v.foundServices = append(v.foundServices, parsePlayServices(relPath, specData)...)

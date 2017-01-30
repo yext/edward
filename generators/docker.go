@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/juju/errgo"
+	"github.com/pkg/errors"
 	"github.com/yext/edward/services"
 )
 
@@ -34,11 +34,11 @@ func (v *DockerGenerator) StopWalk() {
 
 func (v *DockerGenerator) VisitDir(path string, f os.FileInfo, err error) error {
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	if _, err := os.Stat(path); err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	files, _ := ioutil.ReadDir(path)
@@ -49,13 +49,13 @@ func (v *DockerGenerator) VisitDir(path string, f os.FileInfo, err error) error 
 
 		dockerPath, err := filepath.Rel(v.basePath, path)
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 
 		fPath := filepath.Join(path, f.Name())
 		expectedPorts, portCommands, err := getPorts(fPath)
 		if err != nil {
-			return errgo.Mask(err)
+			return errors.WithStack(err)
 		}
 
 		name := filepath.Base(path)
@@ -82,7 +82,7 @@ func (v *DockerGenerator) VisitDir(path string, f os.FileInfo, err error) error 
 func getPorts(dockerFilePath string) ([]int, []string, error) {
 	input, err := ioutil.ReadFile(dockerFilePath)
 	if err != nil {
-		return nil, nil, errgo.Mask(err)
+		return nil, nil, errors.WithStack(err)
 	}
 	var ports []int
 	var portCommands []string
@@ -91,7 +91,7 @@ func getPorts(dockerFilePath string) ([]int, []string, error) {
 		portCommands = append(portCommands, "-p "+match[1]+":"+match[1])
 		port, err := strconv.Atoi(match[1])
 		if err != nil {
-			return nil, nil, errgo.Mask(err)
+			return nil, nil, errors.WithStack(err)
 		}
 		ports = append(ports, port)
 	}
