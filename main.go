@@ -20,6 +20,7 @@ import (
 
 	"gopkg.in/natefinch/lumberjack.v2"
 
+	"github.com/fatih/color"
 	"github.com/hpcloud/tail"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
@@ -695,13 +696,14 @@ func doLog(c *cli.Context) error {
 	count := services.CountServices(sgs)
 
 	var wait sync.WaitGroup
+	var writeMutex sync.Mutex
 
 	for _, sg := range sgs {
 		switch v := sg.(type) {
 		case *services.ServiceConfig:
-			followServiceLog(v, count > 1, &wait)
+			followServiceLog(v, count > 1, &wait, &writeMutex)
 		case *services.ServiceGroupConfig:
-			followGroupLog(v, count > 1, &wait)
+			followGroupLog(v, count > 1, &wait, &writeMutex)
 		}
 	}
 
@@ -710,23 +712,23 @@ func doLog(c *cli.Context) error {
 	return nil
 }
 
-func followGroupLog(group *services.ServiceGroupConfig, multiple bool, wait *sync.WaitGroup) error {
+func followGroupLog(group *services.ServiceGroupConfig, multiple bool, wait *sync.WaitGroup, writeMutex *sync.Mutex) error {
 	for _, group := range group.Groups {
-		followGroupLog(group, multiple, wait)
+		followGroupLog(group, multiple, wait, writeMutex)
 	}
 	for _, service := range group.Services {
-		followServiceLog(service, multiple, wait)
+		followServiceLog(service, multiple, wait, writeMutex)
 	}
 	return nil
 }
 
-func followServiceLog(service *services.ServiceConfig, multiple bool, wait *sync.WaitGroup) error {
+func followServiceLog(service *services.ServiceConfig, multiple bool, wait *sync.WaitGroup, writeMutex *sync.Mutex) error {
 	wait.Add(1)
-	go doFollowServiceLog(service, multiple, wait)
+	go doFollowServiceLog(service, multiple, wait, writeMutex)
 	return nil
 }
 
-func doFollowServiceLog(service *services.ServiceConfig, multiple bool, wait *sync.WaitGroup) error {
+func doFollowServiceLog(service *services.ServiceConfig, multiple bool, wait *sync.WaitGroup, writeMutex *sync.Mutex) error {
 	command, err := service.GetCommand()
 	if err != nil {
 		return errors.WithStack(err)
@@ -742,11 +744,16 @@ func doFollowServiceLog(service *services.ServiceConfig, multiple bool, wait *sy
 		if err != nil {
 			return errors.WithStack(err)
 		}
+		writeMutex.Lock()
 		if multiple {
-			fmt.Printf("%v: %v\n", service.Name, lineData.Message)
-		} else {
-			fmt.Printf("%v\n", lineData.Message)
+			print("[")
+			color.Set(color.FgHiYellow)
+			print(service.Name)
+			color.Unset()
+			print("]: ")
 		}
+		fmt.Printf("%v\n", lineData.Message)
+		writeMutex.Unlock()
 	}
 	wait.Done()
 	return nil
