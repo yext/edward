@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -14,5 +15,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/", handler)
 	fmt.Println("Starting to listen on port 51936")
-	http.ListenAndServe(":51936", nil)
+	err := http.ListenAndServe(":51936", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -703,10 +704,15 @@ func doLog(c *cli.Context) error {
 		runLog := command.Scripts.Launch.Log
 		t, err := tail.TailFile(runLog, tail.Config{Follow: true})
 		if err != nil {
-			return nil
+			return errors.WithStack(err)
 		}
 		for line := range t.Lines {
-			println(line.Text)
+			var lineData LogLine
+			err = json.Unmarshal([]byte(line.Text), &lineData)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			println(lineData.Message)
 		}
 		return nil
 	}
