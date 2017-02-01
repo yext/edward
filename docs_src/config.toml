@@ -61,25 +61,35 @@ publishDir = "../docs"
 	url    = "quickstart/"
 	weight = 20
 
-	[[menu.main]]
-		name   = "Autocompletion"
-		url    = "autocompletion/"
-		weight = 30
+[[menu.main]]
+  name   = "Commands"
+  url    = "commands/"
+  weight = 30
+
+[[menu.main]]
+  name   = "Project Configuration"
+  url    = "projectconfig/"
+  weight = 40
+
+[[menu.main]]
+  name   = "Autocompletion"
+	url    = "autocompletion/"
+	weight = 50
 
 [[menu.main]]
 	name   = "Sudo"
 	url    = "sudo/"
-	weight = 40
+	weight = 60
 
 [[menu.main]]
 	name   = "Roadmap"
 	url    = "roadmap/"
-	weight = 50
+	weight = 70
 
 [[menu.main]]
 	name   = "License"
 	url    = "license/"
-	weight = 60
+	weight = 80
 
 
 [blackfriday]
