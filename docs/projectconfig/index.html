@@ -9,18 +9,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=10" />
-    <title>Roadmap - Edward Docs</title>
+    <title>Project Configuration - Edward Docs</title>
     <meta name="generator" content="Hugo 0.18.1" />
 
     
     <meta name="description" content="A command line tool for managing local instances of microservices.">
     
-    <link rel="canonical" href="http://engblog.yext.com/edward/roadmap/">
+    <link rel="canonical" href="http://engblog.yext.com/edward/projectconfig/">
     
     <meta name="author" content="Tom Elliott">
     
 
-    <meta property="og:url" content="http://engblog.yext.com/edward/roadmap/">
+    <meta property="og:url" content="http://engblog.yext.com/edward/projectconfig/">
     <meta property="og:title" content="Edward Docs">
     
     <meta name="apple-mobile-web-app-title" content="Edward Docs">
@@ -97,7 +97,7 @@
     </div>
     <div class="stretch">
       <div class="title">
-        Roadmap
+        Project Configuration
       </div>
     </div>
 
@@ -248,11 +248,14 @@
 
 
 
-<a  title="Project Configuration" href="http://engblog.yext.com/edward/projectconfig/">
+<a class="current" title="Project Configuration" href="http://engblog.yext.com/edward/projectconfig/">
 	
 	Project Configuration
 </a>
 
+
+<ul id="scrollspy">
+</ul>
 
 
   
@@ -302,14 +305,11 @@
 
 
 
-<a class="current" title="Roadmap" href="http://engblog.yext.com/edward/roadmap/">
+<a  title="Roadmap" href="http://engblog.yext.com/edward/roadmap/">
 	
 	Roadmap
 </a>
 
-
-<ul id="scrollspy">
-</ul>
 
 
   
@@ -370,26 +370,223 @@
 
 	<article class="article">
 		<div class="wrapper">
-			<h1>Roadmap </h1>
+			<h1>Project Configuration </h1>
 
 			
 
-<h2 id="planned-features">Planned Features</h2>
+<h2 id="edward-json">edward.json</h2>
 
-<ul>
-<li>Plugins for generators</li>
-<li>Error counts in status</li>
-<li>System tray/menu interface</li>
-<li>Toast notifications</li>
-</ul>
+<p>The <em>edward.json</em> file defines the services and groups that can be managed by Edward.</p>
 
-<h2 id="issues">Issues</h2>
+<p>Edward will look for an <em>edward.json</em> file in the current working directory, and if not found there,
+it will look for <em>edward.json</em> in every parent directory to the root.</p>
 
-<p>Bugs and planned work are tracked in the Edward GitHub repo under <a href="https://github.com/yext/edward/issues">issues</a>.</p>
+<p>If no config file can be found, Edward will exit with an error and print usage information.</p>
 
-<h2 id="contributing">Contributing</h2>
+<p>You can override this behavior with the <code>--config</code> or <code>-c</code> flag:</p>
 
-<p>Contributions to Edward are always welcome. Please feel free to raise new <a href="https://github.com/yext/edward/issues">issues</a> or submit a <a href="https://github.com/yext/edward/pulls">pull request</a>.</p>
+<pre><code>$ edward -c path/to/alternative.json list
+</code></pre>
+
+<h2 id="structure">Structure</h2>
+
+<p>An <em>edward.json</em> file at its core is a JSON document, containing an object with three array attributes:</p>
+
+<pre><code class="language-json">{
+  &quot;imports&quot;: [],
+  &quot;groups&quot;: [],
+  &quot;services&quot;: []
+}
+</code></pre>
+
+<p>These attributes are all optional.</p>
+
+<h2 id="services">Services</h2>
+
+<p>A basic service consists of a <em>name</em>, a <em>path</em> in which to run the build and launch commands, and <em>commands</em>
+to perform the build and launch steps:</p>
+
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;myservice&quot;,
+    &quot;path&quot;: &quot;path/to/myservice&quot;,
+    &quot;commands&quot;: {
+        &quot;build&quot;: &quot;make install&quot;,
+        &quot;launch&quot;: &quot;myservice&quot;
+    }
+}
+</code></pre>
+
+<p>The service <em>name</em> is the name you will use to identify this service when calling Edward commands.</p>
+
+<div class="admonition warning">
+<p class="admonition-title">Names must be unique</p>
+<p>Service and group names must be unique within your Edward config. If duplicates are found, Edward will
+exit with an error.</p>
+</div>
+
+<p>The <em>path</em> and each of the <em>commands</em> are optional. If no path is specified, Edward will run the commands in the current working directory. If a build command is omitted, only the launch script will be executed, and vice versa. This allows you to run pre-flight build steps common to many services, or start third-party applications you don&rsquo;t need to build.</p>
+
+<p>You can use environment variables in the path and commands:</p>
+
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;myservice&quot;,
+    &quot;path&quot;: &quot;$HOME/src/myservice&quot;,
+    &quot;commands&quot;: {
+        &quot;launch&quot;: &quot;myservice -key $MY_KEY&quot;
+    }
+}
+</code></pre>
+
+<p>However, you cannot use shell-specific constructs like piping (<code>|</code>) or redirection (<code>&gt;</code>). For complex
+build and launch operations, we recommend consolidating multiple commands into a separate script file.</p>
+
+<h3 id="custom-stop-scripts">Custom Stop Scripts</h3>
+
+<p>If you need to run a specific command to stop a service, you can add a <em>stop</em> command to the service definition:</p>
+
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;myservice&quot;,
+    &quot;commands&quot;: {
+        &quot;launch&quot;: &quot;myservice up&quot;,
+        &quot;stop&quot;: &quot;myservice down&quot;
+    }
+}
+</code></pre>
+
+<p>If this command fails, Edward will attempt to send a kill signal to the running service.</p>
+
+<h3 id="detecting-successful-launch">Detecting Successful Launch</h3>
+
+<p>When Edward starts a service, it will confirm that the service has started successfully before proceeding. By default, Edward will consider a service to have started if it is listening on one or more ports.</p>
+
+<p>You can override this behavior by setting the <em>launch_checks</em> attribute for the service.</p>
+
+<p>If your service will output a known piece of text to the console when it has finished startup, you can specify a <em>log_text</em>:</p>
+
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;myservice&quot;,
+    ...
+    &quot;launch_checks&quot;: {
+      &quot;log_text&quot;: &quot;Finished startup&quot;
+    }
+}
+</code></pre>
+
+<p>In this case, once the text &ldquo;Finished startup&rdquo; appears in the console lot, Edward will deem the service to have started successfully.</p>
+
+<p>Alternatively, you can specify a set of ports:</p>
+
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;myservice&quot;,
+    ...
+    &quot;launch_checks&quot;: {
+      &quot;ports&quot;: [8080, 8081]
+    }
+}
+</code></pre>
+
+<p>And Edward will wait for all the listed ports to be open before considering the service started. When ports are specified, the process that opens them will not be taken into account.</p>
+
+<h3 id="environment-variables">Environment Variables</h3>
+
+<p>To specify environment variables to be passed to a service, you can add the <em>env</em> attribute, which is an array of environment variables in the form <code>KEY=VALUE</code>:</p>
+
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;myservice&quot;,
+    ...
+    &quot;env&quot;: [
+      &quot;ENV_VAR=value&quot;
+    ]
+}
+</code></pre>
+
+<h3 id="platform-specific-services">Platform-Specific Services</h3>
+
+<p>Some services need different configuration for different platforms. To make a service platform-specific, set the <em>platform</em> attribute.</p>
+
+<p>It is permitted to have multiple services with the same name, provided they have different platforms.</p>
+
+<p>The below example will create two instances of <em>myservice</em>: one for Mac OS (darwin) and one for Linux:</p>
+
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;myservice&quot;,
+    ...
+    &quot;platform&quot;: &quot;darwin&quot;
+},
+{
+    &quot;name&quot;: &quot;myservice&quot;,
+    ...
+    &quot;platform&quot;: &quot;linux&quot;
+}
+</code></pre>
+
+<h3 id="warming-up-services">&ldquo;Warming Up&rdquo; Services</h3>
+
+<p>Some services may do a portion of their setup on the first request they receive. To cut down on waiting
+time when working with such services, you can configure Edward to make a request to a URL after starting a service.</p>
+
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;myservice&quot;,
+    ...
+    &quot;warmup&quot;: {
+      &quot;url&quot;: &quot;http://localhost:8080&quot;
+    }
+}
+</code></pre>
+
+<p>Requests to these URLs will happen in the background, and will not delay the starting of other services.</p>
+
+<h3 id="requiring-sudo">Requiring Sudo</h3>
+
+<p>If a service needs sudo to run, it will need to be marked appropriately:</p>
+
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;myservice&quot;,
+  &quot;requiresSudo&quot;: true
+}
+</code></pre>
+
+<p>If any service to be started/stopped/restarted requires sudo, Edward will trigger a prompt for the user&rsquo;s password.
+This prompt is triggered through scripting, Edward itself will not have access to your password.</p>
+
+<h2 id="groups">Groups</h2>
+
+<p>The <em>groups</em> array contains a list of group objects, each of which have a name and a list of children.
+A group&rsquo;s children can be either services, or other groups.</p>
+
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;mygroup&quot;,
+  &quot;children&quot;: [&quot;childgroup&quot;, &quot;childservice&quot;]
+}
+</code></pre>
+
+<p>The above example specifies a group called <em>mygroup</em> with two children, <em>childgroup</em> and <em>childservice</em>.</p>
+
+<h2 id="imports">Imports</h2>
+
+<p>The <em>imports</em> array is a list of other config files to be imported into this one:</p>
+
+<pre><code class="language-json">&quot;imports&quot;: [&quot;import1.json&quot;, &quot;path/to/import2.json&quot;]
+</code></pre>
+
+<p>The paths to imports are relative to the parent <code>edward.json</code> file. Imported config files may also import other
+config files.</p>
+
+<p>The combined configuration is validated after all imports have been loaded, so a group in one file may have as a child a service from another file, provided they are connected by an import in some way.</p>
+
+<h2 id="versioning">Versioning</h2>
+
+<p>If you are using features from a new version of Edward, and want to make sure that your config file can only be used by that version or higher, you can specify the <em>edwardVersion</em> setting in your config file:</p>
+
+<pre><code class="language-json">{
+  &quot;edwardVersion&quot;: &quot;1.6.0&quot;,
+  &quot;imports&quot;: [],
+  &quot;groups&quot;: [],
+  &quot;services&quot;: []
+}
+</code></pre>
+
+<p>This will require that Edward version 1.6.0 or higher is installed in order to use your config file.</p>
 
 
 			<aside class="copyright" role="note">
@@ -408,7 +605,7 @@
 <nav class="pagination" aria-label="Footer">
   <div class="previous">
   
-      <a href="http://engblog.yext.com/edward/quickstart/" title="Getting started">
+      <a href="http://engblog.yext.com/edward/commands/" title="Commands">
         <span class="direction">
           Previous
         </span>
@@ -418,7 +615,7 @@
           </div>
           <div class="stretch">
             <div class="title">
-              Getting started
+              Commands
             </div>
           </div>
         </div>
@@ -428,14 +625,14 @@
 
   <div class="next">
   
-      <a href="http://engblog.yext.com/edward/license/" title="License">
+      <a href="http://engblog.yext.com/edward/autocompletion/" title="Autocompletion">
         <span class="direction">
           Next
         </span>
         <div class="page">
           <div class="stretch">
             <div class="title">
-              License
+              Autocompletion
             </div>
           </div>
           <div class="button button-next" role="button" aria-label="Next">

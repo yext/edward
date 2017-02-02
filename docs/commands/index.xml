@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Commands on Edward Docs</title>
+    <link>http://engblog.yext.com/edward/commands/index.xml</link>
+    <description>Recent content in Commands on Edward Docs</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>Released under the MIT license</copyright>
+    <lastBuildDate>Wed, 01 Feb 2017 17:24:55 -0500</lastBuildDate>
+    <atom:link href="http://engblog.yext.com/edward/commands/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Commands</title>
+      <link>http://engblog.yext.com/edward/commands/</link>
+      <pubDate>Wed, 01 Feb 2017 17:24:55 -0500</pubDate>
+      
+      <guid>http://engblog.yext.com/edward/commands/</guid>
+      <description>
+
+&lt;p&gt;Edward provides a series of commands to manage your local services, which are called
+using the form:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ edward [command]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;You may have discovered some of these already in the &lt;a href=&#34;../quickstart/&#34;&gt;Quickstart&lt;/a&gt;,
+but they are outlined in more detail here.&lt;/p&gt;
+
+&lt;h2 id=&#34;list&#34;&gt;List&lt;/h2&gt;
+
+&lt;p&gt;The &lt;code&gt;list&lt;/code&gt; command outputs a list of all the services and groups that are defined
+in the current &lt;a href=&#34;../projectconfig&#34;&gt;&lt;code&gt;edward.json&lt;/code&gt;&lt;/a&gt;. It takes no arguments.&lt;/p&gt;
+
+&lt;p&gt;Groups are listed first, followed by services. The list will include all services
+that are defined by your &lt;code&gt;edward.json&lt;/code&gt; or any of the files it imports.&lt;/p&gt;
+
+&lt;h2 id=&#34;start&#34;&gt;Start&lt;/h2&gt;
+
+&lt;p&gt;The &lt;code&gt;start&lt;/code&gt; command will build and launch a service or group locally. It takes
+the name of one or more services as arguments.&lt;/p&gt;
+
+&lt;p&gt;For example, to start the service named &lt;em&gt;myservice&lt;/em&gt;, you would run:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ edward start myservice
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;To start the group &lt;em&gt;mygroup&lt;/em&gt; along with &lt;em&gt;myservice&lt;/em&gt;, you would run:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ edward start mygroup myservice
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;When starting multiple services, it will build and launch them sequentially.&lt;/p&gt;
+
+&lt;p&gt;If any of the specified services are already running, Edward will ignore them and move on to the next
+service.&lt;/p&gt;
+
+&lt;p&gt;If Edward fails to build or launch any services, it will stop the operation and any subsequent specified
+services will not start.&lt;/p&gt;
+
+&lt;p&gt;Once all services have been started, the Edward command will exit, and these services will continue to run in the background.&lt;/p&gt;
+
+&lt;h2 id=&#34;stop&#34;&gt;Stop&lt;/h2&gt;
+
+&lt;p&gt;The &lt;code&gt;stop&lt;/code&gt; command will stop one or more groups and/or services. It takes service
+and group names are arguments in the same manner as &lt;code&gt;start&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;For example, to stop &lt;em&gt;mygroup&lt;/em&gt; and &lt;em&gt;myservice&lt;/em&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ edward stop mygroup myservice
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If any of the specified services are not running, Edward will ignore them and move on to the next
+service. If Edward fails to stop a service, it will continue to stop the rest of the services specified.&lt;/p&gt;
+
+&lt;h2 id=&#34;restart&#34;&gt;Restart&lt;/h2&gt;
+
+&lt;p&gt;The &lt;code&gt;restart&lt;/code&gt; command will rebuild and relaunch the specified groups/services.  It takes service
+and group names are arguments in the same manner as &lt;code&gt;start&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;To restart &lt;em&gt;mygroup&lt;/em&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ edward restart mygroup
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Each service will be stopped, rebuilt and relaunched sequentially. If Edward fails to start, build or launch any
+service, the operation will end, as with &lt;code&gt;start&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&#34;log-tail&#34;&gt;Log/Tail&lt;/h2&gt;
+
+&lt;p&gt;The &lt;code&gt;log&lt;/code&gt; or &lt;code&gt;tail&lt;/code&gt; command will output and then follow the console logs for a specified service.&lt;/p&gt;
+
+&lt;p&gt;For example, to output and follow the logs for &lt;em&gt;myservice&lt;/em&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ edward log myservice
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Or:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ edward tail myservice
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Only one service&amp;rsquo;s log can be output at once. Specifying multiple services or a group will result
+in an error.&lt;/p&gt;
+
+&lt;h2 id=&#34;generate&#34;&gt;Generate&lt;/h2&gt;
+
+&lt;p&gt;The &lt;code&gt;generate&lt;/code&gt; command will search in the current working directory for projects for which Edward
+can automatically generate a config file. It will then either create a new &lt;code&gt;edward.json&lt;/code&gt; file in the
+working directory, or add to the existing file.&lt;/p&gt;
+
+&lt;p&gt;For example:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ edward generate
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Will search in all directories below the working directory and automatically generate config for any
+supported projects that are found.&lt;/p&gt;
+
+&lt;p&gt;If you want to only generate config for a specific project, you can specify it as an argument:&lt;/p&gt;
+
+&lt;p&gt;$ edward generate myservice&lt;/p&gt;
+
+&lt;p&gt;Edward supports autogeneration for three types of project:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;go&lt;/li&gt;
+&lt;li&gt;Docker&lt;/li&gt;
+&lt;li&gt;icbm&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;go&#34;&gt;Go&lt;/h3&gt;
+
+&lt;p&gt;The &lt;em&gt;Go&lt;/em&gt; generator will create service configuration for services written in the &lt;a href=&#34;https://golang.org/&#34;&gt;Go programming language&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;This generator will match any folder containing a &lt;code&gt;main&lt;/code&gt; package. The name of this
+folder will be used as the name of the service.&lt;/p&gt;
+
+&lt;p&gt;The generated config will build the project by changing into the package directory and running &lt;code&gt;go install&lt;/code&gt;
+with no additional arguments. The name of the project will be used to launch the resulting binary.&lt;/p&gt;
+
+&lt;p&gt;The generated config will assume that a service has started successfully by detecting that it is listening on
+at least one port. If a service does not listen on any ports, it will time out when starting.&lt;/p&gt;
+
+&lt;p&gt;The &lt;em&gt;Go&lt;/em&gt; generator will attempt to configure the watch paths for Go services, based on the imports of the project&amp;rsquo;s source.&lt;/p&gt;
+
+&lt;p&gt;Note that this generator assumes that your &lt;em&gt;GOPATH&lt;/em&gt; is configured correctly to build discovered projects.&lt;/p&gt;
+
+&lt;p&gt;Once a Go service has been found, any folders inside the package directory will not be searched.&lt;/p&gt;
+
+&lt;h3 id=&#34;docker&#34;&gt;Docker&lt;/h3&gt;
+
+&lt;p&gt;The &lt;em&gt;Docker&lt;/em&gt; generator will create service configuration for &lt;a href=&#34;https://www.docker.com/&#34;&gt;Docker containers&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;This generator will match any folder containing a &lt;em&gt;Dockerfile&lt;/em&gt;. The name of this folder
+will be used as the name of the service.&lt;/p&gt;
+
+&lt;p&gt;The generated config will build the container using &lt;code&gt;docker build&lt;/code&gt; and start it using &lt;code&gt;docker run&lt;/code&gt;. An
+Edward specific tag will be used to identify these container instances.&lt;/p&gt;
+
+&lt;p&gt;The port to be used for this service will be identified by the &lt;code&gt;EXPOSE&lt;/code&gt; command in the Dockerfile. This same port will be opened locally for this service. Edward will identify that this container has started successfully when the
+exposed port is open. If &lt;code&gt;EXPOSE&lt;/code&gt; is not used, starting the container will time out.&lt;/p&gt;
+
+&lt;p&gt;Note that this generator will assume that you can execute the &lt;code&gt;docker&lt;/code&gt; command without additional configuration, so older Docker Toolkit distributions may not work.&lt;/p&gt;
+
+&lt;h3 id=&#34;icbm&#34;&gt;icbm&lt;/h3&gt;
+
+&lt;p&gt;The &lt;em&gt;icbm&lt;/em&gt; generator will generate service configuration for services that use the &lt;a href=&#34;https://github.com/yext/icbm&#34;&gt;icbm&lt;/a&gt; build tool.&lt;/p&gt;
+
+&lt;p&gt;This generator will look for a &lt;em&gt;build.spec&lt;/em&gt; file and generate a service for each of the named aliases.&lt;/p&gt;
+
+&lt;p&gt;The generated config will assume that a service has started successfully by detecting that it is listening on
+at least one port. If a service does not listen on any ports, it will time out when starting.&lt;/p&gt;
+
+&lt;h3 id=&#34;ignoring-directories&#34;&gt;Ignoring directories&lt;/h3&gt;
+
+&lt;p&gt;To protect against false positives, you can instruct Edward to ignore specific patterns when running &lt;code&gt;generate&lt;/code&gt; by creating an &lt;em&gt;.edwardignore&lt;/em&gt; file.&lt;/p&gt;
+
+&lt;p&gt;This file uses the same format as &lt;a href=&#34;https://git-scm.com/docs/gitignore&#34;&gt;gitignore&lt;/a&gt;. You can place an &lt;em&gt;.edwardignore&lt;/em&gt; file in any directory and it will take effect for paths below that directory, replacing ignores specified by ignore files higher up.&lt;/p&gt;
+
+&lt;h2 id=&#34;watch-automatically-rebuild-and-relaunch&#34;&gt;watch: Automatically rebuild and relaunch&lt;/h2&gt;
+
+&lt;p&gt;When running &lt;code&gt;start&lt;/code&gt; or &lt;code&gt;restart&lt;/code&gt;, the &lt;code&gt;-watch&lt;/code&gt; flag can be specified to instruct Edward to try and automatically
+restart services when files change in the directories specified in their config.&lt;/p&gt;
+
+&lt;p&gt;For example:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ edward start -watch myservice
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Will build and launch &lt;em&gt;myservice&lt;/em&gt; and watch for changes in the paths specified by &lt;em&gt;myservice&amp;rsquo;s&lt;/em&gt; config.&lt;/p&gt;
+
+&lt;p&gt;If you run &lt;code&gt;edward start&lt;/code&gt; or &lt;code&gt;edward restart&lt;/code&gt; with this flag, it will continue running after all services are started and monitor their watch paths for changes. Any restarts caused by these changes will be logged in the console.&lt;/p&gt;
+
+&lt;p&gt;If a service does not compile after a change, it will continue to run with its last good build and Edward will continue watching for changes.&lt;/p&gt;
+
+&lt;p&gt;If none of the started services have watch paths configured, Edward will display a warning and exit once all services have started.&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

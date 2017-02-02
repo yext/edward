@@ -9,18 +9,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=10" />
-    <title>Roadmap - Edward Docs</title>
+    <title>Commands - Edward Docs</title>
     <meta name="generator" content="Hugo 0.18.1" />
 
     
     <meta name="description" content="A command line tool for managing local instances of microservices.">
     
-    <link rel="canonical" href="http://engblog.yext.com/edward/roadmap/">
+    <link rel="canonical" href="http://engblog.yext.com/edward/commands/">
     
     <meta name="author" content="Tom Elliott">
     
 
-    <meta property="og:url" content="http://engblog.yext.com/edward/roadmap/">
+    <meta property="og:url" content="http://engblog.yext.com/edward/commands/">
     <meta property="og:title" content="Edward Docs">
     
     <meta name="apple-mobile-web-app-title" content="Edward Docs">
@@ -97,7 +97,7 @@
     </div>
     <div class="stretch">
       <div class="title">
-        Roadmap
+        Commands
       </div>
     </div>
 
@@ -230,11 +230,14 @@
 
 
 
-<a  title="Commands" href="http://engblog.yext.com/edward/commands/">
+<a class="current" title="Commands" href="http://engblog.yext.com/edward/commands/">
 	
 	Commands
 </a>
 
+
+<ul id="scrollspy">
+</ul>
 
 
   
@@ -302,14 +305,11 @@
 
 
 
-<a class="current" title="Roadmap" href="http://engblog.yext.com/edward/roadmap/">
+<a  title="Roadmap" href="http://engblog.yext.com/edward/roadmap/">
 	
 	Roadmap
 </a>
 
-
-<ul id="scrollspy">
-</ul>
 
 
   
@@ -370,26 +370,187 @@
 
 	<article class="article">
 		<div class="wrapper">
-			<h1>Roadmap </h1>
+			<h1>Commands </h1>
 
 			
 
-<h2 id="planned-features">Planned Features</h2>
+<p>Edward provides a series of commands to manage your local services, which are called
+using the form:</p>
+
+<pre><code>$ edward [command]
+</code></pre>
+
+<p>You may have discovered some of these already in the <a href="../quickstart/">Quickstart</a>,
+but they are outlined in more detail here.</p>
+
+<h2 id="list">List</h2>
+
+<p>The <code>list</code> command outputs a list of all the services and groups that are defined
+in the current <a href="../projectconfig"><code>edward.json</code></a>. It takes no arguments.</p>
+
+<p>Groups are listed first, followed by services. The list will include all services
+that are defined by your <code>edward.json</code> or any of the files it imports.</p>
+
+<h2 id="start">Start</h2>
+
+<p>The <code>start</code> command will build and launch a service or group locally. It takes
+the name of one or more services as arguments.</p>
+
+<p>For example, to start the service named <em>myservice</em>, you would run:</p>
+
+<pre><code>$ edward start myservice
+</code></pre>
+
+<p>To start the group <em>mygroup</em> along with <em>myservice</em>, you would run:</p>
+
+<pre><code>$ edward start mygroup myservice
+</code></pre>
+
+<p>When starting multiple services, it will build and launch them sequentially.</p>
+
+<p>If any of the specified services are already running, Edward will ignore them and move on to the next
+service.</p>
+
+<p>If Edward fails to build or launch any services, it will stop the operation and any subsequent specified
+services will not start.</p>
+
+<p>Once all services have been started, the Edward command will exit, and these services will continue to run in the background.</p>
+
+<h2 id="stop">Stop</h2>
+
+<p>The <code>stop</code> command will stop one or more groups and/or services. It takes service
+and group names are arguments in the same manner as <code>start</code>.</p>
+
+<p>For example, to stop <em>mygroup</em> and <em>myservice</em>:</p>
+
+<pre><code>$ edward stop mygroup myservice
+</code></pre>
+
+<p>If any of the specified services are not running, Edward will ignore them and move on to the next
+service. If Edward fails to stop a service, it will continue to stop the rest of the services specified.</p>
+
+<h2 id="restart">Restart</h2>
+
+<p>The <code>restart</code> command will rebuild and relaunch the specified groups/services.  It takes service
+and group names are arguments in the same manner as <code>start</code>.</p>
+
+<p>To restart <em>mygroup</em>:</p>
+
+<pre><code>$ edward restart mygroup
+</code></pre>
+
+<p>Each service will be stopped, rebuilt and relaunched sequentially. If Edward fails to start, build or launch any
+service, the operation will end, as with <code>start</code>.</p>
+
+<h2 id="log-tail">Log/Tail</h2>
+
+<p>The <code>log</code> or <code>tail</code> command will output and then follow the console logs for a specified service.</p>
+
+<p>For example, to output and follow the logs for <em>myservice</em>:</p>
+
+<pre><code>$ edward log myservice
+</code></pre>
+
+<p>Or:</p>
+
+<pre><code>$ edward tail myservice
+</code></pre>
+
+<p>Only one service&rsquo;s log can be output at once. Specifying multiple services or a group will result
+in an error.</p>
+
+<h2 id="generate">Generate</h2>
+
+<p>The <code>generate</code> command will search in the current working directory for projects for which Edward
+can automatically generate a config file. It will then either create a new <code>edward.json</code> file in the
+working directory, or add to the existing file.</p>
+
+<p>For example:</p>
+
+<pre><code>$ edward generate
+</code></pre>
+
+<p>Will search in all directories below the working directory and automatically generate config for any
+supported projects that are found.</p>
+
+<p>If you want to only generate config for a specific project, you can specify it as an argument:</p>
+
+<p>$ edward generate myservice</p>
+
+<p>Edward supports autogeneration for three types of project:</p>
 
 <ul>
-<li>Plugins for generators</li>
-<li>Error counts in status</li>
-<li>System tray/menu interface</li>
-<li>Toast notifications</li>
+<li>go</li>
+<li>Docker</li>
+<li>icbm</li>
 </ul>
 
-<h2 id="issues">Issues</h2>
+<h3 id="go">Go</h3>
 
-<p>Bugs and planned work are tracked in the Edward GitHub repo under <a href="https://github.com/yext/edward/issues">issues</a>.</p>
+<p>The <em>Go</em> generator will create service configuration for services written in the <a href="https://golang.org/">Go programming language</a>.</p>
 
-<h2 id="contributing">Contributing</h2>
+<p>This generator will match any folder containing a <code>main</code> package. The name of this
+folder will be used as the name of the service.</p>
 
-<p>Contributions to Edward are always welcome. Please feel free to raise new <a href="https://github.com/yext/edward/issues">issues</a> or submit a <a href="https://github.com/yext/edward/pulls">pull request</a>.</p>
+<p>The generated config will build the project by changing into the package directory and running <code>go install</code>
+with no additional arguments. The name of the project will be used to launch the resulting binary.</p>
+
+<p>The generated config will assume that a service has started successfully by detecting that it is listening on
+at least one port. If a service does not listen on any ports, it will time out when starting.</p>
+
+<p>The <em>Go</em> generator will attempt to configure the watch paths for Go services, based on the imports of the project&rsquo;s source.</p>
+
+<p>Note that this generator assumes that your <em>GOPATH</em> is configured correctly to build discovered projects.</p>
+
+<p>Once a Go service has been found, any folders inside the package directory will not be searched.</p>
+
+<h3 id="docker">Docker</h3>
+
+<p>The <em>Docker</em> generator will create service configuration for <a href="https://www.docker.com/">Docker containers</a>.</p>
+
+<p>This generator will match any folder containing a <em>Dockerfile</em>. The name of this folder
+will be used as the name of the service.</p>
+
+<p>The generated config will build the container using <code>docker build</code> and start it using <code>docker run</code>. An
+Edward specific tag will be used to identify these container instances.</p>
+
+<p>The port to be used for this service will be identified by the <code>EXPOSE</code> command in the Dockerfile. This same port will be opened locally for this service. Edward will identify that this container has started successfully when the
+exposed port is open. If <code>EXPOSE</code> is not used, starting the container will time out.</p>
+
+<p>Note that this generator will assume that you can execute the <code>docker</code> command without additional configuration, so older Docker Toolkit distributions may not work.</p>
+
+<h3 id="icbm">icbm</h3>
+
+<p>The <em>icbm</em> generator will generate service configuration for services that use the <a href="https://github.com/yext/icbm">icbm</a> build tool.</p>
+
+<p>This generator will look for a <em>build.spec</em> file and generate a service for each of the named aliases.</p>
+
+<p>The generated config will assume that a service has started successfully by detecting that it is listening on
+at least one port. If a service does not listen on any ports, it will time out when starting.</p>
+
+<h3 id="ignoring-directories">Ignoring directories</h3>
+
+<p>To protect against false positives, you can instruct Edward to ignore specific patterns when running <code>generate</code> by creating an <em>.edwardignore</em> file.</p>
+
+<p>This file uses the same format as <a href="https://git-scm.com/docs/gitignore">gitignore</a>. You can place an <em>.edwardignore</em> file in any directory and it will take effect for paths below that directory, replacing ignores specified by ignore files higher up.</p>
+
+<h2 id="watch-automatically-rebuild-and-relaunch">watch: Automatically rebuild and relaunch</h2>
+
+<p>When running <code>start</code> or <code>restart</code>, the <code>-watch</code> flag can be specified to instruct Edward to try and automatically
+restart services when files change in the directories specified in their config.</p>
+
+<p>For example:</p>
+
+<pre><code>$ edward start -watch myservice
+</code></pre>
+
+<p>Will build and launch <em>myservice</em> and watch for changes in the paths specified by <em>myservice&rsquo;s</em> config.</p>
+
+<p>If you run <code>edward start</code> or <code>edward restart</code> with this flag, it will continue running after all services are started and monitor their watch paths for changes. Any restarts caused by these changes will be logged in the console.</p>
+
+<p>If a service does not compile after a change, it will continue to run with its last good build and Edward will continue watching for changes.</p>
+
+<p>If none of the started services have watch paths configured, Edward will display a warning and exit once all services have started.</p>
 
 
 			<aside class="copyright" role="note">
@@ -408,7 +569,7 @@
 <nav class="pagination" aria-label="Footer">
   <div class="previous">
   
-      <a href="http://engblog.yext.com/edward/quickstart/" title="Getting started">
+      <a href="http://engblog.yext.com/edward/license/" title="License">
         <span class="direction">
           Previous
         </span>
@@ -418,7 +579,7 @@
           </div>
           <div class="stretch">
             <div class="title">
-              Getting started
+              License
             </div>
           </div>
         </div>
@@ -428,14 +589,14 @@
 
   <div class="next">
   
-      <a href="http://engblog.yext.com/edward/license/" title="License">
+      <a href="http://engblog.yext.com/edward/projectconfig/" title="Project Configuration">
         <span class="direction">
           Next
         </span>
         <div class="page">
           <div class="stretch">
             <div class="title">
-              License
+              Project Configuration
             </div>
           </div>
           <div class="button button-next" role="button" aria-label="Next">

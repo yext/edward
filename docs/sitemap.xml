@@ -22,6 +22,16 @@
   </url>
   
   <url>
+    <loc>http://engblog.yext.com/edward/commands/</loc>
+    <lastmod>2017-02-01T17:24:55-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://engblog.yext.com/edward/projectconfig/</loc>
+    <lastmod>2017-02-01T17:24:55-05:00</lastmod>
+  </url>
+  
+  <url>
     <loc>http://engblog.yext.com/edward/autocompletion/</loc>
     <lastmod>2017-01-15T22:29:28-05:00</lastmod>
   </url>
@@ -43,6 +53,12 @@
   </url>
   
   <url>
+    <loc>http://engblog.yext.com/edward/commands/</loc>
+    <lastmod>2017-02-01T17:24:55-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>http://engblog.yext.com/edward/</loc>
     <lastmod>2016-03-09T00:11:02+01:00</lastmod>
     <priority>0</priority>
@@ -57,6 +73,12 @@
   <url>
     <loc>http://engblog.yext.com/edward/license/</loc>
     <lastmod>2016-03-09T20:10:46+01:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://engblog.yext.com/edward/projectconfig/</loc>
+    <lastmod>2017-02-01T17:24:55-05:00</lastmod>
     <priority>0</priority>
   </url>
   
