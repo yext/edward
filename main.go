@@ -84,6 +84,7 @@ func main() {
 	}
 	app.Commands = []cli.Command{
 		runner.Command,
+		builder.Command,
 		{
 			Name:   "list",
 			Usage:  "List available services",

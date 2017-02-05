@@ -23,7 +23,6 @@ type ServiceCommand struct {
 	Service *ServiceConfig
 	// Path to string
 	Scripts struct {
-		Build  Script
 		Launch Script
 		Stop   Script
 	}
@@ -103,9 +102,8 @@ func (sc *ServiceCommand) deleteScript(scriptType string) error {
 // If force is false, the build will be skipped if the service is already running.
 func (sc *ServiceCommand) BuildSync(force bool) error {
 	tracker := CommandTracker{
-		Name:       "Building " + sc.Service.Name,
-		OutputFile: sc.Scripts.Build.Log,
-		Logger:     sc.Logger,
+		Name:   "Building " + sc.Service.Name,
+		Logger: sc.Logger,
 	}
 	tracker.Start()
 
@@ -114,19 +112,33 @@ func (sc *ServiceCommand) BuildSync(force bool) error {
 		return nil
 	}
 
-	if !sc.Scripts.Build.WillRun() {
+	if sc.Service.Commands.Build == "" {
 		tracker.SoftFail(errors.New("No build"))
 		return nil
 	}
 
-	err := sc.Scripts.Build.Run(sc.Logger)
+	cmd := sc.getBuildCommand()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		tracker.Fail(err)
+		tracker.FailWithOutput(err, string(out))
 		return errors.WithStack(err)
 	}
 
 	tracker.Success()
 	return nil
+}
+
+func (sc *ServiceCommand) getBuildCommand() *exec.Cmd {
+	args := []string{
+		"build",
+		sc.Service.Name,
+	}
+
+	sc.printf("Generating script command: %v %v", os.Args[0], args)
+
+	cmd := exec.Command(os.Args[0], args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	return cmd
 }
 
 func (sc *ServiceCommand) waitForLogText(line string, cancel <-chan struct{}) error {

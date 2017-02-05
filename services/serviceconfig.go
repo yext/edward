@@ -435,15 +435,9 @@ func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 	command := &ServiceCommand{
 		Service: s,
 		Scripts: struct {
-			Build  Script
 			Launch Script
 			Stop   Script
 		}{
-			Build: Script{
-				Path:    path,
-				Command: s.Commands.Build,
-				Log:     logs.Build,
-			},
 			Launch: Script{
 				Path:    path,
 				Command: s.Commands.Launch,

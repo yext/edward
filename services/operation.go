@@ -86,6 +86,14 @@ func (c *CommandTracker) Fail(err error) {
 	c.endWait()
 }
 
+func (c *CommandTracker) FailWithOutput(err error, output string) {
+	printResult("Failed", color.FgRed)
+	c.printf("%v Failed: %v\n", c.Name, err.Error())
+	c.printf("%v\n", output)
+	fmt.Println(output)
+	c.endWait()
+}
+
 func printResult(message string, c color.Attribute) {
 	print("[")
 	color.Set(c)
