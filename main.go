@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -15,13 +14,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 
 	"gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/fatih/color"
-	"github.com/hpcloud/tail"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
@@ -684,78 +680,6 @@ func restartOneOrMoreServices(serviceNames []string) error {
 			return errors.WithStack(err)
 		}
 	}
-	return nil
-}
-
-func doLog(c *cli.Context) error {
-	sgs, err := getServicesOrGroups(c.Args())
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	count := services.CountServices(sgs)
-
-	var wait sync.WaitGroup
-	var writeMutex sync.Mutex
-
-	for _, sg := range sgs {
-		switch v := sg.(type) {
-		case *services.ServiceConfig:
-			followServiceLog(v, count > 1, &wait, &writeMutex)
-		case *services.ServiceGroupConfig:
-			followGroupLog(v, count > 1, &wait, &writeMutex)
-		}
-	}
-
-	wait.Wait()
-
-	return nil
-}
-
-func followGroupLog(group *services.ServiceGroupConfig, multiple bool, wait *sync.WaitGroup, writeMutex *sync.Mutex) error {
-	for _, group := range group.Groups {
-		followGroupLog(group, multiple, wait, writeMutex)
-	}
-	for _, service := range group.Services {
-		followServiceLog(service, multiple, wait, writeMutex)
-	}
-	return nil
-}
-
-func followServiceLog(service *services.ServiceConfig, multiple bool, wait *sync.WaitGroup, writeMutex *sync.Mutex) error {
-	wait.Add(1)
-	go doFollowServiceLog(service, multiple, wait, writeMutex)
-	return nil
-}
-
-func doFollowServiceLog(service *services.ServiceConfig, multiple bool, wait *sync.WaitGroup, writeMutex *sync.Mutex) error {
-	command, err := service.GetCommand()
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	runLog := command.Scripts.Launch.Log
-	t, err := tail.TailFile(runLog, tail.Config{Follow: true})
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	for line := range t.Lines {
-		var lineData LogLine
-		err = json.Unmarshal([]byte(line.Text), &lineData)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		writeMutex.Lock()
-		if multiple {
-			print("[")
-			color.Set(color.FgHiYellow)
-			print(service.Name)
-			color.Unset()
-			print("]: ")
-		}
-		fmt.Printf("%v\n", lineData.Message)
-		writeMutex.Unlock()
-	}
-	wait.Done()
 	return nil
 }
 
