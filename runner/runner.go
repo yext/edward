@@ -1,4 +1,4 @@
-package main
+package runner
 
 import (
 	"encoding/json"
@@ -12,14 +12,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-type LogLine struct {
-	Name    string
-	Time    time.Time
-	Stream  string
-	Message string
-}
-
-var runnerCommand = cli.Command{
+var Command = cli.Command{
 	Name:   "run",
 	Hidden: true,
 	Action: run,

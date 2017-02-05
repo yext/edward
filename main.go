@@ -24,6 +24,7 @@ import (
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/generators"
 	"github.com/yext/edward/home"
+	"github.com/yext/edward/runner"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/servicewatch"
 	"github.com/yext/edward/updates"
@@ -81,7 +82,7 @@ func main() {
 		},
 	}
 	app.Commands = []cli.Command{
-		runnerCommand,
+		runner.Command,
 		{
 			Name:   "list",
 			Usage:  "List available services",

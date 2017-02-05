@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
@@ -11,6 +10,7 @@ import (
 	"github.com/hpcloud/tail"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
+	"github.com/yext/edward/runner"
 	"github.com/yext/edward/services"
 )
 
@@ -20,8 +20,8 @@ func doLog(c *cli.Context) error {
 		return errors.WithStack(err)
 	}
 
-	var logChannel chan LogLine = make(chan LogLine)
-	var lines []LogLine
+	var logChannel chan runner.LogLine = make(chan runner.LogLine)
+	var lines []runner.LogLine
 	for _, sg := range sgs {
 		switch v := sg.(type) {
 		case *services.ServiceConfig:
@@ -52,13 +52,13 @@ func doLog(c *cli.Context) error {
 	return nil
 }
 
-type ByTime []LogLine
+type ByTime []runner.LogLine
 
 func (a ByTime) Len() int           { return len(a) }
 func (a ByTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByTime) Less(i, j int) bool { return a[i].Time.Before(a[j].Time) }
 
-func printMessage(logMessage LogLine, multiple bool) {
+func printMessage(logMessage runner.LogLine, multiple bool) {
 	if multiple {
 		print("[")
 		color.Set(color.FgHiYellow)
@@ -69,8 +69,8 @@ func printMessage(logMessage LogLine, multiple bool) {
 	fmt.Printf("%v\n", logMessage.Message)
 }
 
-func followGroupLog(group *services.ServiceGroupConfig, logChannel chan LogLine) ([]LogLine, error) {
-	var lines []LogLine
+func followGroupLog(group *services.ServiceGroupConfig, logChannel chan runner.LogLine) ([]runner.LogLine, error) {
+	var lines []runner.LogLine
 	for _, group := range group.Groups {
 		newLines, err := followGroupLog(group, logChannel)
 		lines = append(lines, newLines...)
@@ -88,7 +88,7 @@ func followGroupLog(group *services.ServiceGroupConfig, logChannel chan LogLine)
 	return lines, nil
 }
 
-func followServiceLog(service *services.ServiceConfig, logChannel chan LogLine) ([]LogLine, error) {
+func followServiceLog(service *services.ServiceConfig, logChannel chan runner.LogLine) ([]runner.LogLine, error) {
 	command, err := service.GetCommand()
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -99,14 +99,14 @@ func followServiceLog(service *services.ServiceConfig, logChannel chan LogLine) 
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	var initialLines []LogLine
+	var initialLines []runner.LogLine
 	// create a new scanner and read the file line by line
 	scanner := bufio.NewScanner(logFile)
 	var lineCount int
 	for scanner.Scan() {
 		text := scanner.Text()
 		lineCount++
-		line, err := parseLogLine(text, service)
+		line, err := runner.ParseLogLine(text, service)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -122,7 +122,7 @@ func followServiceLog(service *services.ServiceConfig, logChannel chan LogLine) 
 	return initialLines, nil
 }
 
-func doFollowServiceLog(service *services.ServiceConfig, command *services.ServiceCommand, skipLines int, logChannel chan LogLine) error {
+func doFollowServiceLog(service *services.ServiceConfig, command *services.ServiceCommand, skipLines int, logChannel chan runner.LogLine) error {
 	runLog := command.Scripts.Launch.Log
 	t, err := tail.TailFile(runLog, tail.Config{
 		Follow: true,
@@ -137,21 +137,11 @@ func doFollowServiceLog(service *services.ServiceConfig, command *services.Servi
 			linesSkipped++
 			continue
 		}
-		lineData, err := parseLogLine(line.Text, service)
+		lineData, err := runner.ParseLogLine(line.Text, service)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 		logChannel <- lineData
 	}
 	return nil
-}
-
-func parseLogLine(line string, service *services.ServiceConfig) (LogLine, error) {
-	var lineData LogLine
-	err := json.Unmarshal([]byte(line), &lineData)
-	if err != nil {
-		return LogLine{}, errors.WithStack(err)
-	}
-	lineData.Name = service.Name
-	return lineData, nil
 }
