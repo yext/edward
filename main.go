@@ -21,6 +21,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
+	"github.com/yext/edward/builder"
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/generators"
 	"github.com/yext/edward/home"
@@ -57,12 +58,12 @@ func main() {
 		command := c.Args().First()
 
 		if command != "generate" {
-			err := loadConfig()
+			err := config.LoadSharedConfig(getConfigPath(), edwardVersion, logger)
 			if err != nil {
 				return errors.WithStack(err)
 			}
 		} else {
-			initEmptyConfig()
+			config.InitEmptyConfig()
 		}
 
 		return nil
@@ -200,9 +201,6 @@ func checkUpdateAvailable(checkUpdateChan chan interface{}) {
 	}
 }
 
-var groupMap map[string]*services.ServiceGroupConfig
-var serviceMap map[string]*services.ServiceConfig
-
 // getConfigPath identifies the location of edward.json, if any exists
 func getConfigPath() string {
 
@@ -250,34 +248,6 @@ func gitRoot() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-func initEmptyConfig() {
-	groupMap = make(map[string]*services.ServiceGroupConfig)
-	serviceMap = make(map[string]*services.ServiceConfig)
-}
-
-func loadConfig() error {
-	initEmptyConfig()
-
-	configPath := getConfigPath()
-	if configPath != "" {
-		r, err := os.Open(configPath)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		cfg, err := config.LoadConfigWithDir(r, filepath.Dir(configPath), edwardVersion, logger)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-
-		serviceMap = cfg.ServiceMap
-		groupMap = cfg.GroupMap
-		return nil
-	}
-
-	return errors.New("No config file found")
-
-}
-
 func sudoIfNeeded(sgs []services.ServiceOrGroup) error {
 	for _, sg := range sgs {
 		if sg.IsSudo(getOperationConfig()) {
@@ -289,56 +259,17 @@ func sudoIfNeeded(sgs []services.ServiceOrGroup) error {
 	return nil
 }
 
-func getServicesOrGroups(names []string) ([]services.ServiceOrGroup, error) {
-	var outSG []services.ServiceOrGroup
-	for _, name := range names {
-		sg, err := getServiceOrGroup(name)
-		if err != nil {
-			return nil, err
-		}
-		outSG = append(outSG, sg)
-	}
-	return outSG, nil
-}
-
-func getServiceOrGroup(name string) (services.ServiceOrGroup, error) {
-	if group, ok := groupMap[name]; ok {
-		return group, nil
-	}
-	if service, ok := serviceMap[name]; ok {
-		return service, nil
-	}
-	return nil, errors.New("Service or group not found")
-}
-
-func getAllServices() []string {
-	var serviceNames []string
-	for name := range serviceMap {
-		serviceNames = append(serviceNames, name)
-	}
-	return serviceNames
-}
-
-func getAllGroups() []string {
-	var groupNames []string
-	for name := range groupMap {
-		groupNames = append(groupNames, name)
-	}
-	return groupNames
-
-}
-
 func autocompleteServices(c *cli.Context) {
-	loadConfig()
-	names := getAllServices()
+	config.LoadSharedConfig(getConfigPath(), edwardVersion, logger)
+	names := config.GetAllServiceNames()
 	for _, name := range names {
 		fmt.Println(name)
 	}
 }
 
 func autocompleteServicesAndGroups(c *cli.Context) {
-	loadConfig()
-	names := append(getAllGroups(), getAllServices()...)
+	config.LoadSharedConfig(getConfigPath(), edwardVersion, logger)
+	names := append(config.GetAllGroupNames(), config.GetAllServiceNames()...)
 	for _, name := range names {
 		fmt.Println(name)
 	}
@@ -346,8 +277,8 @@ func autocompleteServicesAndGroups(c *cli.Context) {
 
 func list(c *cli.Context) error {
 
-	groupNames := getAllGroups()
-	serviceNames := getAllServices()
+	groupNames := config.GetAllGroupNames()
+	serviceNames := config.GetAllServiceNames()
 
 	sort.Strings(groupNames)
 	sort.Strings(serviceNames)
@@ -493,8 +424,7 @@ func status(c *cli.Context) error {
 	var sgs []services.ServiceOrGroup
 	var err error
 	if len(c.Args()) == 0 {
-		allSrv := allServices()
-		for _, service := range allSrv {
+		for _, service := range config.GetAllServicesSorted() {
 			s, err := service.Status()
 			if err != nil {
 				return errors.WithStack(err)
@@ -511,7 +441,7 @@ func status(c *cli.Context) error {
 		}
 	} else {
 
-		sgs, err = getServicesOrGroups(c.Args())
+		sgs, err = config.GetServicesOrGroups(c.Args())
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -556,7 +486,7 @@ func messages(c *cli.Context) error {
 }
 
 func start(c *cli.Context) error {
-	sgs, err := getServicesOrGroups(c.Args())
+	sgs, err := config.GetServicesOrGroups(c.Args())
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -584,20 +514,11 @@ func start(c *cli.Context) error {
 	return nil
 }
 
-func allServices() []services.ServiceOrGroup {
-	var as []services.ServiceOrGroup
-	for _, service := range serviceMap {
-		as = append(as, service)
-	}
-	sort.Sort(serviceOrGroupByName(as))
-	return as
-}
-
 func stop(c *cli.Context) error {
 	var sgs []services.ServiceOrGroup
 	var err error
 	if len(c.Args()) == 0 {
-		allSrv := allServices()
+		allSrv := config.GetAllServicesSorted()
 		for _, service := range allSrv {
 			s, err := service.Status()
 			if err != nil {
@@ -610,7 +531,7 @@ func stop(c *cli.Context) error {
 			}
 		}
 	} else {
-		sgs, err = getServicesOrGroups(c.Args())
+		sgs, err = config.GetServicesOrGroups(c.Args())
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -637,7 +558,7 @@ func restart(c *cli.Context) error {
 func restartAll() error {
 
 	var as []*services.ServiceConfig
-	for _, service := range serviceMap {
+	for _, service := range config.GetServiceMap() {
 		s, err := service.Status()
 		if err != nil {
 			return errors.WithStack(err)
@@ -659,7 +580,7 @@ func restartAll() error {
 }
 
 func restartOneOrMoreServices(serviceNames []string) error {
-	sgs, err := getServicesOrGroups(serviceNames)
+	sgs, err := config.GetServicesOrGroups(serviceNames)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -781,18 +702,6 @@ func getOperationConfig() services.OperationConfig {
 	return services.OperationConfig{
 		Exclusions: []string(flags.exclude),
 	}
-}
-
-type serviceOrGroupByName []services.ServiceOrGroup
-
-func (s serviceOrGroupByName) Len() int {
-	return len(s)
-}
-func (s serviceOrGroupByName) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-func (s serviceOrGroupByName) Less(i, j int) bool {
-	return len(s[i].GetName()) < len(s[j].GetName())
 }
 
 type ServiceConfigByPID []*services.ServiceConfig

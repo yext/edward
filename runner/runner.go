@@ -27,7 +27,7 @@ func run(c *cli.Context) error {
 	logFile := os.ExpandEnv(args[1])
 	fullCommand := os.ExpandEnv(args[2])
 
-	command, cmdArgs, err := parseCommand(fullCommand)
+	command, cmdArgs, err := ParseCommand(fullCommand)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -87,7 +87,7 @@ func (r *RunnerLog) Write(p []byte) (int, error) {
 
 // Returns the executable path and arguments
 // TODO: Clean this up
-func parseCommand(cmd string) (string, []string, error) {
+func ParseCommand(cmd string) (string, []string, error) {
 	var args []string
 	state := "start"
 	current := ""

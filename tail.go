@@ -10,12 +10,13 @@ import (
 	"github.com/hpcloud/tail"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
+	"github.com/yext/edward/config"
 	"github.com/yext/edward/runner"
 	"github.com/yext/edward/services"
 )
 
 func doLog(c *cli.Context) error {
-	sgs, err := getServicesOrGroups(c.Args())
+	sgs, err := config.GetServicesOrGroups(c.Args())
 	if err != nil {
 		return errors.WithStack(err)
 	}
