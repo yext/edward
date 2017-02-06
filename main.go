@@ -107,12 +107,6 @@ func main() {
 			BashComplete: autocompleteServicesAndGroups,
 		},
 		{
-			Name:         "messages",
-			Usage:        "Show messages from services",
-			Action:       messages,
-			BashComplete: autocompleteServicesAndGroups,
-		},
-		{
 			Name:         "start",
 			Usage:        "Build and launch a service",
 			Action:       start,
@@ -478,10 +472,6 @@ func status(c *cli.Context) error {
 	}
 	table.Render()
 	return nil
-}
-
-func messages(c *cli.Context) error {
-	return errors.New("Unimplemented")
 }
 
 func start(c *cli.Context) error {
