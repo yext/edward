@@ -1,9 +1,9 @@
 package services
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
 	"os/signal"
 
@@ -16,6 +16,7 @@ type OperationTracker interface {
 	Success()
 	SoftFail(err error)
 	Fail(err error)
+	FailWithOutput(err error, output string)
 }
 
 var _ OperationTracker = &CommandTracker{}
@@ -86,6 +87,14 @@ func (c *CommandTracker) Fail(err error) {
 	c.endWait()
 }
 
+func (c *CommandTracker) FailWithOutput(err error, output string) {
+	printResult("Failed", color.FgRed)
+	c.printf("%v Failed: %v\n", c.Name, err.Error())
+	c.printf("%v\n", output)
+	fmt.Println(output)
+	c.endWait()
+}
+
 func printResult(message string, c color.Attribute) {
 	print("[")
 	color.Set(c)
@@ -94,13 +103,36 @@ func printResult(message string, c color.Attribute) {
 	println("]")
 }
 
+type LogLine struct {
+	Message string
+}
+
 func (c *CommandTracker) printFile(path string) {
-	dat, errRead := ioutil.ReadFile(path)
-	if errRead != nil {
-		c.printf("%v: Error reading operation log (%v)\n", c.Name, errRead)
-		log.Println(errRead)
+	logFile, err := os.Open(path)
+	defer logFile.Close()
+	if err != nil {
+		c.printf("%v", err)
+		fmt.Print(err)
 		return
 	}
-	c.printf("%v", string(dat))
-	fmt.Print(string(dat))
+	scanner := bufio.NewScanner(logFile)
+	for scanner.Scan() {
+		text := scanner.Text()
+		var lineData LogLine
+		err := json.Unmarshal([]byte(text), &lineData)
+		if err != nil {
+			c.printf("%v", err)
+			fmt.Print(err)
+			return
+		}
+		c.printf("%v", lineData.Message)
+		fmt.Print(lineData.Message)
+	}
+
+	// check for errors
+	if err = scanner.Err(); err != nil {
+		c.printf("%v", err)
+		fmt.Print(err)
+		return
+	}
 }

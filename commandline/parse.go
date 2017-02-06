@@ -1,50 +1,13 @@
-package main
+package commandline
 
 import (
+	"errors"
 	"fmt"
-	"os"
-	"os/exec"
-
-	"github.com/pkg/errors"
-	"github.com/urfave/cli"
 )
-
-var runnerCommand = cli.Command{
-	Name:   "run",
-	Hidden: true,
-	Action: run,
-}
-
-func run(c *cli.Context) error {
-	args := c.Args()
-	if len(args) < 3 {
-		return errors.New("a directory, log file and command is required")
-	}
-	workingDir := os.ExpandEnv(args[0])
-	logFile := os.ExpandEnv(args[1])
-	fullCommand := os.ExpandEnv(args[2])
-
-	command, cmdArgs, err := parseCommand(fullCommand)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	log, err := os.Create(logFile)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	cmd := exec.Command(command, cmdArgs...)
-	fmt.Println(cmd.Path)
-	cmd.Dir = workingDir
-	cmd.Stdout = log
-	cmd.Stderr = log
-	return cmd.Run()
-}
 
 // Returns the executable path and arguments
 // TODO: Clean this up
-func parseCommand(cmd string) (string, []string, error) {
+func ParseCommand(cmd string) (string, []string, error) {
 	var args []string
 	state := "start"
 	current := ""

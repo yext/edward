@@ -4,8 +4,9 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
+	"os"
+	"time"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -14,9 +15,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", handler)
-	fmt.Println("Starting to listen on port 51936")
-	err := http.ListenAndServe(":51936", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	fmt.Println("Starting to listen on port", os.Args[1])
+
+	go func() {
+		c := time.Tick(1 * time.Second)
+		for now := range c {
+			fmt.Printf("%v %s\n", now, "Tick")
+		}
+	}()
+
+	http.ListenAndServe(":"+os.Args[1], nil)
 }

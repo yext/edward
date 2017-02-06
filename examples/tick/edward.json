@@ -11,23 +11,15 @@
             "path": "simple1",
             "commands": {
                 "build": "go install",
-                "launch": "simple1"
+                "launch": "simple1 12554"
             }
         },
         {
             "name": "simple2",
-            "path": "simple2",
+            "path": "simple1",
             "commands": {
                 "build": "go install",
-                "launch": "simple2"
-            }
-        },
-        {
-            "name": "buildtest",
-            "path": "simple2",
-            "commands": {
-                "build": "echo doing a build",
-                "launch": "simple2"
+                "launch": "simple1 12555"
             }
         }
     ]

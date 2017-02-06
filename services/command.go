@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -13,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/net"
 	"github.com/shirou/gopsutil/process"
+	"github.com/yext/edward/commandline"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/warmup"
@@ -21,51 +23,8 @@ import (
 type ServiceCommand struct {
 	// Parent service config
 	Service *ServiceConfig
-	// Path to string
-	Scripts struct {
-		Build  Script
-		Launch Script
-		Stop   Script
-	}
-	Pid    int
-	Logger common.Logger
-}
-
-type Script struct {
-	Path    string
-	Command string
-	Log     string
-}
-
-func (s *Script) WillRun() bool {
-	return s.Command != ""
-}
-
-func (s *Script) GetCommand(logger common.Logger) (*exec.Cmd, error) {
-	args := []string{
-		"run",
-		s.Path,
-		s.Log,
-		s.Command,
-	}
-
-	if logger != nil {
-		logger.Printf("Generating script command: %v %v", os.Args[0], args)
-	}
-
-	cmd := exec.Command(os.Args[0], args...)
-	// TODO: Cache all output from the command and output it on failure as needed
-	cmd.Stderr = os.Stderr
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	return cmd, nil
-}
-
-func (s *Script) Run(logger common.Logger) error {
-	cmd, err := s.GetCommand(logger)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return cmd.Run()
+	Pid     int
+	Logger  common.Logger
 }
 
 func (c *ServiceCommand) printf(format string, v ...interface{}) {
@@ -103,9 +62,8 @@ func (sc *ServiceCommand) deleteScript(scriptType string) error {
 // If force is false, the build will be skipped if the service is already running.
 func (sc *ServiceCommand) BuildSync(force bool) error {
 	tracker := CommandTracker{
-		Name:       "Building " + sc.Service.Name,
-		OutputFile: sc.Scripts.Build.Log,
-		Logger:     sc.Logger,
+		Name:   "Building " + sc.Service.Name,
+		Logger: sc.Logger,
 	}
 	tracker.Start()
 
@@ -114,14 +72,20 @@ func (sc *ServiceCommand) BuildSync(force bool) error {
 		return nil
 	}
 
-	if !sc.Scripts.Build.WillRun() {
+	if sc.Service.Commands.Build == "" {
 		tracker.SoftFail(errors.New("No build"))
 		return nil
 	}
 
-	err := sc.Scripts.Build.Run(sc.Logger)
+	cmd, err := sc.constructCommand(sc.Service.Commands.Build)
 	if err != nil {
 		tracker.Fail(err)
+		return errors.WithStack(err)
+	}
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		tracker.FailWithOutput(err, string(out))
 		return errors.WithStack(err)
 	}
 
@@ -129,11 +93,23 @@ func (sc *ServiceCommand) BuildSync(force bool) error {
 	return nil
 }
 
+func (sc *ServiceCommand) constructCommand(command string) (*exec.Cmd, error) {
+	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(command))
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	cmd := exec.Command(command, cmdArgs...)
+	if sc.Service.Path != nil {
+		cmd.Dir = os.ExpandEnv(*sc.Service.Path)
+	}
+	return cmd, nil
+}
+
 func (sc *ServiceCommand) waitForLogText(line string, cancel <-chan struct{}) error {
 	// Read output until we get the success
 	var t *tail.Tail
 	var err error
-	t, err = tail.TailFile(sc.Scripts.Launch.Log, tail.Config{Follow: true, Logger: tail.DiscardingLogger})
+	t, err = tail.TailFile(sc.Service.GetRunLog(), tail.Config{Follow: true, Logger: tail.DiscardingLogger})
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -317,7 +293,7 @@ func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 	tracker := CommandTracker{
 		Name:       "Launching " + sc.Service.Name,
-		OutputFile: sc.Scripts.Launch.Log,
+		OutputFile: sc.Service.GetRunLog(),
 		Logger:     sc.Logger,
 	}
 	tracker.Start()
@@ -327,7 +303,7 @@ func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 		return nil
 	}
 
-	if !sc.Scripts.Launch.WillRun() {
+	if sc.Service.Commands.Launch == "" {
 		tracker.SoftFail(errors.New("No launch"))
 		return nil
 	}
@@ -345,10 +321,7 @@ func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 		}
 	}
 
-	// Clear logs
-	os.Remove(sc.Scripts.Launch.Log)
-
-	cmd, err := sc.Scripts.Launch.GetCommand(sc.Logger)
+	cmd, err := sc.GetLaunchCommand()
 	if err != nil {
 		tracker.Fail(err)
 		return errors.WithStack(err)
@@ -388,11 +361,30 @@ func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 	return errors.WithStack(err)
 }
 
+func (sc *ServiceCommand) GetLaunchCommand() (*exec.Cmd, error) {
+	command := os.Args[0]
+	cmdArgs := []string{
+		"run",
+		sc.Service.Name,
+	}
+	cmd := exec.Command(command, cmdArgs...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	return cmd, nil
+}
+
 func (sc *ServiceCommand) StopScript() error {
 	sc.printf("Running stop script for %v\n", sc.Service.Name)
-	return errors.WithStack(
-		sc.Scripts.Stop.Run(sc.Logger),
-	)
+	cmd, err := sc.constructCommand(sc.Service.Commands.Stop)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(out)
+		return errors.WithStack(err)
+	}
+	return nil
 }
 
 func (sc *ServiceCommand) clearPid() {
