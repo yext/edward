@@ -103,7 +103,7 @@ func followServiceLog(service *services.ServiceConfig, logChannel chan runner.Lo
 	for scanner.Scan() {
 		text := scanner.Text()
 		lineCount++
-		line, err := runner.ParseLogLine(text, service)
+		line, err := runner.ParseLogLine(text)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -134,7 +134,7 @@ func doFollowServiceLog(service *services.ServiceConfig, skipLines int, logChann
 			linesSkipped++
 			continue
 		}
-		lineData, err := runner.ParseLogLine(line.Text, service)
+		lineData, err := runner.ParseLogLine(line.Text)
 		if err != nil {
 			return errors.WithStack(err)
 		}
