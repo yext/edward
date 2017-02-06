@@ -227,7 +227,7 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 	}
 
 	var scriptErr error = nil
-	if command.Scripts.Stop.WillRun() {
+	if sc.Commands.Stop != "" {
 		sc.printf("Running stop script for %v.\n", sc.Name)
 		scriptErr = command.StopScript()
 	}
@@ -436,17 +436,11 @@ func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 		Service: s,
 		Scripts: struct {
 			Launch Script
-			Stop   Script
 		}{
 			Launch: Script{
 				Path:    path,
 				Command: s.Commands.Launch,
 				Log:     logs.Run,
-			},
-			Stop: Script{
-				Path:    path,
-				Command: s.Commands.Stop,
-				Log:     logs.Stop,
 			},
 		},
 		Logger: s.Logger,

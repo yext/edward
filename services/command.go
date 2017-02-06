@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -25,7 +26,6 @@ type ServiceCommand struct {
 	// Path to string
 	Scripts struct {
 		Launch Script
-		Stop   Script
 	}
 	Pid    int
 	Logger common.Logger
@@ -118,7 +118,7 @@ func (sc *ServiceCommand) BuildSync(force bool) error {
 		return nil
 	}
 
-	cmd, err := sc.getBuildCommand()
+	cmd, err := sc.constructCommand(sc.Service.Commands.Build)
 	if err != nil {
 		tracker.Fail(err)
 		return errors.WithStack(err)
@@ -134,8 +134,8 @@ func (sc *ServiceCommand) BuildSync(force bool) error {
 	return nil
 }
 
-func (sc *ServiceCommand) getBuildCommand() (*exec.Cmd, error) {
-	command, cmdArgs, err := commandline.ParseCommand(sc.Service.Commands.Build)
+func (sc *ServiceCommand) constructCommand(command string) (*exec.Cmd, error) {
+	command, cmdArgs, err := commandline.ParseCommand(command)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -407,9 +407,17 @@ func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 
 func (sc *ServiceCommand) StopScript() error {
 	sc.printf("Running stop script for %v\n", sc.Service.Name)
-	return errors.WithStack(
-		sc.Scripts.Stop.Run(sc.Logger),
-	)
+	cmd, err := sc.constructCommand(sc.Service.Commands.Stop)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(out)
+		return errors.WithStack(err)
+	}
+	return nil
 }
 
 func (sc *ServiceCommand) clearPid() {
