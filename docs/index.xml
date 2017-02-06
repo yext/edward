@@ -458,7 +458,7 @@ service, the operation will end, as with &lt;code&gt;start&lt;/code&gt;.&lt;/p&g
 
 &lt;h2 id=&#34;log-tail&#34;&gt;Log/Tail&lt;/h2&gt;
 
-&lt;p&gt;The &lt;code&gt;log&lt;/code&gt; or &lt;code&gt;tail&lt;/code&gt; command will output and then follow the console logs for a specified service.&lt;/p&gt;
+&lt;p&gt;The &lt;code&gt;log&lt;/code&gt; or &lt;code&gt;tail&lt;/code&gt; command will output and then follow the console logs for the specified groups/services.&lt;/p&gt;
 
 &lt;p&gt;For example, to output and follow the logs for &lt;em&gt;myservice&lt;/em&gt;:&lt;/p&gt;
 
@@ -470,8 +470,8 @@ service, the operation will end, as with &lt;code&gt;start&lt;/code&gt;.&lt;/p&g
 &lt;pre&gt;&lt;code&gt;$ edward tail myservice
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;Only one service&amp;rsquo;s log can be output at once. Specifying multiple services or a group will result
-in an error.&lt;/p&gt;
+&lt;p&gt;If more than one service is being output, the name of the service will be added to the start
+of each line in the log to distinguish them.&lt;/p&gt;
 
 &lt;h2 id=&#34;generate&#34;&gt;Generate&lt;/h2&gt;
 

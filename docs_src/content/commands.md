@@ -68,7 +68,7 @@ service, the operation will end, as with `start`.
 
 ## Log/Tail
 
-The `log` or `tail` command will output and then follow the console logs for a specified service.
+The `log` or `tail` command will output and then follow the console logs for the specified groups/services.
 
 For example, to output and follow the logs for *myservice*:
 
@@ -78,8 +78,8 @@ Or:
 
     $ edward tail myservice
 
-Only one service's log can be output at once. Specifying multiple services or a group will result
-in an error.
+If more than one service is being output, the name of the service will be added to the start
+of each line in the log to distinguish them.
 
 ## Generate
 

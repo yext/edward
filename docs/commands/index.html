@@ -444,7 +444,7 @@ service, the operation will end, as with <code>start</code>.</p>
 
 <h2 id="log-tail">Log/Tail</h2>
 
-<p>The <code>log</code> or <code>tail</code> command will output and then follow the console logs for a specified service.</p>
+<p>The <code>log</code> or <code>tail</code> command will output and then follow the console logs for the specified groups/services.</p>
 
 <p>For example, to output and follow the logs for <em>myservice</em>:</p>
 
@@ -456,8 +456,8 @@ service, the operation will end, as with <code>start</code>.</p>
 <pre><code>$ edward tail myservice
 </code></pre>
 
-<p>Only one service&rsquo;s log can be output at once. Specifying multiple services or a group will result
-in an error.</p>
+<p>If more than one service is being output, the name of the service will be added to the start
+of each line in the log to distinguish them.</p>
 
 <h2 id="generate">Generate</h2>
 
