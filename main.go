@@ -485,6 +485,9 @@ func messages(c *cli.Context) error {
 }
 
 func start(c *cli.Context) error {
+	if len(c.Args()) == 0 {
+		return errors.New("At least one service or group must be specified")
+	}
 	sgs, err := config.GetServicesOrGroups(c.Args())
 	if err != nil {
 		return errors.WithStack(err)
