@@ -2,7 +2,6 @@
 date: 2016-03-08T21:07:13+01:00
 title: About Edward
 type: index
-weight: 0
 ---
 
 A command line tool for managing local instances of microservices.

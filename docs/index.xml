@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Edward Docs</title>
+    <title>About Edward on Edward Docs</title>
     <link>http://engblog.yext.com/edward/index.xml</link>
-    <description>Recent content on Edward Docs</description>
+    <description>Recent content in About Edward on Edward Docs</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>Released under the MIT license</copyright>
-    <lastBuildDate>Wed, 09 Mar 2016 00:11:02 +0100</lastBuildDate>
+    <lastBuildDate>Tue, 08 Mar 2016 21:07:13 +0100</lastBuildDate>
     <atom:link href="http://engblog.yext.com/edward/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
@@ -834,46 +834,6 @@ _cli_bash_autocomplete() {
       <description>&lt;p&gt;Edward will not run if you try to launch it with sudo, but it may ask you to provide your password so that certain services can be run with elevated priviledges. The password request is triggered through a bash script that calls a command with sudo, to ensure that your bash session can make further sudo calls without prompting.&lt;/p&gt;
 
 &lt;p&gt;This has only been tested in one bash environment, so your mileage may vary. If services hang when starting (waiting for their log), this may be an indicator that they are waiting for a password prompt that isn&amp;rsquo;t redirected anywhere.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>About Edward</title>
-      <link>http://engblog.yext.com/edward/</link>
-      <pubDate>Tue, 08 Mar 2016 21:07:13 +0100</pubDate>
-      
-      <guid>http://engblog.yext.com/edward/</guid>
-      <description>
-
-&lt;p&gt;A command line tool for managing local instances of microservices.&lt;/p&gt;
-
-&lt;p&gt;Edward will build and launch groups of services in your development environment
-with just a single call to &lt;code&gt;edward start&lt;/code&gt;. No more long rows of Terminal tabs!&lt;/p&gt;
-
-&lt;p&gt;Services run in the background, and you can follow the logs for a single service
-as and when you need with &lt;code&gt;edward log&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Need to rebuild? Just run &lt;code&gt;edward restart&lt;/code&gt;, or set up a watch on the source folder.&lt;/p&gt;
-
-&lt;p&gt;When you&amp;rsquo;re all done for the day, just run &lt;code&gt;edward stop&lt;/code&gt;.&lt;/p&gt;
-
-&lt;h2 id=&#34;features&#34;&gt;Features&lt;/h2&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Group services with a single alias&lt;/li&gt;
-&lt;li&gt;Prompt for a password when sudo is required&lt;/li&gt;
-&lt;li&gt;Auto-generate service configuration for:
-
-&lt;ul&gt;
-&lt;li&gt;Go&lt;/li&gt;
-&lt;li&gt;Docker&lt;/li&gt;
-&lt;li&gt;ICBM&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;li&gt;Watch directories for automatic rebuild&lt;/li&gt;
-&lt;li&gt;&amp;ldquo;Warm up&amp;rdquo; services by sending an HTTP request&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&#34;acknowledgements&#34;&gt;Acknowledgements&lt;/h2&gt;
 </description>
     </item>
     
