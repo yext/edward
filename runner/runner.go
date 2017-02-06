@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 	"github.com/yext/edward/commandline"
+	"github.com/yext/edward/config"
 )
 
 var Command = cli.Command{
@@ -21,14 +22,19 @@ var Command = cli.Command{
 
 func run(c *cli.Context) error {
 	args := c.Args()
-	if len(args) < 3 {
-		return errors.New("a directory, log file and command is required")
+	if len(args) < 1 {
+		return errors.New("a service name is required")
 	}
-	workingDir := os.ExpandEnv(args[0])
-	logFile := os.ExpandEnv(args[1])
-	fullCommand := os.ExpandEnv(args[2])
 
-	command, cmdArgs, err := commandline.ParseCommand(fullCommand)
+	service, ok := config.GetServiceMap()[args[0]]
+	if !ok {
+		return errors.New("service not found")
+	}
+
+	logFile := service.GetRunLog()
+	os.Remove(logFile)
+
+	command, cmdArgs, err := commandline.ParseCommand(service.Commands.Launch)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -40,18 +46,19 @@ func run(c *cli.Context) error {
 
 	standardLog := &RunnerLog{
 		file:   log,
-		name:   fullCommand,
+		name:   service.Name,
 		stream: "stdout",
 	}
 	errorLog := &RunnerLog{
 		file:   log,
-		name:   fullCommand,
+		name:   service.Name,
 		stream: "stderr",
 	}
 
 	cmd := exec.Command(command, cmdArgs...)
-	fmt.Println(cmd.Path)
-	cmd.Dir = workingDir
+	if service.Path != nil {
+		cmd.Dir = os.ExpandEnv(*service.Path)
+	}
 	cmd.Stdout = standardLog
 	cmd.Stderr = errorLog
 	return cmd.Run()

@@ -411,39 +411,17 @@ func (sc *ServiceConfig) IsSudo(cfg OperationConfig) bool {
 	return sc.RequiresSudo
 }
 
+func (s *ServiceConfig) GetRunLog() string {
+	dir := home.EdwardConfig.LogDir
+	return path.Join(dir, s.Name+".log")
+}
+
 func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 
 	s.printf("Building control command for: %v\n", s.Name)
-
-	dir := home.EdwardConfig.LogDir
-
-	logs := struct {
-		Build string
-		Run   string
-		Stop  string
-	}{
-		Build: path.Join(dir, s.Name+"-build.log"),
-		Run:   path.Join(dir, s.Name+".log"),
-		Stop:  path.Join(dir, s.Name+"-stop.log"),
-	}
-
-	path := ""
-	if s.Path != nil {
-		path = *s.Path
-	}
-
 	command := &ServiceCommand{
 		Service: s,
-		Scripts: struct {
-			Launch Script
-		}{
-			Launch: Script{
-				Path:    path,
-				Command: s.Commands.Launch,
-				Log:     logs.Run,
-			},
-		},
-		Logger: s.Logger,
+		Logger:  s.Logger,
 	}
 
 	// Retrieve the PID if available

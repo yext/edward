@@ -90,11 +90,7 @@ func followGroupLog(group *services.ServiceGroupConfig, logChannel chan runner.L
 }
 
 func followServiceLog(service *services.ServiceConfig, logChannel chan runner.LogLine) ([]runner.LogLine, error) {
-	command, err := service.GetCommand()
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	runLog := command.Scripts.Launch.Log
+	runLog := service.GetRunLog()
 	logFile, err := os.Open(runLog)
 	defer logFile.Close()
 	if err != nil {
@@ -119,12 +115,12 @@ func followServiceLog(service *services.ServiceConfig, logChannel chan runner.Lo
 		return nil, errors.WithStack(err)
 	}
 
-	go doFollowServiceLog(service, command, lineCount, logChannel)
+	go doFollowServiceLog(service, lineCount, logChannel)
 	return initialLines, nil
 }
 
-func doFollowServiceLog(service *services.ServiceConfig, command *services.ServiceCommand, skipLines int, logChannel chan runner.LogLine) error {
-	runLog := command.Scripts.Launch.Log
+func doFollowServiceLog(service *services.ServiceConfig, skipLines int, logChannel chan runner.LogLine) error {
+	runLog := service.GetRunLog()
 	t, err := tail.TailFile(runLog, tail.Config{
 		Follow: true,
 		Logger: tail.DiscardingLogger,
