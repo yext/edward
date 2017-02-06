@@ -21,6 +21,14 @@
                 "build": "go install",
                 "launch": "simple2"
             }
+        },
+        {
+            "name": "buildtest",
+            "path": "simple2",
+            "commands": {
+                "build": "echo doing a build",
+                "launch": "simple2"
+            }
         }
     ]
 }

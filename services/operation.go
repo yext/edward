@@ -16,6 +16,7 @@ type OperationTracker interface {
 	Success()
 	SoftFail(err error)
 	Fail(err error)
+	FailWithOutput(err error, output string)
 }
 
 var _ OperationTracker = &CommandTracker{}

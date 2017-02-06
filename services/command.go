@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/net"
 	"github.com/shirou/gopsutil/process"
+	"github.com/yext/edward/commandline"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/warmup"
@@ -117,7 +118,12 @@ func (sc *ServiceCommand) BuildSync(force bool) error {
 		return nil
 	}
 
-	cmd := sc.getBuildCommand()
+	cmd, err := sc.getBuildCommand()
+	if err != nil {
+		tracker.Fail(err)
+		return errors.WithStack(err)
+	}
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		tracker.FailWithOutput(err, string(out))
@@ -128,17 +134,16 @@ func (sc *ServiceCommand) BuildSync(force bool) error {
 	return nil
 }
 
-func (sc *ServiceCommand) getBuildCommand() *exec.Cmd {
-	args := []string{
-		"build",
-		sc.Service.Name,
+func (sc *ServiceCommand) getBuildCommand() (*exec.Cmd, error) {
+	command, cmdArgs, err := commandline.ParseCommand(sc.Service.Commands.Build)
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
-
-	sc.printf("Generating script command: %v %v", os.Args[0], args)
-
-	cmd := exec.Command(os.Args[0], args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	return cmd
+	cmd := exec.Command(command, cmdArgs...)
+	if sc.Service.Path != nil {
+		cmd.Dir = *sc.Service.Path
+	}
+	return cmd, nil
 }
 
 func (sc *ServiceCommand) waitForLogText(line string, cancel <-chan struct{}) error {

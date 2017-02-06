@@ -21,7 +21,6 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
-	"github.com/yext/edward/builder"
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/generators"
 	"github.com/yext/edward/home"
@@ -84,7 +83,6 @@ func main() {
 	}
 	app.Commands = []cli.Command{
 		runner.Command,
-		builder.Command,
 		{
 			Name:   "list",
 			Usage:  "List available services",
