@@ -33,7 +33,7 @@ import (
 
 var logger *log.Logger
 
-const edwardVersion = "1.6.5"
+const edwardVersion = "1.6.6"
 
 func main() {
 

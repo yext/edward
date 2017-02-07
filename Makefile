@@ -16,4 +16,4 @@ checkdocs:
 docs:
 	cd docs_src && hugo
 
-.PHONY: build
+.PHONY: build docs
