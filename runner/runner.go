@@ -34,7 +34,7 @@ func run(c *cli.Context) error {
 	logFile := service.GetRunLog()
 	os.Remove(logFile)
 
-	command, cmdArgs, err := commandline.ParseCommand(service.Commands.Launch)
+	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(service.Commands.Launch))
 	if err != nil {
 		return errors.WithStack(err)
 	}
