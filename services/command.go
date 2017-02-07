@@ -321,6 +321,8 @@ func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 		}
 	}
 
+	os.Remove(sc.Service.GetRunLog())
+
 	cmd, err := sc.GetLaunchCommand()
 	if err != nil {
 		tracker.Fail(err)
