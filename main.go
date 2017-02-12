@@ -301,10 +301,7 @@ func list(c *cli.Context) error {
 }
 
 func generate(c *cli.Context) error {
-
 	var cfg config.Config
-	var err error
-
 	configPath := getConfigPath()
 	if configPath == "" {
 		wd, err := os.Getwd()
