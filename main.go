@@ -123,6 +123,11 @@ func main() {
 					Usage:       "After starting, watch services for changes and hot-reload.",
 					Destination: &(flags.watch),
 				},
+				cli.BoolFlag{
+					Name:        "tail, t",
+					Usage:       "After starting, tail logs for services.",
+					Destination: &(flags.tail),
+				},
 			},
 		},
 		{
@@ -145,6 +150,11 @@ func main() {
 					Name:        "skip-build, s",
 					Usage:       "Skip the build phase",
 					Destination: &(flags.skipBuild),
+				},
+				cli.BoolFlag{
+					Name:        "tail, t",
+					Usage:       "After restarting, tail logs for services.",
+					Destination: &(flags.tail),
 				},
 			},
 		},
@@ -498,9 +508,17 @@ func start(c *cli.Context) error {
 		}
 	}
 
+	if flags.watch && flags.tail {
+		return errors.New("cannot watch and tail when launching")
+	}
+
 	if flags.watch {
 		println("==== Watch ====")
 		return errors.WithStack(servicewatch.Begin(sgs, getOperationConfig()))
+	}
+
+	if flags.tail {
+		return errors.WithStack(tailFromFlag(c))
 	}
 
 	return nil
@@ -542,9 +560,17 @@ func stop(c *cli.Context) error {
 func restart(c *cli.Context) error {
 	if len(c.Args()) == 0 {
 		restartAll()
-		return nil
+	} else {
+		err := restartOneOrMoreServices(c.Args())
+		if err != nil {
+			return errors.WithStack(err)
+		}
 	}
-	return errors.WithStack(restartOneOrMoreServices(c.Args()))
+
+	if flags.tail {
+		return errors.WithStack(tailFromFlag(c))
+	}
+	return nil
 }
 
 func restartAll() error {
@@ -688,6 +714,7 @@ var flags = struct {
 	watch     bool
 	noPrompt  bool
 	exclude   cli.StringSlice
+	tail      bool
 }{}
 
 func getOperationConfig() services.OperationConfig {

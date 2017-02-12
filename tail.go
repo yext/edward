@@ -15,6 +15,11 @@ import (
 	"github.com/yext/edward/services"
 )
 
+func tailFromFlag(c *cli.Context) error {
+	fmt.Println("=== Logs ===")
+	return errors.WithStack(doLog(c))
+}
+
 func doLog(c *cli.Context) error {
 	if len(c.Args()) == 0 {
 		return errors.New("At least one service or group must be specified")
