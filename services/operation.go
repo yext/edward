@@ -51,7 +51,9 @@ func (c *CommandTracker) waitForInterrupt() {
 			}
 			os.Exit(1)
 		case _ = <-c.endChan:
-			break
+			signal.Reset(os.Interrupt)
+			close(c.sigChan)
+			return
 		}
 	}()
 }
