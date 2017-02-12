@@ -534,24 +534,6 @@ at least one port. If a service does not listen on any ports, it will time out w
 
 <p>This file uses the same format as <a href="https://git-scm.com/docs/gitignore">gitignore</a>. You can place an <em>.edwardignore</em> file in any directory and it will take effect for paths below that directory, replacing ignores specified by ignore files higher up.</p>
 
-<h2 id="watch-automatically-rebuild-and-relaunch">watch: Automatically rebuild and relaunch</h2>
-
-<p>When running <code>start</code> or <code>restart</code>, the <code>-watch</code> flag can be specified to instruct Edward to try and automatically
-restart services when files change in the directories specified in their config.</p>
-
-<p>For example:</p>
-
-<pre><code>$ edward start -watch myservice
-</code></pre>
-
-<p>Will build and launch <em>myservice</em> and watch for changes in the paths specified by <em>myservice&rsquo;s</em> config.</p>
-
-<p>If you run <code>edward start</code> or <code>edward restart</code> with this flag, it will continue running after all services are started and monitor their watch paths for changes. Any restarts caused by these changes will be logged in the console.</p>
-
-<p>If a service does not compile after a change, it will continue to run with its last good build and Edward will continue watching for changes.</p>
-
-<p>If none of the started services have watch paths configured, Edward will display a warning and exit once all services have started.</p>
-
 
 			<aside class="copyright" role="note">
 				

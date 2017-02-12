@@ -152,20 +152,3 @@ at least one port. If a service does not listen on any ports, it will time out w
 To protect against false positives, you can instruct Edward to ignore specific patterns when running `generate` by creating an *.edwardignore* file.
 
 This file uses the same format as [gitignore](https://git-scm.com/docs/gitignore). You can place an *.edwardignore* file in any directory and it will take effect for paths below that directory, replacing ignores specified by ignore files higher up.
-
-## watch: Automatically rebuild and relaunch
-
-When running `start` or `restart`, the `-watch` flag can be specified to instruct Edward to try and automatically
-restart services when files change in the directories specified in their config.
-
-For example:
-
-    $ edward start -watch myservice
-
-Will build and launch *myservice* and watch for changes in the paths specified by *myservice's* config.
-
-If you run `edward start` or `edward restart` with this flag, it will continue running after all services are started and monitor their watch paths for changes. Any restarts caused by these changes will be logged in the console.
-
-If a service does not compile after a change, it will continue to run with its last good build and Edward will continue watching for changes.
-
-If none of the started services have watch paths configured, Edward will display a warning and exit once all services have started.

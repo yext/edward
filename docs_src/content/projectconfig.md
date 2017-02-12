@@ -172,6 +172,40 @@ time when working with such services, you can configure Edward to make a request
 
 Requests to these URLs will happen in the background, and will not delay the starting of other services.
 
+### Autorestart (watch)
+
+To save you running `edward restart` every time you make a change to a service, you can configure a set of
+directories to be monitored for changes. If a file in the specified directories changes, your service will
+automatically be restarted.
+
+```json
+{
+    "name": "myservice",
+    ...
+    "watch": {
+      "include": ["dir1", "dir2"]
+    }
+}
+```
+
+In the above example, changes in *dir1* or *dir2* will result in *myservice* being restarted.
+
+You can also specify directories to be explicitly excluded:
+
+```json
+{
+    "name": "myservice",
+    ...
+    "watch": {
+      "include": ["dir1", "dir2"],
+      "exclude": ["dir1/exclude"]
+    }
+}
+```
+
+If rebuilding the service fails, the existing running instance will not be stopped. Details of attempts to
+restart services can be found in the service logs.
+
 ### Requiring Sudo
 
 If a service needs sudo to run, it will need to be marked appropriately:

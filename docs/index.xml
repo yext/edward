@@ -547,24 +547,6 @@ at least one port. If a service does not listen on any ports, it will time out w
 &lt;p&gt;To protect against false positives, you can instruct Edward to ignore specific patterns when running &lt;code&gt;generate&lt;/code&gt; by creating an &lt;em&gt;.edwardignore&lt;/em&gt; file.&lt;/p&gt;
 
 &lt;p&gt;This file uses the same format as &lt;a href=&#34;https://git-scm.com/docs/gitignore&#34;&gt;gitignore&lt;/a&gt;. You can place an &lt;em&gt;.edwardignore&lt;/em&gt; file in any directory and it will take effect for paths below that directory, replacing ignores specified by ignore files higher up.&lt;/p&gt;
-
-&lt;h2 id=&#34;watch-automatically-rebuild-and-relaunch&#34;&gt;watch: Automatically rebuild and relaunch&lt;/h2&gt;
-
-&lt;p&gt;When running &lt;code&gt;start&lt;/code&gt; or &lt;code&gt;restart&lt;/code&gt;, the &lt;code&gt;-watch&lt;/code&gt; flag can be specified to instruct Edward to try and automatically
-restart services when files change in the directories specified in their config.&lt;/p&gt;
-
-&lt;p&gt;For example:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ edward start -watch myservice
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Will build and launch &lt;em&gt;myservice&lt;/em&gt; and watch for changes in the paths specified by &lt;em&gt;myservice&amp;rsquo;s&lt;/em&gt; config.&lt;/p&gt;
-
-&lt;p&gt;If you run &lt;code&gt;edward start&lt;/code&gt; or &lt;code&gt;edward restart&lt;/code&gt; with this flag, it will continue running after all services are started and monitor their watch paths for changes. Any restarts caused by these changes will be logged in the console.&lt;/p&gt;
-
-&lt;p&gt;If a service does not compile after a change, it will continue to run with its last good build and Edward will continue watching for changes.&lt;/p&gt;
-
-&lt;p&gt;If none of the started services have watch paths configured, Edward will display a warning and exit once all services have started.&lt;/p&gt;
 </description>
     </item>
     
@@ -737,6 +719,38 @@ time when working with such services, you can configure Edward to make a request
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Requests to these URLs will happen in the background, and will not delay the starting of other services.&lt;/p&gt;
+
+&lt;h3 id=&#34;autorestart-watch&#34;&gt;Autorestart (watch)&lt;/h3&gt;
+
+&lt;p&gt;To save you running &lt;code&gt;edward restart&lt;/code&gt; every time you make a change to a service, you can configure a set of
+directories to be monitored for changes. If a file in the specified directories changes, your service will
+automatically be restarted.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;name&amp;quot;: &amp;quot;myservice&amp;quot;,
+    ...
+    &amp;quot;watch&amp;quot;: {
+      &amp;quot;include&amp;quot;: [&amp;quot;dir1&amp;quot;, &amp;quot;dir2&amp;quot;]
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;In the above example, changes in &lt;em&gt;dir1&lt;/em&gt; or &lt;em&gt;dir2&lt;/em&gt; will result in &lt;em&gt;myservice&lt;/em&gt; being restarted.&lt;/p&gt;
+
+&lt;p&gt;You can also specify directories to be explicitly excluded:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;name&amp;quot;: &amp;quot;myservice&amp;quot;,
+    ...
+    &amp;quot;watch&amp;quot;: {
+      &amp;quot;include&amp;quot;: [&amp;quot;dir1&amp;quot;, &amp;quot;dir2&amp;quot;],
+      &amp;quot;exclude&amp;quot;: [&amp;quot;dir1/exclude&amp;quot;]
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If rebuilding the service fails, the existing running instance will not be stopped. Details of attempts to
+restart services can be found in the service logs.&lt;/p&gt;
 
 &lt;h3 id=&#34;requiring-sudo&#34;&gt;Requiring Sudo&lt;/h3&gt;
 
