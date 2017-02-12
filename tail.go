@@ -68,14 +68,27 @@ func (a ByTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByTime) Less(i, j int) bool { return a[i].Time.Before(a[j].Time) }
 
 func printMessage(logMessage runner.LogLine, multiple bool) {
+
 	if multiple {
 		print("[")
 		color.Set(color.FgHiYellow)
 		print(logMessage.Name)
+		if logMessage.Stream == "messages" {
+			print(" (edward)")
+		}
 		color.Unset()
 		print("]: ")
 	}
+
+	if logMessage.Stream == "stderr" {
+		color.Set(color.FgRed)
+	}
+	if logMessage.Stream == "messages" {
+		color.Set(color.FgYellow)
+	}
+
 	fmt.Printf("%v\n", logMessage.Message)
+	color.Unset()
 }
 
 func followGroupLog(group *services.ServiceGroupConfig, logChannel chan runner.LogLine) ([]runner.LogLine, error) {

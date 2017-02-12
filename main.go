@@ -18,6 +18,7 @@ import (
 
 	"gopkg.in/natefinch/lumberjack.v2"
 
+	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
@@ -26,7 +27,6 @@ import (
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/runner"
 	"github.com/yext/edward/services"
-	"github.com/yext/edward/servicewatch"
 	"github.com/yext/edward/updates"
 	"github.com/yext/edward/warmup"
 )
@@ -120,8 +120,9 @@ func main() {
 				},
 				cli.BoolFlag{
 					Name:        "watch, w",
-					Usage:       "After starting, watch services for changes and hot-reload.",
+					Usage:       "Deprecated, watches are now enabled by default",
 					Destination: &(flags.watch),
+					Hidden:      true,
 				},
 				cli.BoolFlag{
 					Name:        "tail, t",
@@ -488,6 +489,13 @@ func start(c *cli.Context) error {
 	if len(c.Args()) == 0 {
 		return errors.New("At least one service or group must be specified")
 	}
+
+	if flags.watch {
+		color.Set(color.FgYellow)
+		println("The watch flag has been deprecated.\nWatches are now always enabled and run with services in the background.")
+		color.Unset()
+	}
+
 	sgs, err := config.GetServicesOrGroups(c.Args())
 	if err != nil {
 		return errors.WithStack(err)
@@ -506,15 +514,6 @@ func start(c *cli.Context) error {
 		if err != nil {
 			return errors.New("Error launching " + s.GetName() + ": " + err.Error())
 		}
-	}
-
-	if flags.watch && flags.tail {
-		return errors.New("cannot watch and tail when launching")
-	}
-
-	if flags.watch {
-		println("==== Watch ====")
-		return errors.WithStack(servicewatch.Begin(sgs, getOperationConfig()))
 	}
 
 	if flags.tail {

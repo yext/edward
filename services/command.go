@@ -61,10 +61,15 @@ func (sc *ServiceCommand) deleteScript(scriptType string) error {
 // BuildSync will buid the service synchronously.
 // If force is false, the build will be skipped if the service is already running.
 func (sc *ServiceCommand) BuildSync(force bool) error {
-	tracker := CommandTracker{
+	tracker := &CommandTracker{
 		Name:   "Building " + sc.Service.Name,
 		Logger: sc.Logger,
 	}
+	return errors.WithStack(sc.BuildWithTracker(force, tracker))
+}
+
+// If force is false, the build will be skipped if the service is already running.
+func (sc *ServiceCommand) BuildWithTracker(force bool, tracker OperationTracker) error {
 	tracker.Start()
 
 	if !force && sc.Pid != 0 {
