@@ -5,6 +5,8 @@
 
 A command line tool for managing local instances of microservices.
 
+Full documentation available at [http://engblog.yext.com/edward/](http://engblog.yext.com/edward/).
+
 ## Table of Contents  
 
 * [Features](#features)
@@ -14,7 +16,6 @@ A command line tool for managing local instances of microservices.
   * [Restart as needed](#restart-as-needed)
   * [Auto-restart on edits](#auto-restart-on-edits)
   * [Generate configuration automatically](#generate-configuration-automatically)
-* [Documentation](#documentation)
 * [Installation](#installation)  
 * [Updating](#updating)
 
@@ -66,10 +67,6 @@ Edward can generate configuration for:
 
 Using a different language? No problem! Edward can be manually configured for any
 service that can be built and started from the command line.
-
-## Documentation
-
-Full documentation available at [http://engblog.yext.com/edward/](http://engblog.yext.com/edward/).
 
 ## Installation
 
