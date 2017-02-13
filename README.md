@@ -5,6 +5,8 @@
 
 A command line tool for managing local instances of microservices.
 
+Full documentation available at [http://engblog.yext.com/edward/](http://engblog.yext.com/edward/).
+
 ## Start multiple services with one command
 
 No need to start each service in its own terminal tab, just run `edward start` to build and launch multiple
@@ -63,7 +65,3 @@ Edward uses the vendor folder, and as such, Go 1.6 is required.
 To update an existing install to the latest version of Edward, run:
 
     go get -u github.com/yext/edward
-
-## Documentation
-
-Full documentation is available at [http://engblog.yext.com/edward/](http://engblog.yext.com/edward/).
