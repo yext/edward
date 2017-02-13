@@ -125,6 +125,11 @@ func main() {
 					Hidden:      true,
 				},
 				cli.BoolFlag{
+					Name:        "no-watch",
+					Usage:       "Disable autorestart",
+					Destination: &(flags.noWatch),
+				},
+				cli.BoolFlag{
 					Name:        "tail, t",
 					Usage:       "After starting, tail logs for services.",
 					Destination: &(flags.tail),
@@ -156,6 +161,11 @@ func main() {
 					Name:        "tail, t",
 					Usage:       "After restarting, tail logs for services.",
 					Destination: &(flags.tail),
+				},
+				cli.BoolFlag{
+					Name:        "no-watch",
+					Usage:       "Disable autorestart",
+					Destination: &(flags.noWatch),
 				},
 			},
 		},
@@ -708,6 +718,7 @@ var flags = struct {
 	config    string
 	skipBuild bool
 	watch     bool
+	noWatch   bool
 	noPrompt  bool
 	exclude   cli.StringSlice
 	tail      bool
@@ -716,6 +727,7 @@ var flags = struct {
 func getOperationConfig() services.OperationConfig {
 	return services.OperationConfig{
 		Exclusions: []string(flags.exclude),
+		NoWatch:    flags.noWatch,
 	}
 }
 

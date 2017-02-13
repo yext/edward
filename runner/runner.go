@@ -20,6 +20,13 @@ var Command = cli.Command{
 	Name:   "run",
 	Hidden: true,
 	Action: run,
+	Flags: []cli.Flag{
+		cli.BoolFlag{
+			Name:        "no-watch",
+			Usage:       "Disable autorestart",
+			Destination: &(noWatch),
+		},
+	},
 }
 
 var runningService *services.ServiceConfig
@@ -28,6 +35,8 @@ var logFile *os.File
 var messageLog *RunnerLog
 
 var commandWait sync.WaitGroup
+
+var noWatch bool
 
 type Logger interface {
 	Printf(format string, a ...interface{})
@@ -66,11 +75,13 @@ func run(c *cli.Context) error {
 		return errors.WithStack(err)
 	}
 
-	closeWatchers, err := BeginWatch(runningService, restartService, messageLog)
-	if err != nil {
-		return errors.WithStack(err)
+	if !noWatch {
+		closeWatchers, err := BeginWatch(runningService, restartService, messageLog)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		defer closeWatchers()
 	}
-	defer closeWatchers()
 
 	commandWait.Wait()
 	return nil

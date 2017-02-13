@@ -327,7 +327,7 @@ func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 
 	os.Remove(sc.Service.GetRunLog())
 
-	cmd, err := sc.GetLaunchCommand()
+	cmd, err := sc.GetLaunchCommand(cfg)
 	if err != nil {
 		tracker.Fail(err)
 		return errors.WithStack(err)
@@ -367,12 +367,16 @@ func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 	return errors.WithStack(err)
 }
 
-func (sc *ServiceCommand) GetLaunchCommand() (*exec.Cmd, error) {
+func (sc *ServiceCommand) GetLaunchCommand(cfg OperationConfig) (*exec.Cmd, error) {
 	command := os.Args[0]
 	cmdArgs := []string{
 		"run",
-		sc.Service.Name,
 	}
+	if cfg.NoWatch {
+		cmdArgs = append(cmdArgs, "--no-watch")
+	}
+	cmdArgs = append(cmdArgs, sc.Service.Name)
+
 	cmd := exec.Command(command, cmdArgs...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	return cmd, nil

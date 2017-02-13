@@ -14,6 +14,7 @@ type ServiceStatus struct {
 // on a service or group
 type OperationConfig struct {
 	Exclusions []string // Names of services/groups to be excluded from this operation
+	NoWatch    bool
 }
 
 func (o *OperationConfig) IsExcluded(sg ServiceOrGroup) bool {
