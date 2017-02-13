@@ -29,7 +29,7 @@ Follow stdout and stderr for one or more services with `edward tail`.
 
 Made some changes? Run `edward restart` to re-build and re-launch a service.
 
-![Restart services](images/status.gif)
+![Restart services](images/restart.gif)
 
 ## Auto-restart on edits
 
