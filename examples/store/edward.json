@@ -1,0 +1,97 @@
+{
+    "groups": [
+      {
+        "name": "store",
+        "children": [
+          "database",
+          "users",
+          "products",
+          "carts",
+          "checkout",
+          "tracking"
+        ]
+      }
+    ],
+    "services": [
+        {
+            "name": "carts",
+            "path": "carts",
+            "commands": {
+                "build": "go install",
+                "launch": "carts 12301"
+            },
+            "launch_checks": null,
+            "watch": {
+                "include": [
+                    "carts"
+                ]
+            }
+        },
+        {
+            "name": "checkout",
+            "path": "checkout",
+            "commands": {
+                "build": "go install",
+                "launch": "checkout 12302"
+            },
+            "launch_checks": null,
+            "watch": {
+                "include": [
+                    "checkout"
+                ]
+            }
+        },
+        {
+            "name": "products",
+            "path": "products",
+            "commands": {
+                "build": "go install",
+                "launch": "products 12303"
+            },
+            "launch_checks": null,
+            "watch": {
+                "include": [
+                    "products"
+                ]
+            }
+        },
+        {
+            "name": "tracking",
+            "path": "tracking",
+            "commands": {
+                "build": "go install",
+                "launch": "tracking 12304"
+            },
+            "launch_checks": null,
+            "watch": {
+                "include": [
+                    "tracking"
+                ]
+            }
+        },
+        {
+            "name": "users",
+            "path": "users",
+            "commands": {
+                "build": "go install",
+                "launch": "users 12305"
+            },
+            "launch_checks": null,
+            "watch": {
+                "include": [
+                    "users"
+                ]
+            }
+        },
+        {
+            "name": "database",
+            "path": ".",
+            "commands": {
+                "launch": "docker-compose up --build"
+            },
+            "log_properties": {
+                "started": "database system is ready"
+            }
+        }
+    ]
+}
