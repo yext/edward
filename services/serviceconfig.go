@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -342,6 +343,7 @@ func (sc *ServiceConfig) Status() ([]ServiceStatus, error) {
 		}
 		status.StartTime = time.Unix(epochStart/1000, 0)
 		status.Ports, err = sc.getPorts(proc)
+		status.StdoutCount, status.StderrCount = sc.getLogCounts()
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -366,6 +368,32 @@ func (sc *ServiceConfig) getPorts(proc *process.Process) ([]string, error) {
 		}
 	}
 	return ports, nil
+}
+
+func (sc *ServiceConfig) getLogCounts() (int, int) {
+	logFile, err := os.Open(sc.GetRunLog())
+	if err != nil {
+		return 0, 0
+	}
+	defer logFile.Close()
+	scanner := bufio.NewScanner(logFile)
+	var stdoutCount int
+	var stderrCount int
+	var lineData struct{ Stream string }
+	for scanner.Scan() {
+		text := scanner.Text()
+		err := json.Unmarshal([]byte(text), &lineData)
+		if err != nil {
+			continue
+		}
+		if lineData.Stream == "stdout" {
+			stdoutCount++
+		}
+		if lineData.Stream == "stderr" {
+			stderrCount++
+		}
+	}
+	return stdoutCount, stderrCount
 }
 
 func (sc *ServiceConfig) doGetPorts(proc *process.Process) ([]string, error) {

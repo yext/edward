@@ -3,11 +3,13 @@ package services
 import "time"
 
 type ServiceStatus struct {
-	Service   *ServiceConfig
-	Status    string
-	Pid       int
-	StartTime time.Time
-	Ports     []string
+	Service     *ServiceConfig
+	Status      string
+	Pid         int
+	StartTime   time.Time
+	Ports       []string
+	StderrCount int
+	StdoutCount int
 }
 
 // OperationConfig provides additional configuration for an operation

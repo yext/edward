@@ -468,6 +468,8 @@ func status(c *cli.Context) error {
 		"Status",
 		"PID",
 		"Ports",
+		"Stdout",
+		"Stderr",
 		"Start Time",
 	})
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
@@ -483,7 +485,9 @@ func status(c *cli.Context) error {
 				status.Status,
 				strconv.Itoa(status.Pid),
 				strings.Join(status.Ports, ", "),
-				status.StartTime.String(),
+				strconv.Itoa(status.StdoutCount) + " lines",
+				strconv.Itoa(status.StderrCount) + " lines",
+				status.StartTime.Format("2006-01-02 15:04:05"),
 			})
 		}
 	}
