@@ -5,11 +5,12 @@
 
 A command line tool for managing local instances of microservices.
 
-##### Table of Contents  
-[Features](#features)
-[Documentation](#documentation)
-[Installation](#installation)  
-[Updating](#updating)
+## Table of Contents  
+
+* [Features](#features)
+* [Documentation](#documentation)
+* [Installation](#installation)  
+* [Updating](#updating)
 
 ## Features
 
