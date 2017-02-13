@@ -8,6 +8,12 @@ A command line tool for managing local instances of microservices.
 ## Table of Contents  
 
 * [Features](#features)
+  * [Start multiple services with one command](#start-multiple-services-with-one-command)
+  * [See status for running services](#see-status-for-running-services)
+  * [Follow service logs](#follow-service-logs)
+  * [Restart as needed](#restart-as-needed)
+  * [Auto-restart on edits](#auto-restart-on-edits)
+  * [Generate configuration automatically](#generate-configuration-automatically)
 * [Documentation](#documentation)
 * [Installation](#installation)  
 * [Updating](#updating)
