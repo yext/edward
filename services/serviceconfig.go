@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -226,10 +227,11 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 		return errors.WithStack(err)
 	}
 
-	var scriptErr error = nil
+	var scriptErr error
+	var scriptOutput []byte
 	if sc.Commands.Stop != "" {
 		sc.printf("Running stop script for %v.\n", sc.Name)
-		scriptErr = command.StopScript()
+		scriptOutput, scriptErr = command.RunStopScript()
 	}
 
 	if command.Pid == 0 {
@@ -271,6 +273,7 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 	if scriptErr == nil {
 		tracker.Success()
 	} else {
+		fmt.Println(string(scriptOutput))
 		tracker.SoftFail(errors.New("Script failed, kill signal succeeded"))
 	}
 

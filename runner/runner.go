@@ -95,13 +95,62 @@ func restartService() error {
 }
 
 func stopService() error {
-	// TODO: Call the stop script and soft-interrupt
-	err := runningCommand.Process.Kill()
+
+	command, err := runningService.GetCommand()
+	if err != nil {
+		messageLog.Printf("Could not get service command: %v\n", err)
+	}
+
+	var scriptErr error
+	var scriptOutput []byte
+	if runningService.Commands.Stop != "" {
+		messageLog.Printf("Running stop script for %v.\n", runningService.Name)
+		scriptOutput, scriptErr = command.RunStopScript()
+		if scriptErr != nil {
+			messageLog.Printf("%v\n", string(scriptOutput))
+			messageLog.Printf("Stop script failed: %v\n", scriptErr)
+		}
+		if waitForCompletionWithTimeout(1 * time.Second) {
+			return nil
+		}
+		messageLog.Printf("Stop script did not effectively stop service, sending interrupt\n")
+	}
+
+	err = runningCommand.Process.Signal(os.Interrupt)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if waitForCompletionWithTimeout(1 * time.Second) {
+		return nil
+	}
+	messageLog.Printf("Stop script did not effectively stop service, sending kill\n")
+
+	err = runningCommand.Process.Kill()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
 	return nil
+}
+
+func waitForCompletionWithTimeout(timeout time.Duration) bool {
+	var completed = make(chan struct{})
+	defer close(completed)
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	go func() {
+		runningCommand.Wait()
+		completed <- struct{}{}
+	}()
+
+	select {
+	case <-completed:
+		return true
+	case <-timer.C:
+		return false
+	}
 }
 
 func startService() error {

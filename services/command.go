@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -379,19 +378,18 @@ func (sc *ServiceCommand) GetLaunchCommand() (*exec.Cmd, error) {
 	return cmd, nil
 }
 
-func (sc *ServiceCommand) StopScript() error {
+func (sc *ServiceCommand) RunStopScript() ([]byte, error) {
 	sc.printf("Running stop script for %v\n", sc.Service.Name)
 	cmd, err := sc.constructCommand(sc.Service.Commands.Stop)
 	if err != nil {
-		return errors.WithStack(err)
+		return nil, errors.WithStack(err)
 	}
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println(out)
-		return errors.WithStack(err)
+		return out, errors.WithStack(err)
 	}
-	return nil
+	return nil, nil
 }
 
 func (sc *ServiceCommand) clearPid() {
