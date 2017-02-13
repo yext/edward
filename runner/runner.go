@@ -78,9 +78,11 @@ func run(c *cli.Context) error {
 	if !noWatch {
 		closeWatchers, err := BeginWatch(runningService, restartService, messageLog)
 		if err != nil {
-			return errors.WithStack(err)
+			messageLog.Printf("Could not enable auto-restart: %v\n", err)
+		} else {
+			messageLog.Printf("Auto-restart enabled. This service will restart when files in its watch directories are edited.\nThis can be disabled using the --no-watch flag.\n")
+			defer closeWatchers()
 		}
-		defer closeWatchers()
 	}
 
 	commandWait.Wait()
