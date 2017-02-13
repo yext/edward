@@ -106,6 +106,7 @@ func printResult(message string, c color.Attribute) {
 }
 
 type LogLine struct {
+	Stream  string
 	Message string
 }
 
@@ -127,8 +128,10 @@ func (c *CommandTracker) printFile(path string) {
 			fmt.Print(err)
 			return
 		}
-		c.printf("%v", lineData.Message)
-		fmt.Print(lineData.Message)
+		if lineData.Stream != "messages" {
+			c.printf("%v\n", lineData.Message)
+			fmt.Println(lineData.Message)
+		}
 	}
 
 	// check for errors
