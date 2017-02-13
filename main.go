@@ -218,12 +218,11 @@ func checkUpdateAvailable(checkUpdateChan chan interface{}) {
 // getConfigPath identifies the location of edward.json, if any exists
 func getConfigPath() string {
 
-	// TODO: Handle abs path not working more cleanly
-
 	if len(flags.config) > 0 {
 		if absfp, err := filepath.Abs(flags.config); err == nil {
 			return absfp
 		}
+		// TODO: Handle the error from filepath.Abs more effectively
 	}
 
 	var pathOptions []string

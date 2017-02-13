@@ -466,7 +466,6 @@ func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 	} else {
 		s.printf("No pidfile for %v", s.Name)
 	}
-	// TODO: Set status
 
 	return command, nil
 }
