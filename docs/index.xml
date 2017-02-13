@@ -430,6 +430,18 @@ services will not start.&lt;/p&gt;
 
 &lt;p&gt;Once all services have been started, the Edward command will exit, and these services will continue to run in the background.&lt;/p&gt;
 
+&lt;p&gt;If you want to go straight into the logs for your services once they are started, provide the &lt;code&gt;--tail&lt;/code&gt; flag:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;$ edward start --tail mygroup  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If any of the services being started are configured with &lt;a href=&#34;http://engblog.yext.com/edward/projectconfig/#autorestart-watch&#34;&gt;watch paths&lt;/a&gt;,
+they will be automatically restarted when any files in those paths are edited. You can disable this by using the
+&lt;code&gt;--no-watch&lt;/code&gt; flag when starting these services:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;$ edward start --no-watch mygroup  
+&lt;/code&gt;&lt;/pre&gt;
+
 &lt;h2 id=&#34;stop&#34;&gt;Stop&lt;/h2&gt;
 
 &lt;p&gt;The &lt;code&gt;stop&lt;/code&gt; command will stop one or more groups and/or services. It takes service
@@ -455,6 +467,8 @@ and group names are arguments in the same manner as &lt;code&gt;start&lt;/code&g
 
 &lt;p&gt;Each service will be stopped, rebuilt and relaunched sequentially. If Edward fails to start, build or launch any
 service, the operation will end, as with &lt;code&gt;start&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;The &lt;code&gt;restart&lt;/code&gt; commands also supports the &lt;code&gt;--tail&lt;/code&gt; and &lt;code&gt;--no-watch&lt;/code&gt; flags as with &lt;code&gt;start&lt;/code&gt;.&lt;/p&gt;
 
 &lt;h2 id=&#34;log-tail&#34;&gt;Log/Tail&lt;/h2&gt;
 

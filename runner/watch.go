@@ -33,7 +33,7 @@ func BeginWatch(service services.ServiceOrGroup, restart func() error, logger Lo
 }
 
 func startWatch(watches *services.ServiceWatch, restart func() error, logger Logger) (*fsnotify.Watcher, error) {
-	logger.Printf("Watching %v paths for service %v\n", len(watches.IncludedPaths), watches.Service.GetName())
+	logger.Printf("Auto-restart enabled for %v on %v paths. This can be disabled using the --no-watch flag.\n", watches.Service.GetName(), len(watches.IncludedPaths))
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, errors.WithStack(err)

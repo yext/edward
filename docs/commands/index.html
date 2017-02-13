@@ -416,6 +416,18 @@ services will not start.</p>
 
 <p>Once all services have been started, the Edward command will exit, and these services will continue to run in the background.</p>
 
+<p>If you want to go straight into the logs for your services once they are started, provide the <code>--tail</code> flag:</p>
+
+<pre><code class="language-bash">$ edward start --tail mygroup  
+</code></pre>
+
+<p>If any of the services being started are configured with <a href="http://engblog.yext.com/edward/projectconfig/#autorestart-watch">watch paths</a>,
+they will be automatically restarted when any files in those paths are edited. You can disable this by using the
+<code>--no-watch</code> flag when starting these services:</p>
+
+<pre><code class="language-bash">$ edward start --no-watch mygroup  
+</code></pre>
+
 <h2 id="stop">Stop</h2>
 
 <p>The <code>stop</code> command will stop one or more groups and/or services. It takes service
@@ -441,6 +453,8 @@ and group names are arguments in the same manner as <code>start</code>.</p>
 
 <p>Each service will be stopped, rebuilt and relaunched sequentially. If Edward fails to start, build or launch any
 service, the operation will end, as with <code>start</code>.</p>
+
+<p>The <code>restart</code> commands also supports the <code>--tail</code> and <code>--no-watch</code> flags as with <code>start</code>.</p>
 
 <h2 id="log-tail">Log/Tail</h2>
 

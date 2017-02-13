@@ -42,6 +42,20 @@ services will not start.
 
 Once all services have been started, the Edward command will exit, and these services will continue to run in the background.
 
+If you want to go straight into the logs for your services once they are started, provide the `--tail` flag:
+
+```bash
+$ edward start --tail mygroup  
+```
+
+If any of the services being started are configured with [watch paths](/projectconfig/#autorestart-watch),
+they will be automatically restarted when any files in those paths are edited. You can disable this by using the
+`--no-watch` flag when starting these services:
+
+```bash
+$ edward start --no-watch mygroup  
+```
+
 ## Stop
 
 The `stop` command will stop one or more groups and/or services. It takes service
@@ -65,6 +79,8 @@ To restart *mygroup*:
 
 Each service will be stopped, rebuilt and relaunched sequentially. If Edward fails to start, build or launch any
 service, the operation will end, as with `start`.
+
+The `restart` commands also supports the `--tail` and `--no-watch` flags as with `start`.
 
 ## Log/Tail
 
