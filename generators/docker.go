@@ -2,7 +2,6 @@ package generators
 
 import (
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -24,15 +23,7 @@ func (v *DockerGenerator) Name() string {
 func (v *DockerGenerator) StopWalk() {
 }
 
-func (v *DockerGenerator) VisitDir(path string, f os.FileInfo, err error) (bool, error) {
-	if err != nil {
-		return false, errors.WithStack(err)
-	}
-
-	if _, err := os.Stat(path); err != nil {
-		return false, errors.WithStack(err)
-	}
-
+func (v *DockerGenerator) VisitDir(path string) (bool, error) {
 	files, _ := ioutil.ReadDir(path)
 	for _, f := range files {
 		if f.Name() != "Dockerfile" {

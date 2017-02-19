@@ -27,7 +27,7 @@ func (v *IcbmGenerator) StartWalk(path string) {
 func (v *IcbmGenerator) StopWalk() {
 }
 
-func (v *IcbmGenerator) VisitDir(path string, f os.FileInfo, err error) (bool, error) {
+func (v *IcbmGenerator) VisitDir(path string) (bool, error) {
 	buildFilePath := filepath.Join(path, "build.spec")
 
 	if _, err := os.Stat(buildFilePath); os.IsNotExist(err) {

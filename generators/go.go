@@ -32,15 +32,7 @@ func (v *GoGenerator) StartWalk(path string) {
 func (v *GoGenerator) StopWalk() {
 }
 
-func (v *GoGenerator) VisitDir(path string, f os.FileInfo, err error) (bool, error) {
-	if err != nil {
-		return false, errors.WithStack(err)
-	}
-
-	if _, err := os.Stat(path); err != nil {
-		return false, errors.WithStack(err)
-	}
-
+func (v *GoGenerator) VisitDir(path string) (bool, error) {
 	files, _ := ioutil.ReadDir(path)
 	for _, f := range files {
 		fPath := filepath.Join(path, f.Name())

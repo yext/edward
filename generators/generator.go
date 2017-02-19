@@ -1,7 +1,7 @@
 package generators
 
 import (
-	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -15,7 +15,7 @@ type Generator interface {
 	Name() string
 	StartWalk(basePath string)
 	StopWalk()
-	VisitDir(path string, f os.FileInfo, err error) (bool, error)
+	VisitDir(path string) (bool, error)
 	Err() error
 	SetErr(err error)
 }
@@ -50,6 +50,91 @@ func (b *generatorBase) StartWalk(basePath string) {
 	b.basePath = basePath
 }
 
+// directory represents a directory for the purposes of scanning for projects
+// to import.
+type directory struct {
+	Path     string
+	Parent   *directory
+	children []*directory
+	ignores  *ignore.GitIgnore
+}
+
+func NewDirectory(path string, parent *directory) (*directory, error) {
+	if parent != nil && parent.Ignores() != nil && parent.Ignores().MatchesPath(path) {
+		return nil, nil
+	}
+
+	ignores, err := loadIgnores(path, nil)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	d := &directory{
+		Path:    path,
+		Parent:  parent,
+		ignores: ignores,
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			child, err := NewDirectory(filepath.Join(path, file.Name()), d)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+			d.children = append(d.children, child)
+		}
+	}
+
+	return d, nil
+}
+
+// Ignores returns the .edwardignore config for this directory or any of its
+// ancestor directories.
+func (d *directory) Ignores() *ignore.GitIgnore {
+	if d.ignores != nil {
+		return d.ignores
+	}
+
+	if d.Parent != nil {
+		return d.Parent.Ignores()
+	}
+	return nil
+}
+
+func (d *directory) Generate(generators []Generator) error {
+	if d == nil || len(generators) == 0 {
+		return nil
+	}
+
+	var childGenerators []Generator
+	for _, generator := range generators {
+		found, err := generator.VisitDir(d.Path)
+		if err != nil && err != filepath.SkipDir {
+			return errors.WithStack(err)
+		}
+		if err != filepath.SkipDir {
+			childGenerators = append(childGenerators, generator)
+		}
+		if found {
+			break
+		}
+	}
+
+	for _, child := range d.children {
+		err := child.Generate(childGenerators)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	return nil
+}
+
 func loadIgnores(path string, currentIgnores *ignore.GitIgnore) (*ignore.GitIgnore, error) {
 	ignoreFile := filepath.Join(path, ".edwardignore")
 	if _, err := os.Stat(ignoreFile); err != nil {
@@ -61,20 +146,6 @@ func loadIgnores(path string, currentIgnores *ignore.GitIgnore) (*ignore.GitIgno
 
 	ignores, err := ignore.CompileIgnoreFile(ignoreFile)
 	return ignores, errors.WithStack(err)
-}
-
-func shouldIgnore(basePath, path string, ignores *ignore.GitIgnore) bool {
-	if ignores == nil {
-		return false
-	}
-
-	rel, err := filepath.Rel(basePath, path)
-	if err != nil {
-		fmt.Println("Error checking ignore:", err)
-		return false
-	}
-
-	return ignores.MatchesPath(rel)
 }
 
 type GeneratorCollection struct {
@@ -91,16 +162,11 @@ func (g *GeneratorCollection) Generate() error {
 		return errors.New(g.Path + " is not a directory")
 	}
 
-	// TODO: Create a stack of ignore files to handle ignores in subdirs
-	ignores, err := loadIgnores(g.Path, nil)
+	dir, err := NewDirectory(g.Path, nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	return errors.WithStack(g.walkGenerators(ignores))
-}
-
-func (g *GeneratorCollection) walkGenerators(ignores *ignore.GitIgnore) error {
 	for _, generator := range g.Generators {
 		generator.StartWalk(g.Path)
 	}
@@ -110,31 +176,7 @@ func (g *GeneratorCollection) walkGenerators(ignores *ignore.GitIgnore) error {
 		}
 	}()
 
-	err := filepath.Walk(g.Path, func(curPath string, f os.FileInfo, err error) error {
-		if _, err := os.Stat(curPath); err != nil {
-			if os.IsNotExist(err) {
-				return nil
-			}
-			return errors.WithStack(err)
-		}
-
-		if !f.Mode().IsDir() || shouldIgnore(g.Path, curPath, ignores) {
-			return nil
-		}
-		for _, generator := range g.Generators {
-			found, err := generator.VisitDir(curPath, f, err)
-			if found || err == filepath.SkipDir {
-				// TODO: Determine whether a generator should result in directories below being skipped
-				return filepath.SkipDir
-			}
-			if err != nil {
-				generator.SetErr(err)
-				return errors.WithStack(err)
-			}
-		}
-		return nil
-	})
-	return errors.WithStack(err)
+	return errors.WithStack(dir.Generate(g.Generators))
 }
 
 func (g *GeneratorCollection) Services() []*services.ServiceConfig {
