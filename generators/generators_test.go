@@ -81,9 +81,17 @@ func TestGoGenerator(t *testing.T) {
 		},
 	}
 	for _, test := range goTests {
-		services, _, err := GenerateServices(test.path, test.targets)
-		must.BeEqual(t, test.outServices, services, test.name+": services did not match.")
-		must.BeEqualErrors(t, test.outErr, err, test.name+": errors did not match.")
+		t.Run(test.name, func(t *testing.T) {
+			gc := &GeneratorCollection{
+				Generators: []Generator{&GoGenerator{}},
+				Path:       test.path,
+				Targets:    test.targets,
+			}
+			err := gc.Generate()
+			services := gc.Services()
+			must.BeEqual(t, test.outServices, services, "services did not match.")
+			must.BeEqualErrors(t, test.outErr, err, "errors did not match.")
+		})
 	}
 }
 
@@ -119,7 +127,13 @@ func TestDockerGenerator(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			services, _, err := GenerateServices(test.path, test.targets)
+			gc := &GeneratorCollection{
+				Generators: []Generator{&DockerGenerator{}},
+				Path:       test.path,
+				Targets:    test.targets,
+			}
+			err := gc.Generate()
+			services := gc.Services()
 			must.BeEqual(t, test.outServices, services, "services did not match.")
 			must.BeEqualErrors(t, test.outErr, err, "errors did not match.")
 		})

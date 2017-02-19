@@ -15,7 +15,7 @@ func init() {
 }
 
 type IcbmGenerator struct {
-	basePath      string
+	generatorBase
 	foundServices []*services.ServiceConfig
 }
 
@@ -24,7 +24,7 @@ func (v *IcbmGenerator) Name() string {
 }
 
 func (v *IcbmGenerator) StartWalk(path string) {
-	v.basePath = path
+	v.generatorBase.StartWalk(path)
 	v.foundServices = nil
 }
 
@@ -56,7 +56,7 @@ func (v *IcbmGenerator) VisitDir(path string, f os.FileInfo, err error) error {
 	return filepath.SkipDir
 }
 
-func (v *IcbmGenerator) Found() []*services.ServiceConfig {
+func (v *IcbmGenerator) Services() []*services.ServiceConfig {
 	return v.foundServices
 }
 

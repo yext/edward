@@ -338,39 +338,22 @@ func generate(c *cli.Context) error {
 		return errors.WithStack(err)
 	}
 
-	foundServices, serviceToGenerator, err := generators.GenerateServices(wd, c.Args())
+	generators := &generators.GeneratorCollection{
+		Generators: generators.Generators,
+		Path:       wd,
+		Targets:    c.Args(),
+	}
+	err = generators.Generate()
 	if err != nil {
 		return errors.WithStack(err)
 	}
+	foundServices := generators.Services()
 
 	// Prompt user to confirm the list of services that will be generated
 	if !flags.noPrompt {
-		fmt.Println("The following list of services will be generated:")
-		var goServices []string
-		var icbmServices []string
+		fmt.Println("The following services will be generated:")
 		for _, service := range foundServices {
-			switch serviceToGenerator[service.Name] {
-			case "go":
-				goServices = append(goServices, service.Name)
-			case "icbm":
-				icbmServices = append(icbmServices, service.Name)
-			default:
-				fmt.Println("\t", service.Name)
-			}
-		}
-
-		if len(goServices) > 0 {
-			fmt.Println("GO:")
-		}
-		for _, service := range goServices {
-			fmt.Println("\t", service)
-		}
-
-		if len(icbmServices) > 0 {
-			fmt.Println("ICBM:")
-		}
-		for _, service := range icbmServices {
-			fmt.Println("\t", service)
+			fmt.Println("\t", service.Name)
 		}
 
 		if !askForConfirmation("Do you wish to continue?") {

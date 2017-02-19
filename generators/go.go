@@ -20,8 +20,8 @@ func init() {
 }
 
 type GoGenerator struct {
-	basePath string
-	found    map[string]string
+	generatorBase
+	found map[string]string
 }
 
 func (v *GoGenerator) Name() string {
@@ -29,7 +29,7 @@ func (v *GoGenerator) Name() string {
 }
 
 func (v *GoGenerator) StartWalk(path string) {
-	v.basePath = path
+	v.generatorBase.StartWalk(path)
 	v.found = make(map[string]string)
 }
 
@@ -72,7 +72,7 @@ func (v *GoGenerator) VisitDir(path string, f os.FileInfo, err error) error {
 	return nil
 }
 
-func (v *GoGenerator) Found() []*services.ServiceConfig {
+func (v *GoGenerator) Services() []*services.ServiceConfig {
 	var outServices []*services.ServiceConfig
 
 	for packageName, packagePath := range v.found {

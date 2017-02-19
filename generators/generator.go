@@ -16,18 +16,44 @@ type Generator interface {
 	StartWalk(basePath string)
 	StopWalk()
 	VisitDir(path string, f os.FileInfo, err error) error
-	Found() []*services.ServiceConfig
+	Err() error
+	SetErr(err error)
 }
 
-type ConfigGenerator func(path string) ([]*services.ServiceConfig, []*services.ServiceGroupConfig, error)
+type ServiceGenerator interface {
+	Services() []*services.ServiceConfig
+}
 
-var Generators map[string]Generator
+type GroupGenerator interface {
+	Groups() []*services.ServiceGroupConfig
+}
+
+type ImportGenerator interface {
+	Imports() []string
+}
+
+type generatorBase struct {
+	err      error
+	basePath string
+}
+
+func (e *generatorBase) Err() error {
+	return e.err
+}
+
+func (e *generatorBase) SetErr(err error) {
+	e.err = err
+}
+
+func (b *generatorBase) StartWalk(basePath string) {
+	b.err = nil
+	b.basePath = basePath
+}
+
+var Generators []Generator
 
 func RegisterGenerator(g Generator) {
-	if Generators == nil {
-		Generators = make(map[string]Generator)
-	}
-	Generators[g.Name()] = g
+	Generators = append(Generators, g)
 }
 
 func loadIgnores(path string, currentIgnores *ignore.GitIgnore) (*ignore.GitIgnore, error) {
@@ -57,61 +83,57 @@ func shouldIgnore(basePath, path string, ignores *ignore.GitIgnore) bool {
 	return ignores.MatchesPath(rel)
 }
 
-func GenerateServices(path string, targets []string) ([]*services.ServiceConfig, map[string]string, error) {
-	var outServices []*services.ServiceConfig
-	var serviceToGenerator = make(map[string]string)
+type GeneratorCollection struct {
+	Generators []Generator
+	Path       string
+	Targets    []string
+}
 
-	if info, err := os.Stat(path); err != nil || !info.IsDir() {
+func (g *GeneratorCollection) Generate() error {
+	if info, err := os.Stat(g.Path); err != nil || !info.IsDir() {
 		if err != nil {
-			return outServices, serviceToGenerator, err
+			return errors.WithStack(err)
 		}
-		return nil, nil, errors.New(path + " is not a directory")
+		return errors.New(g.Path + " is not a directory")
 	}
 
 	// TODO: Create a stack of ignore files to handle ignores in subdirs
-	ignores, err := loadIgnores(path, nil)
+	ignores, err := loadIgnores(g.Path, nil)
 	if err != nil {
-		return nil, nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
-	for name, generator := range Generators {
-		generator.StartWalk(path)
-		err := filepath.Walk(path, func(curPath string, f os.FileInfo, err error) error {
-			if _, err := os.Stat(curPath); err != nil {
-				if os.IsNotExist(err) {
-					return nil
-				}
-				return errors.WithStack(err)
-			}
-
-			if !f.Mode().IsDir() || shouldIgnore(path, curPath, ignores) {
-				return nil
-			}
-
-			err = generator.VisitDir(curPath, f, err)
-			if err == filepath.SkipDir {
-				return errors.WithStack(err)
-			}
-			return errors.WithStack(err)
-		})
-		generator.StopWalk()
-		if err != nil {
-			fmt.Println("Error in generator", name, ":", err)
-		} else {
-			for _, service := range generator.Found() {
-				serviceToGenerator[service.Name] = generator.Name()
-			}
-			outServices = append(outServices, generator.Found()...)
+	for _, generator := range g.Generators {
+		walkGenerator(generator, g.Path, ignores)
+		if generator.Err() != nil {
+			fmt.Println("Error in generator", generator.Name(), ":", err)
 		}
 	}
 
-	if len(targets) == 0 {
+	return nil
+}
+
+func (g *GeneratorCollection) Services() []*services.ServiceConfig {
+	var outServices []*services.ServiceConfig
+	var serviceToGenerator = make(map[string]string)
+
+	for _, generator := range g.Generators {
+		if serviceGenerator, ok := generator.(ServiceGenerator); ok && generator.Err() == nil {
+			found := serviceGenerator.Services()
+			for _, service := range found {
+				serviceToGenerator[service.Name] = generator.Name()
+			}
+			outServices = append(outServices, found...)
+		}
+	}
+
+	if len(g.Targets) == 0 {
 		sort.Sort(ByName(outServices))
-		return outServices, serviceToGenerator, nil
+		return outServices
 	}
 
 	filterMap := make(map[string]struct{})
-	for _, name := range targets {
+	for _, name := range g.Targets {
 		filterMap[name] = struct{}{}
 	}
 
@@ -119,16 +141,89 @@ func GenerateServices(path string, targets []string) ([]*services.ServiceConfig,
 	for _, service := range outServices {
 		if _, ok := filterMap[service.Name]; ok {
 			filteredServices = append(filteredServices, service)
-			continue
+		}
+	}
+	sort.Sort(ByName(filteredServices))
+	return filteredServices
+}
+
+func (g *GeneratorCollection) Group() []*services.ServiceGroupConfig {
+	var outGroups []*services.ServiceGroupConfig
+	var groupToGenerator = make(map[string]string)
+
+	for _, generator := range g.Generators {
+		if groupGenerator, ok := generator.(GroupGenerator); ok && generator.Err() == nil {
+			found := groupGenerator.Groups()
+			for _, group := range found {
+				groupToGenerator[group.Name] = generator.Name()
+			}
+			outGroups = append(outGroups, found...)
 		}
 	}
 
-	if len(filteredServices) == 0 {
-		return nil, nil, errors.New("No matching services found")
+	if len(g.Targets) == 0 {
+		sort.Sort(ByGroupName(outGroups))
+		return outGroups
 	}
 
-	sort.Sort(ByName(filteredServices))
-	return filteredServices, serviceToGenerator, nil
+	filterMap := make(map[string]struct{})
+	for _, name := range g.Targets {
+		filterMap[name] = struct{}{}
+	}
+
+	var filteredGroups []*services.ServiceGroupConfig
+	for _, group := range outGroups {
+		if _, ok := filterMap[group.Name]; ok {
+			filteredGroups = append(filteredGroups, group)
+		}
+	}
+	sort.Sort(ByGroupName(filteredGroups))
+	return filteredGroups
+}
+
+func (g *GeneratorCollection) Imports() []string {
+	var outImports []string
+	for _, generator := range g.Generators {
+		if importGenerator, ok := generator.(ImportGenerator); ok && generator.Err() == nil {
+			outImports = append(outImports, importGenerator.Imports()...)
+		}
+	}
+	return nil
+}
+
+func walkGenerator(generator Generator, path string, ignores *ignore.GitIgnore) {
+	generator.StartWalk(path)
+	err := filepath.Walk(path, func(curPath string, f os.FileInfo, err error) error {
+		if _, err := os.Stat(curPath); err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return errors.WithStack(err)
+		}
+
+		if !f.Mode().IsDir() || shouldIgnore(path, curPath, ignores) {
+			return nil
+		}
+
+		err = generator.VisitDir(curPath, f, err)
+		return errors.WithStack(err)
+	})
+	if err != nil {
+		generator.SetErr(err)
+	}
+	generator.StopWalk()
+}
+
+type ByGroupName []*services.ServiceGroupConfig
+
+func (s ByGroupName) Len() int {
+	return len(s)
+}
+func (s ByGroupName) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s ByGroupName) Less(i, j int) bool {
+	return s[i].Name < s[j].Name
 }
 
 type ByName []*services.ServiceConfig

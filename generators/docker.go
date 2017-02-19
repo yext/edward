@@ -17,16 +17,12 @@ func init() {
 }
 
 type DockerGenerator struct {
-	basePath      string
+	generatorBase
 	foundServices []*services.ServiceConfig
 }
 
 func (v *DockerGenerator) Name() string {
 	return "docker"
-}
-
-func (v *DockerGenerator) StartWalk(basePath string) {
-	v.basePath = basePath
 }
 
 func (v *DockerGenerator) StopWalk() {
@@ -98,6 +94,6 @@ func getPorts(dockerFilePath string) ([]int, []string, error) {
 	return ports, portCommands, nil
 }
 
-func (v *DockerGenerator) Found() []*services.ServiceConfig {
+func (v *DockerGenerator) Services() []*services.ServiceConfig {
 	return v.foundServices
 }
