@@ -241,7 +241,7 @@ func (c *Config) loadImports() error {
 		}
 		cfg, err := loadConfigContents(r, filepath.Dir(cPath), c.Logger)
 		if err != nil {
-			return errors.WithStack(err)
+			return errors.WithMessage(err, i)
 		}
 
 		err = c.importConfig(cfg)

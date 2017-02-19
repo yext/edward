@@ -188,7 +188,7 @@ func (g *GeneratorCollection) Imports() []string {
 			outImports = append(outImports, importGenerator.Imports()...)
 		}
 	}
-	return nil
+	return outImports
 }
 
 func walkGenerator(generator Generator, path string, ignores *ignore.GitIgnore) {

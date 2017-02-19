@@ -26,7 +26,9 @@ func LoadSharedConfig(configPath string, edwardVersion string, logger *log.Logge
 		}
 		cfg, err := LoadConfigWithDir(r, filepath.Dir(configPath), edwardVersion, logger)
 		if err != nil {
-			return errors.WithStack(err)
+			workingDir, _ := os.Getwd()
+			configRel, _ := filepath.Rel(workingDir, configPath)
+			return errors.WithMessage(err, configRel)
 		}
 
 		serviceMap = cfg.ServiceMap

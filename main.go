@@ -320,14 +320,13 @@ func generate(c *cli.Context) error {
 	}
 
 	if _, err := os.Stat(configPath); err == nil {
-
 		r, err := os.Open(configPath)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 		cfg, err = config.LoadConfigWithDir(r, filepath.Dir(configPath), edwardVersion, logger)
 		if err != nil {
-			return errors.WithStack(err)
+			return errors.WithMessage(err, configPath)
 		}
 	} else {
 		cfg = config.EmptyConfig(filepath.Dir(configPath), logger)
@@ -396,7 +395,6 @@ func generate(c *cli.Context) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
 	defer f.Close()
 
 	w := bufio.NewWriter(f)
