@@ -193,6 +193,14 @@ func (cfg *Config) AppendServices(newServices []*services.ServiceConfig) error {
 	return nil
 }
 
+func (cfg *Config) AppendGroups(groups []*services.ServiceGroupConfig) error {
+	var groups_dereferenced []services.ServiceGroupConfig
+	for _, group := range groups {
+		groups_dereferenced = append(groups_dereferenced, *group)
+	}
+	return errors.WithStack(cfg.AddGroups(groups_dereferenced))
+}
+
 func (cfg *Config) AddGroups(groups []services.ServiceGroupConfig) error {
 	cfg.printf("Adding %d groups.\n", len(groups))
 	for _, group := range groups {

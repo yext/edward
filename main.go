@@ -348,12 +348,29 @@ func generate(c *cli.Context) error {
 		return errors.WithStack(err)
 	}
 	foundServices := generators.Services()
+	foundGroups := generators.Groups()
+	foundImports := generators.Imports()
 
 	// Prompt user to confirm the list of services that will be generated
 	if !flags.noPrompt {
-		fmt.Println("The following services will be generated:")
+		fmt.Println("The following will be generated:")
+		if len(foundServices) > 0 {
+			fmt.Println("Services:")
+		}
 		for _, service := range foundServices {
 			fmt.Println("\t", service.Name)
+		}
+		if len(foundGroups) > 0 {
+			fmt.Println("Groups:")
+		}
+		for _, group := range foundGroups {
+			fmt.Println("\t", group.Name)
+		}
+		if len(foundImports) > 0 {
+			fmt.Println("Imports:")
+		}
+		for _, i := range foundImports {
+			fmt.Println("\t", i)
 		}
 
 		if !askForConfirmation("Do you wish to continue?") {
@@ -369,6 +386,11 @@ func generate(c *cli.Context) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
+	err = cfg.AppendGroups(foundGroups)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	cfg.Imports = append(cfg.Imports, foundImports...)
 
 	f, err := os.Create(configPath)
 	if err != nil {

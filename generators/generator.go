@@ -147,7 +147,7 @@ func (g *GeneratorCollection) Services() []*services.ServiceConfig {
 	return filteredServices
 }
 
-func (g *GeneratorCollection) Group() []*services.ServiceGroupConfig {
+func (g *GeneratorCollection) Groups() []*services.ServiceGroupConfig {
 	var outGroups []*services.ServiceGroupConfig
 	var groupToGenerator = make(map[string]string)
 
