@@ -15,7 +15,7 @@ type Generator interface {
 	Name() string
 	StartWalk(basePath string)
 	StopWalk()
-	VisitDir(path string, f os.FileInfo, err error) error
+	VisitDir(path string, f os.FileInfo, err error) (bool, error)
 	Err() error
 	SetErr(err error)
 }
@@ -48,12 +48,6 @@ func (e *generatorBase) SetErr(err error) {
 func (b *generatorBase) StartWalk(basePath string) {
 	b.err = nil
 	b.basePath = basePath
-}
-
-var Generators []Generator
-
-func RegisterGenerator(g Generator) {
-	Generators = append(Generators, g)
 }
 
 func loadIgnores(path string, currentIgnores *ignore.GitIgnore) (*ignore.GitIgnore, error) {
@@ -103,14 +97,44 @@ func (g *GeneratorCollection) Generate() error {
 		return errors.WithStack(err)
 	}
 
-	for _, generator := range g.Generators {
-		walkGenerator(generator, g.Path, ignores)
-		if generator.Err() != nil {
-			fmt.Println("Error in generator", generator.Name(), ":", err)
-		}
-	}
+	return errors.WithStack(g.walkGenerators(ignores))
+}
 
-	return nil
+func (g *GeneratorCollection) walkGenerators(ignores *ignore.GitIgnore) error {
+	for _, generator := range g.Generators {
+		generator.StartWalk(g.Path)
+	}
+	defer func() {
+		for _, generator := range g.Generators {
+			generator.StopWalk()
+		}
+	}()
+
+	err := filepath.Walk(g.Path, func(curPath string, f os.FileInfo, err error) error {
+		if _, err := os.Stat(curPath); err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return errors.WithStack(err)
+		}
+
+		if !f.Mode().IsDir() || shouldIgnore(g.Path, curPath, ignores) {
+			return nil
+		}
+		for _, generator := range g.Generators {
+			found, err := generator.VisitDir(curPath, f, err)
+			if found || err == filepath.SkipDir {
+				// TODO: Determine whether a generator should result in directories below being skipped
+				return filepath.SkipDir
+			}
+			if err != nil {
+				generator.SetErr(err)
+				return errors.WithStack(err)
+			}
+		}
+		return nil
+	})
+	return errors.WithStack(err)
 }
 
 func (g *GeneratorCollection) Services() []*services.ServiceConfig {
@@ -189,29 +213,6 @@ func (g *GeneratorCollection) Imports() []string {
 		}
 	}
 	return outImports
-}
-
-func walkGenerator(generator Generator, path string, ignores *ignore.GitIgnore) {
-	generator.StartWalk(path)
-	err := filepath.Walk(path, func(curPath string, f os.FileInfo, err error) error {
-		if _, err := os.Stat(curPath); err != nil {
-			if os.IsNotExist(err) {
-				return nil
-			}
-			return errors.WithStack(err)
-		}
-
-		if !f.Mode().IsDir() || shouldIgnore(path, curPath, ignores) {
-			return nil
-		}
-
-		err = generator.VisitDir(curPath, f, err)
-		return errors.WithStack(err)
-	})
-	if err != nil {
-		generator.SetErr(err)
-	}
-	generator.StopWalk()
 }
 
 type ByGroupName []*services.ServiceGroupConfig

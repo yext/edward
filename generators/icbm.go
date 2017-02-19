@@ -10,10 +10,6 @@ import (
 	"github.com/yext/edward/services"
 )
 
-func init() {
-	RegisterGenerator(&IcbmGenerator{})
-}
-
 type IcbmGenerator struct {
 	generatorBase
 	foundServices []*services.ServiceConfig
@@ -31,29 +27,29 @@ func (v *IcbmGenerator) StartWalk(path string) {
 func (v *IcbmGenerator) StopWalk() {
 }
 
-func (v *IcbmGenerator) VisitDir(path string, f os.FileInfo, err error) error {
+func (v *IcbmGenerator) VisitDir(path string, f os.FileInfo, err error) (bool, error) {
 	buildFilePath := filepath.Join(path, "build.spec")
 
 	if _, err := os.Stat(buildFilePath); os.IsNotExist(err) {
-		return nil
+		return false, nil
 	} else if err != nil {
-		return errors.WithStack(err)
+		return false, errors.WithStack(err)
 	}
 
 	specData, err := ioutil.ReadFile(buildFilePath)
 	if err != nil {
-		return errors.WithStack(err)
+		return false, errors.WithStack(err)
 	}
 
 	relPath, err := filepath.Rel(v.basePath, path)
 	if err != nil {
-		return errors.WithStack(err)
+		return false, errors.WithStack(err)
 	}
 
 	v.foundServices = append(v.foundServices, parsePlayServices(relPath, specData)...)
 	v.foundServices = append(v.foundServices, parseJavaServices(relPath, specData)...)
 
-	return filepath.SkipDir
+	return true, filepath.SkipDir
 }
 
 func (v *IcbmGenerator) Services() []*services.ServiceConfig {

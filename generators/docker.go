@@ -12,10 +12,6 @@ import (
 	"github.com/yext/edward/services"
 )
 
-func init() {
-	RegisterGenerator(&DockerGenerator{})
-}
-
 type DockerGenerator struct {
 	generatorBase
 	foundServices []*services.ServiceConfig
@@ -28,13 +24,13 @@ func (v *DockerGenerator) Name() string {
 func (v *DockerGenerator) StopWalk() {
 }
 
-func (v *DockerGenerator) VisitDir(path string, f os.FileInfo, err error) error {
+func (v *DockerGenerator) VisitDir(path string, f os.FileInfo, err error) (bool, error) {
 	if err != nil {
-		return errors.WithStack(err)
+		return false, errors.WithStack(err)
 	}
 
 	if _, err := os.Stat(path); err != nil {
-		return errors.WithStack(err)
+		return false, errors.WithStack(err)
 	}
 
 	files, _ := ioutil.ReadDir(path)
@@ -45,13 +41,13 @@ func (v *DockerGenerator) VisitDir(path string, f os.FileInfo, err error) error 
 
 		dockerPath, err := filepath.Rel(v.basePath, path)
 		if err != nil {
-			return errors.WithStack(err)
+			return false, errors.WithStack(err)
 		}
 
 		fPath := filepath.Join(path, f.Name())
 		expectedPorts, portCommands, err := getPorts(fPath)
 		if err != nil {
-			return errors.WithStack(err)
+			return false, errors.WithStack(err)
 		}
 
 		name := filepath.Base(path)
@@ -69,10 +65,10 @@ func (v *DockerGenerator) VisitDir(path string, f os.FileInfo, err error) error 
 			},
 		}
 		v.foundServices = append(v.foundServices, service)
-		break
+		return true, nil
 	}
 
-	return nil
+	return false, nil
 }
 
 func getPorts(dockerFilePath string) ([]int, []string, error) {

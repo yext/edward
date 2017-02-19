@@ -15,10 +15,6 @@ import (
 	"github.com/yext/edward/services"
 )
 
-func init() {
-	RegisterGenerator(&GoGenerator{})
-}
-
 type GoGenerator struct {
 	generatorBase
 	found map[string]string
@@ -36,13 +32,13 @@ func (v *GoGenerator) StartWalk(path string) {
 func (v *GoGenerator) StopWalk() {
 }
 
-func (v *GoGenerator) VisitDir(path string, f os.FileInfo, err error) error {
+func (v *GoGenerator) VisitDir(path string, f os.FileInfo, err error) (bool, error) {
 	if err != nil {
-		return errors.WithStack(err)
+		return false, errors.WithStack(err)
 	}
 
 	if _, err := os.Stat(path); err != nil {
-		return errors.WithStack(err)
+		return false, errors.WithStack(err)
 	}
 
 	files, _ := ioutil.ReadDir(path)
@@ -54,7 +50,7 @@ func (v *GoGenerator) VisitDir(path string, f os.FileInfo, err error) error {
 
 		input, err := ioutil.ReadFile(fPath)
 		if err != nil {
-			return errors.WithStack(err)
+			return false, errors.WithStack(err)
 		}
 
 		packageExpr := regexp.MustCompile(`package main\n`)
@@ -62,14 +58,15 @@ func (v *GoGenerator) VisitDir(path string, f os.FileInfo, err error) error {
 			packageName := filepath.Base(path)
 			packagePath, err := filepath.Rel(v.basePath, path)
 			if err != nil {
-				return errors.WithStack(err)
+				return false, errors.WithStack(err)
 			}
 			v.found[packageName] = packagePath
+			return true, nil
 		}
 
 	}
 
-	return nil
+	return false, nil
 }
 
 func (v *GoGenerator) Services() []*services.ServiceConfig {

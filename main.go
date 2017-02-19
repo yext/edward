@@ -338,9 +338,14 @@ func generate(c *cli.Context) error {
 	}
 
 	generators := &generators.GeneratorCollection{
-		Generators: generators.Generators,
-		Path:       wd,
-		Targets:    c.Args(),
+		Generators: []generators.Generator{
+			&generators.EdwardGenerator{},
+			&generators.DockerGenerator{},
+			&generators.GoGenerator{},
+			&generators.IcbmGenerator{},
+		},
+		Path:    wd,
+		Targets: c.Args(),
 	}
 	err = generators.Generate()
 	if err != nil {
