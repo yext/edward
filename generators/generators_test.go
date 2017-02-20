@@ -1,6 +1,7 @@
 package generators
 
 import (
+	"errors"
 	"testing"
 
 	must "github.com/theothertomelliott/go-must"
@@ -8,12 +9,107 @@ import (
 	"github.com/yext/edward/services"
 )
 
+func TestInvalidPaths(t *testing.T) {
+	var goTests = []struct {
+		name        string
+		path        string
+		targets     []string
+		outServices []*services.ServiceConfig
+		outErr      error
+	}{
+		{
+			name:   "Invalid path",
+			path:   "invalid_path",
+			outErr: errors.New("stat invalid_path: no such file or directory"),
+		},
+		{
+			name:   "Not directory",
+			path:   "testdata/go/multiple/service1/main.go",
+			outErr: errors.New("testdata/go/multiple/service1/main.go is not a directory"),
+		},
+	}
+	for _, test := range goTests {
+		t.Run(test.name, func(t *testing.T) {
+			gc := &GeneratorCollection{
+				Generators: []Generator{},
+				Path:       test.path,
+				Targets:    test.targets,
+			}
+			err := gc.Generate()
+			services := gc.Services()
+			must.BeEqual(t, test.outServices, services, "services did not match.")
+			must.BeEqualErrors(t, test.outErr, err, "errors did not match.")
+		})
+	}
+}
+
+func TestEdwardGenerator(t *testing.T) {
+	var goTests = []struct {
+		name        string
+		path        string
+		targets     []string
+		outServices []*services.ServiceConfig
+		outGroups   []*services.ServiceGroupConfig
+		outImports  []string
+		outErr      error
+	}{
+		{
+			name: "Edward Simple",
+			path: "testdata/edward/simple/",
+			outImports: []string{
+				"project1/edward.json",
+			},
+		},
+		{
+			name: "Edward With Go",
+			path: "testdata/edward/with_go",
+			outImports: []string{
+				"project1/edward.json",
+			},
+			outServices: []*services.ServiceConfig{
+				{
+					Name:      "goproject",
+					Path:      common.StringToStringPointer("goproject"),
+					Env:       []string{},
+					WatchJson: []byte("{\"include\":[\"goproject\"]}"),
+					Commands: services.ServiceConfigCommands{
+						Build:  "go install",
+						Launch: "goproject",
+					},
+				},
+			},
+		},
+	}
+	for _, test := range goTests {
+		t.Run(test.name, func(t *testing.T) {
+			gc := &GeneratorCollection{
+				Generators: []Generator{
+					&EdwardGenerator{},
+					&GoGenerator{},
+				},
+				Path:    test.path,
+				Targets: test.targets,
+			}
+			err := gc.Generate()
+			services := gc.Services()
+			groups := gc.Groups()
+			imports := gc.Imports()
+			must.BeEqual(t, test.outServices, services, "services did not match.")
+			must.BeEqual(t, test.outGroups, groups, "groups did not match.")
+			must.BeEqual(t, test.outImports, imports, "imports did not match.")
+			must.BeEqualErrors(t, test.outErr, err, "errors did not match.")
+		})
+	}
+}
+
 func TestGoGenerator(t *testing.T) {
 	var goTests = []struct {
 		name        string
 		path        string
 		targets     []string
 		outServices []*services.ServiceConfig
+		outGroups   []*services.ServiceGroupConfig
+		outImports  []string
 		outErr      error
 	}{
 
@@ -89,7 +185,11 @@ func TestGoGenerator(t *testing.T) {
 			}
 			err := gc.Generate()
 			services := gc.Services()
+			groups := gc.Groups()
+			imports := gc.Imports()
 			must.BeEqual(t, test.outServices, services, "services did not match.")
+			must.BeEqual(t, test.outGroups, groups, "groups did not match.")
+			must.BeEqual(t, test.outImports, imports, "imports did not match.")
 			must.BeEqualErrors(t, test.outErr, err, "errors did not match.")
 		})
 	}
@@ -101,6 +201,8 @@ func TestDockerGenerator(t *testing.T) {
 		path        string
 		targets     []string
 		outServices []*services.ServiceConfig
+		outGroups   []*services.ServiceGroupConfig
+		outImports  []string
 		outErr      error
 	}{
 
@@ -134,7 +236,11 @@ func TestDockerGenerator(t *testing.T) {
 			}
 			err := gc.Generate()
 			services := gc.Services()
+			groups := gc.Groups()
+			imports := gc.Imports()
 			must.BeEqual(t, test.outServices, services, "services did not match.")
+			must.BeEqual(t, test.outGroups, groups, "groups did not match.")
+			must.BeEqual(t, test.outImports, imports, "imports did not match.")
 			must.BeEqualErrors(t, test.outErr, err, "errors did not match.")
 		})
 	}
