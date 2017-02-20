@@ -491,12 +491,13 @@ supported projects that are found.</p>
 
 <p>$ edward generate myservice</p>
 
-<p>Edward supports autogeneration for three types of project:</p>
+<p>Edward supports autogeneration for four types of project:</p>
 
 <ul>
 <li>go</li>
 <li>Docker</li>
 <li>icbm</li>
+<li>Procfile</li>
 </ul>
 
 <h3 id="go">Go</h3>
@@ -538,6 +539,17 @@ exposed port is open. If <code>EXPOSE</code> is not used, starting the container
 <p>The <em>icbm</em> generator will generate service configuration for services that use the <a href="https://github.com/yext/icbm">icbm</a> build tool.</p>
 
 <p>This generator will look for a <em>build.spec</em> file and generate a service for each of the named aliases.</p>
+
+<p>The generated config will assume that a service has started successfully by detecting that it is listening on
+at least one port. If a service does not listen on any ports, it will time out when starting.</p>
+
+<h3 id="procfile">Procfile</h3>
+
+<p>The <em>Procfile</em> generator will generate service configuration for projects that contain a Procfile,
+such as used on <a href="https://devcenter.heroku.com/articles/procfile">Heroku</a>.</p>
+
+<p>This generator will look for a file called <em>Procfile</em> and create a service for each process listed inside.
+These services will be added to a group representing the whole project.</p>
 
 <p>The generated config will assume that a service has started successfully by detecting that it is listening on
 at least one port. If a service does not listen on any ports, it will time out when starting.</p>

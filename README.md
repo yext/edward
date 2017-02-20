@@ -59,13 +59,14 @@ New services? Run `edward generate` to create a config file automatically.
 
 ![Generate configuration](images/generate.gif)
 
-Edward can generate configuration for:
+Edward can generate configuration for projects using:
 
 * Go
 * Docker
 * ICBM
+* Procfiles
 
-Using a different language? No problem! Edward can be manually configured for any
+Don't see your project described above? No problem! Edward can be manually configured for any
 service that can be built and started from the command line.
 
 ## Installation

@@ -505,12 +505,13 @@ supported projects that are found.&lt;/p&gt;
 
 &lt;p&gt;$ edward generate myservice&lt;/p&gt;
 
-&lt;p&gt;Edward supports autogeneration for three types of project:&lt;/p&gt;
+&lt;p&gt;Edward supports autogeneration for four types of project:&lt;/p&gt;
 
 &lt;ul&gt;
 &lt;li&gt;go&lt;/li&gt;
 &lt;li&gt;Docker&lt;/li&gt;
 &lt;li&gt;icbm&lt;/li&gt;
+&lt;li&gt;Procfile&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;h3 id=&#34;go&#34;&gt;Go&lt;/h3&gt;
@@ -552,6 +553,17 @@ exposed port is open. If &lt;code&gt;EXPOSE&lt;/code&gt; is not used, starting t
 &lt;p&gt;The &lt;em&gt;icbm&lt;/em&gt; generator will generate service configuration for services that use the &lt;a href=&#34;https://github.com/yext/icbm&#34;&gt;icbm&lt;/a&gt; build tool.&lt;/p&gt;
 
 &lt;p&gt;This generator will look for a &lt;em&gt;build.spec&lt;/em&gt; file and generate a service for each of the named aliases.&lt;/p&gt;
+
+&lt;p&gt;The generated config will assume that a service has started successfully by detecting that it is listening on
+at least one port. If a service does not listen on any ports, it will time out when starting.&lt;/p&gt;
+
+&lt;h3 id=&#34;procfile&#34;&gt;Procfile&lt;/h3&gt;
+
+&lt;p&gt;The &lt;em&gt;Procfile&lt;/em&gt; generator will generate service configuration for projects that contain a Procfile,
+such as used on &lt;a href=&#34;https://devcenter.heroku.com/articles/procfile&#34;&gt;Heroku&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;This generator will look for a file called &lt;em&gt;Procfile&lt;/em&gt; and create a service for each process listed inside.
+These services will be added to a group representing the whole project.&lt;/p&gt;
 
 &lt;p&gt;The generated config will assume that a service has started successfully by detecting that it is listening on
 at least one port. If a service does not listen on any ports, it will time out when starting.&lt;/p&gt;

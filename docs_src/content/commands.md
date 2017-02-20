@@ -114,11 +114,12 @@ If you want to only generate config for a specific project, you can specify it a
 
    $ edward generate myservice
 
-Edward supports autogeneration for three types of project:
+Edward supports autogeneration for four types of project:
 
 * go
 * Docker
 * icbm
+* Procfile
 
 ### Go
 
@@ -159,6 +160,17 @@ Note that this generator will assume that you can execute the `docker` command w
 The *icbm* generator will generate service configuration for services that use the [icbm](https://github.com/yext/icbm) build tool.
 
 This generator will look for a *build.spec* file and generate a service for each of the named aliases.
+
+The generated config will assume that a service has started successfully by detecting that it is listening on
+at least one port. If a service does not listen on any ports, it will time out when starting.
+
+### Procfile
+
+The *Procfile* generator will generate service configuration for projects that contain a Procfile,
+such as used on [Heroku](https://devcenter.heroku.com/articles/procfile).
+
+This generator will look for a file called *Procfile* and create a service for each process listed inside.
+These services will be added to a group representing the whole project.
 
 The generated config will assume that a service has started successfully by detecting that it is listening on
 at least one port. If a service does not listen on any ports, it will time out when starting.
