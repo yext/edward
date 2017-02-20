@@ -245,3 +245,80 @@ func TestDockerGenerator(t *testing.T) {
 		})
 	}
 }
+
+func TestProcfileGenerator(t *testing.T) {
+	var tests = []struct {
+		name        string
+		path        string
+		targets     []string
+		outServices []*services.ServiceConfig
+		outGroups   []*services.ServiceGroupConfig
+		outImports  []string
+		outErr      error
+	}{
+		{
+			name: "Procfile Simple",
+			path: "testdata/procfiles/simple/",
+			outServices: []*services.ServiceConfig{
+				{
+					Name: "service-database",
+					Path: common.StringToStringPointer("service"),
+					Env:  []string{},
+					Commands: services.ServiceConfigCommands{
+						Launch: "db launch command",
+					},
+				},
+				{
+					Name: "service-web",
+					Path: common.StringToStringPointer("service"),
+					Env:  []string{},
+					Commands: services.ServiceConfigCommands{
+						Launch: "web launch command",
+					},
+				},
+			},
+			outGroups: []*services.ServiceGroupConfig{
+				{
+					Name: "service",
+					Services: []*services.ServiceConfig{
+						{
+							Name: "service-web",
+							Path: common.StringToStringPointer("service"),
+							Env:  []string{},
+							Commands: services.ServiceConfigCommands{
+								Launch: "web launch command",
+							},
+						},
+						{
+							Name: "service-database",
+							Path: common.StringToStringPointer("service"),
+							Env:  []string{},
+							Commands: services.ServiceConfigCommands{
+								Launch: "db launch command",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			gc := &GeneratorCollection{
+				Generators: []Generator{&ProcfileGenerator{}},
+				Path:       test.path,
+				Targets:    test.targets,
+			}
+			err := gc.Generate()
+			services := gc.Services()
+			groups := gc.Groups()
+			imports := gc.Imports()
+			must.BeEqual(t, test.outServices, services, "services did not match.")
+			must.BeEqual(t, test.outGroups, groups, "groups did not match.")
+			must.BeEqual(t, test.outImports, imports, "imports did not match.")
+			must.BeEqualErrors(t, test.outErr, err, "errors did not match.")
+		})
+	}
+}
