@@ -267,7 +267,6 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 }
 
 func (sc *ServiceConfig) interruptProcess(cfg OperationConfig, command *ServiceCommand) (success bool, err error) {
-
 	p, err := process.NewProcess(int32(command.Pid))
 	if err != nil {
 		return false, errors.WithStack(err)
@@ -295,7 +294,7 @@ func (sc *ServiceConfig) killProcess(cfg OperationConfig, command *ServiceComman
 		return false, errors.WithStack(errors.New("suspect pgid: " + strconv.Itoa(pgid)))
 	}
 
-	err = command.killGroup(cfg, pgid, false)
+	err = command.killGroup(cfg, pgid)
 	return true, errors.WithStack(err)
 }
 

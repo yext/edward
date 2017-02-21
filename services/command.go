@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -413,25 +414,16 @@ func (sc *ServiceCommand) getPidPath() string {
 	return path.Join(dir, sc.Service.Name+".pid")
 }
 
-func (sc *ServiceCommand) killGroup(cfg OperationConfig, pgid int, graceful bool) error {
-	killScript := "#!/bin/bash\n"
+func (sc *ServiceCommand) killGroup(cfg OperationConfig, pgid int) error {
+	cmdName := "kill"
+	cmdArgs := []string{}
 	if sc.Service.IsSudo(cfg) {
-		killScript += "sudo "
+		cmdName = "sudo"
+		cmdArgs = append(cmdArgs, "kill")
 	}
-	if graceful {
-		killScript += "kill -2 -"
-	} else {
-		killScript += "kill -9 -"
-	}
-	killScript += strconv.Itoa(pgid)
-	killSignalScript, err := sc.createScript(killScript, "Kill")
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	defer os.Remove(killSignalScript.Name())
-
-	cmd := exec.Command(killSignalScript.Name())
+	cmdArgs = append(cmdArgs, "-9", fmt.Sprintf("-%v", pgid))
+	cmd := exec.Command(cmdName, cmdArgs...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	err = cmd.Run()
+	err := cmd.Run()
 	return errors.WithStack(err)
 }
