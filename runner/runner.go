@@ -235,7 +235,7 @@ func (r *RunnerLog) Printf(format string, a ...interface{}) {
 }
 
 func (r *RunnerLog) Write(p []byte) (int, error) {
-	fmt.Print(string(p))
+	fmt.Println(strings.TrimRight(string(p), "\n"))
 	lineData := LogLine{
 		Name:    r.name,
 		Time:    time.Now(),
