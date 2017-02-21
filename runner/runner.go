@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 	"sync"
 	"time"
@@ -69,6 +70,8 @@ func run(c *cli.Context) error {
 		stream: "messages",
 	}
 
+	defer messageLog.Printf("Service stopped\n")
+
 	commandWait.Add(1)
 	err = startService()
 	if err != nil {
@@ -84,6 +87,14 @@ func run(c *cli.Context) error {
 			defer closeWatchers()
 		}
 	}
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+	go func() {
+		for _ = range signalChan {
+			_ = stopService()
+		}
+	}()
 
 	commandWait.Wait()
 	return nil
@@ -103,12 +114,10 @@ func restartService() error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	messageLog.Printf("Service restarted\n")
 	return nil
 }
 
 func stopService() error {
-
 	command, err := runningService.GetCommand()
 	if err != nil {
 		messageLog.Printf("Could not get service command: %v\n", err)
@@ -144,7 +153,10 @@ func stopService() error {
 		return errors.WithStack(err)
 	}
 
-	return nil
+	if waitForCompletionWithTimeout(1 * time.Second) {
+		return nil
+	}
+	return errors.New("kill did not stop service")
 }
 
 func waitForCompletionWithTimeout(timeout time.Duration) bool {
@@ -167,6 +179,7 @@ func waitForCompletionWithTimeout(timeout time.Duration) bool {
 }
 
 func startService() error {
+	messageLog.Printf("Service starting\n")
 	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(runningService.Commands.Launch))
 	if err != nil {
 		return errors.WithStack(err)

@@ -3,7 +3,6 @@ package services
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -228,13 +227,6 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 		return errors.WithStack(err)
 	}
 
-	var scriptErr error
-	var scriptOutput []byte
-	if sc.Commands.Stop != "" {
-		sc.printf("Running stop script for %v.\n", sc.Name)
-		scriptOutput, scriptErr = command.RunStopScript()
-	}
-
 	if command.Pid == 0 {
 		tracker.SoftFail(errors.New("Not running"))
 		return nil
@@ -270,28 +262,17 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 
 	// Remove leftover files
 	command.clearState()
-
-	if scriptErr == nil {
-		tracker.Success()
-	} else {
-		fmt.Println(string(scriptOutput))
-		tracker.SoftFail(errors.New("Script failed, kill signal succeeded"))
-	}
-
+	tracker.Success()
 	return nil
 }
 
 func (sc *ServiceConfig) stopProcess(cfg OperationConfig, command *ServiceCommand, graceful bool) (success bool, err error) {
-	pgid, err := syscall.Getpgid(command.Pid)
+
+	p, err := process.NewProcess(int32(command.Pid))
 	if err != nil {
 		return false, errors.WithStack(err)
 	}
-
-	if pgid == 0 || pgid == 1 {
-		return false, errors.WithStack(errors.New("suspect pgid: " + strconv.Itoa(pgid)))
-	}
-
-	err = command.killGroup(cfg, pgid, graceful)
+	err = p.SendSignal(syscall.SIGINT)
 	if err != nil {
 		return false, errors.WithStack(err)
 	}
@@ -301,7 +282,6 @@ func (sc *ServiceConfig) stopProcess(cfg OperationConfig, command *ServiceComman
 	if err != nil {
 		return false, errors.WithStack(err)
 	}
-
 	return !exists, nil
 }
 
