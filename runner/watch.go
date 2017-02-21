@@ -15,6 +15,10 @@ func BeginWatch(service services.ServiceOrGroup, restart func() error, logger Lo
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	if len(watches) == 0 {
+		return nil, nil
+	}
+
 	var watchers []*fsnotify.Watcher
 	for _, watch := range watches {
 		watcher, err := startWatch(&watch, restart, logger)
