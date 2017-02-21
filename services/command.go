@@ -414,14 +414,22 @@ func (sc *ServiceCommand) getPidPath() string {
 	return path.Join(dir, sc.Service.Name+".pid")
 }
 
-func (sc *ServiceCommand) killGroup(cfg OperationConfig, pgid int) error {
+func InterruptGroup(cfg OperationConfig, pgid int, service *ServiceConfig) error {
+	return errors.WithStack(signalGroup(cfg, pgid, service, "-2"))
+}
+
+func KillGroup(cfg OperationConfig, pgid int, service *ServiceConfig) error {
+	return errors.WithStack(signalGroup(cfg, pgid, service, "-9"))
+}
+
+func signalGroup(cfg OperationConfig, pgid int, service *ServiceConfig, flag string) error {
 	cmdName := "kill"
 	cmdArgs := []string{}
-	if sc.Service.IsSudo(cfg) {
+	if service.IsSudo(cfg) {
 		cmdName = "sudo"
 		cmdArgs = append(cmdArgs, "kill")
 	}
-	cmdArgs = append(cmdArgs, "-9", fmt.Sprintf("-%v", pgid))
+	cmdArgs = append(cmdArgs, flag, fmt.Sprintf("-%v", pgid))
 	cmd := exec.Command(cmdName, cmdArgs...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	err := cmd.Run()

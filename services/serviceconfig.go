@@ -294,7 +294,7 @@ func (sc *ServiceConfig) killProcess(cfg OperationConfig, command *ServiceComman
 		return false, errors.WithStack(errors.New("suspect pgid: " + strconv.Itoa(pgid)))
 	}
 
-	err = command.killGroup(cfg, pgid)
+	err = KillGroup(cfg, pgid, sc)
 	return true, errors.WithStack(err)
 }
 

@@ -43,8 +43,9 @@ type Runner struct {
 	noWatch     bool
 }
 
-func NewRunningCommand(cmd *exec.Cmd, commandWait *sync.WaitGroup) *RunningCommand {
+func NewRunningCommand(service *services.ServiceConfig, cmd *exec.Cmd, commandWait *sync.WaitGroup) *RunningCommand {
 	return &RunningCommand{
+		service:     service,
 		command:     cmd,
 		done:        make(chan struct{}),
 		commandWait: commandWait,
@@ -52,6 +53,7 @@ func NewRunningCommand(cmd *exec.Cmd, commandWait *sync.WaitGroup) *RunningComma
 }
 
 type RunningCommand struct {
+	service     *services.ServiceConfig
 	command     *exec.Cmd
 	done        chan struct{}
 	commandWait *sync.WaitGroup
@@ -66,13 +68,15 @@ func (c *RunningCommand) Start() {
 }
 
 func (c *RunningCommand) Interrupt() error {
-	syscall.Kill(-c.command.Process.Pid, syscall.SIGINT)
-	return nil
+	return errors.WithStack(
+		services.InterruptGroup(services.OperationConfig{}, c.command.Process.Pid, c.service),
+	)
 }
 
 func (c *RunningCommand) Kill() error {
-	syscall.Kill(-c.command.Process.Pid, syscall.SIGKILL)
-	return nil
+	return errors.WithStack(
+		services.KillGroup(services.OperationConfig{}, c.command.Process.Pid, c.service),
+	)
 }
 
 func (c *RunningCommand) Wait() {
@@ -223,10 +227,6 @@ func (r *Runner) waitForCompletionWithTimeout(timeout time.Duration) bool {
 
 func (r *Runner) startService() error {
 	r.messageLog.Printf("Service starting\n")
-	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(r.service.Commands.Launch))
-	if err != nil {
-		return errors.WithStack(err)
-	}
 
 	standardLog := &RunnerLog{
 		file:   r.logFile,
@@ -239,6 +239,10 @@ func (r *Runner) startService() error {
 		stream: "stderr",
 	}
 
+	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(r.service.Commands.Launch))
+	if err != nil {
+		return errors.WithStack(err)
+	}
 	cmd := exec.Command(command, cmdArgs...)
 	if r.service.Path != nil {
 		cmd.Dir = os.ExpandEnv(*r.service.Path)
@@ -247,7 +251,7 @@ func (r *Runner) startService() error {
 	cmd.Stdout = standardLog
 	cmd.Stderr = errorLog
 
-	r.command = NewRunningCommand(cmd, &r.commandWait)
+	r.command = NewRunningCommand(r.service, cmd, &r.commandWait)
 	r.command.Start()
 
 	return nil
