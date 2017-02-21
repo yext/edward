@@ -232,7 +232,7 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 		return nil
 	}
 
-	stopped, err := sc.stopProcess(cfg, command, true)
+	stopped, err := sc.interruptProcess(cfg, command)
 	if err != nil {
 		tracker.Fail(err)
 		return nil
@@ -246,7 +246,7 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 			return nil
 		}
 		if !stopped {
-			stopped, err := sc.stopProcess(cfg, command, false)
+			stopped, err := sc.killProcess(cfg, command)
 			if err != nil {
 				tracker.Fail(err)
 				return nil
@@ -266,7 +266,7 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 	return nil
 }
 
-func (sc *ServiceConfig) stopProcess(cfg OperationConfig, command *ServiceCommand, graceful bool) (success bool, err error) {
+func (sc *ServiceConfig) interruptProcess(cfg OperationConfig, command *ServiceCommand) (success bool, err error) {
 
 	p, err := process.NewProcess(int32(command.Pid))
 	if err != nil {
@@ -283,6 +283,20 @@ func (sc *ServiceConfig) stopProcess(cfg OperationConfig, command *ServiceComman
 		return false, errors.WithStack(err)
 	}
 	return !exists, nil
+}
+
+func (sc *ServiceConfig) killProcess(cfg OperationConfig, command *ServiceCommand) (success bool, err error) {
+	pgid, err := syscall.Getpgid(command.Pid)
+	if err != nil {
+		return false, errors.WithStack(err)
+	}
+
+	if pgid == 0 || pgid == 1 {
+		return false, errors.WithStack(errors.New("suspect pgid: " + strconv.Itoa(pgid)))
+	}
+
+	err = command.killGroup(cfg, pgid, false)
+	return true, errors.WithStack(err)
 }
 
 func waitForTerm(command *ServiceCommand, timeout time.Duration) (bool, error) {
