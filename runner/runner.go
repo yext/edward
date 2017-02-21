@@ -17,73 +17,75 @@ import (
 	"github.com/yext/edward/services"
 )
 
+var runnerInstance = &Runner{}
+
 var Command = cli.Command{
 	Name:   "run",
 	Hidden: true,
-	Action: run,
+	Action: runnerInstance.run,
 	Flags: []cli.Flag{
 		cli.BoolFlag{
 			Name:        "no-watch",
 			Usage:       "Disable autorestart",
-			Destination: &(noWatch),
+			Destination: &(runnerInstance.noWatch),
 		},
 	},
 }
 
-var runningService *services.ServiceConfig
-var runningCommand *exec.Cmd
-var logFile *os.File
-var messageLog *RunnerLog
+type Runner struct {
+	service    *services.ServiceConfig
+	command    *exec.Cmd
+	logFile    *os.File
+	messageLog *RunnerLog
 
-var commandWait sync.WaitGroup
-
-var noWatch bool
+	commandWait sync.WaitGroup
+	noWatch     bool
+}
 
 type Logger interface {
 	Printf(format string, a ...interface{})
 }
 
-func run(c *cli.Context) error {
+func (r *Runner) run(c *cli.Context) error {
 	args := c.Args()
 	if len(args) < 1 {
 		return errors.New("a service name is required")
 	}
 
 	var ok bool
-	runningService, ok = config.GetServiceMap()[args[0]]
+	r.service, ok = config.GetServiceMap()[args[0]]
 	if !ok {
 		return errors.New("service not found")
 	}
 
-	logLocation := runningService.GetRunLog()
+	logLocation := r.service.GetRunLog()
 	os.Remove(logLocation)
 
 	var err error
-	logFile, err = os.Create(logLocation)
+	r.logFile, err = os.Create(logLocation)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	messageLog = &RunnerLog{
-		file:   logFile,
-		name:   runningService.Name,
+	r.messageLog = &RunnerLog{
+		file:   r.logFile,
+		name:   r.service.Name,
 		stream: "messages",
 	}
+	defer r.messageLog.Printf("Service stopped\n")
 
-	defer messageLog.Printf("Service stopped\n")
-
-	commandWait.Add(1)
-	err = startService()
+	r.commandWait.Add(1)
+	err = r.startService()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	if !noWatch {
-		closeWatchers, err := BeginWatch(runningService, restartService, messageLog)
+	if !r.noWatch {
+		closeWatchers, err := BeginWatch(r.service, r.restartService, r.messageLog)
 		if err != nil {
-			messageLog.Printf("Could not enable auto-restart: %v\n", err)
+			r.messageLog.Printf("Could not enable auto-restart: %v\n", err)
 		} else {
-			messageLog.Printf("Auto-restart enabled. This service will restart when files in its watch directories are edited.\nThis can be disabled using the --no-watch flag.\n")
+			r.messageLog.Printf("Auto-restart enabled. This service will restart when files in its watch directories are edited.\nThis can be disabled using the --no-watch flag.\n")
 			defer closeWatchers()
 		}
 	}
@@ -92,81 +94,88 @@ func run(c *cli.Context) error {
 	signal.Notify(signalChan, os.Interrupt)
 	go func() {
 		for _ = range signalChan {
-			_ = stopService()
+			r.messageLog.Printf("Received interrupt\n")
+			err := r.stopService()
+			if err != nil {
+				r.messageLog.Printf("Could not stop service: %v", err)
+			}
 		}
 	}()
 
-	commandWait.Wait()
+	r.commandWait.Wait()
 	return nil
 }
 
-func restartService() error {
-	messageLog.Printf("Restarting service\n")
+func (r *Runner) restartService() error {
+	r.messageLog.Printf("Restarting service\n")
 
 	// Increment the counter to prevent exiting unexpectedly
-	commandWait.Add(1)
+	r.commandWait.Add(1)
 
-	err := stopService()
+	err := r.stopService()
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	err = startService()
+	err = r.startService()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 	return nil
 }
 
-func stopService() error {
-	command, err := runningService.GetCommand()
+func (r *Runner) stopService() error {
+	r.messageLog.Printf("stopService")
+	command, err := r.service.GetCommand()
 	if err != nil {
-		messageLog.Printf("Could not get service command: %v\n", err)
+		r.messageLog.Printf("Could not get service command: %v\n", err)
 	}
 
 	var scriptErr error
 	var scriptOutput []byte
-	if runningService.Commands.Stop != "" {
-		messageLog.Printf("Running stop script for %v.\n", runningService.Name)
+	if r.service.Commands.Stop != "" {
+		r.messageLog.Printf("Running stop script for %v.\n", r.service.Name)
 		scriptOutput, scriptErr = command.RunStopScript()
 		if scriptErr != nil {
-			messageLog.Printf("%v\n", string(scriptOutput))
-			messageLog.Printf("Stop script failed: %v\n", scriptErr)
+			r.messageLog.Printf("%v\n", string(scriptOutput))
+			r.messageLog.Printf("Stop script failed: %v\n", scriptErr)
 		}
-		if waitForCompletionWithTimeout(1 * time.Second) {
+		if r.waitForCompletionWithTimeout(1 * time.Second) {
 			return nil
 		}
-		messageLog.Printf("Stop script did not effectively stop service, sending interrupt\n")
+		r.messageLog.Printf("Stop script did not effectively stop service, sending interrupt\n")
 	}
 
-	err = runningCommand.Process.Signal(os.Interrupt)
+	err = r.command.Process.Signal(os.Interrupt)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	if waitForCompletionWithTimeout(1 * time.Second) {
+	if r.waitForCompletionWithTimeout(1 * time.Second) {
+		r.messageLog.Printf("Interrupt succeeded")
 		return nil
 	}
-	messageLog.Printf("Stop script did not effectively stop service, sending kill\n")
+	r.messageLog.Printf("Stop script did not effectively stop service, sending kill\n")
 
-	err = runningCommand.Process.Kill()
+	err = r.command.Process.Kill()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	if waitForCompletionWithTimeout(1 * time.Second) {
+	if r.waitForCompletionWithTimeout(1 * time.Second) {
 		return nil
 	}
 	return errors.New("kill did not stop service")
 }
 
-func waitForCompletionWithTimeout(timeout time.Duration) bool {
+func (r *Runner) waitForCompletionWithTimeout(timeout time.Duration) bool {
 	var completed = make(chan struct{})
 	defer close(completed)
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 
 	go func() {
-		runningCommand.Wait()
+		r.command.Wait()
+		r.messageLog.Printf("Command completed")
 		completed <- struct{}{}
 	}()
 
@@ -178,36 +187,37 @@ func waitForCompletionWithTimeout(timeout time.Duration) bool {
 	}
 }
 
-func startService() error {
-	messageLog.Printf("Service starting\n")
-	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(runningService.Commands.Launch))
+func (r *Runner) startService() error {
+	r.messageLog.Printf("Service starting\n")
+	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(r.service.Commands.Launch))
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
 	standardLog := &RunnerLog{
-		file:   logFile,
-		name:   runningService.Name,
+		file:   r.logFile,
+		name:   r.service.Name,
 		stream: "stdout",
 	}
 	errorLog := &RunnerLog{
-		file:   logFile,
-		name:   runningService.Name,
+		file:   r.logFile,
+		name:   r.service.Name,
 		stream: "stderr",
 	}
 
 	cmd := exec.Command(command, cmdArgs...)
-	if runningService.Path != nil {
-		cmd.Dir = os.ExpandEnv(*runningService.Path)
+	if r.service.Path != nil {
+		cmd.Dir = os.ExpandEnv(*r.service.Path)
 	}
 	cmd.Stdout = standardLog
 	cmd.Stderr = errorLog
 
-	runningCommand = cmd
+	r.command = cmd
 
 	go func() {
 		cmd.Run()
-		commandWait.Done()
+		r.messageLog.Printf("command run finished, sending done")
+		r.commandWait.Done()
 	}()
 	return nil
 }
@@ -220,12 +230,12 @@ type RunnerLog struct {
 }
 
 func (r *RunnerLog) Printf(format string, a ...interface{}) {
-	fmt.Printf(format, a...)
 	msg := fmt.Sprintf(format, a...)
 	r.Write([]byte(msg))
 }
 
 func (r *RunnerLog) Write(p []byte) (int, error) {
+	fmt.Print(string(p))
 	lineData := LogLine{
 		Name:    r.name,
 		Time:    time.Now(),
