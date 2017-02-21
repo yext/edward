@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
@@ -34,12 +35,48 @@ var Command = cli.Command{
 
 type Runner struct {
 	service    *services.ServiceConfig
-	command    *exec.Cmd
+	command    *RunningCommand
 	logFile    *os.File
 	messageLog *RunnerLog
 
 	commandWait sync.WaitGroup
 	noWatch     bool
+}
+
+func NewRunningCommand(cmd *exec.Cmd, commandWait *sync.WaitGroup) *RunningCommand {
+	return &RunningCommand{
+		command:     cmd,
+		done:        make(chan struct{}),
+		commandWait: commandWait,
+	}
+}
+
+type RunningCommand struct {
+	command     *exec.Cmd
+	done        chan struct{}
+	commandWait *sync.WaitGroup
+}
+
+func (c *RunningCommand) Start() {
+	go func() {
+		c.command.Run()
+		c.commandWait.Done()
+		close(c.done)
+	}()
+}
+
+func (c *RunningCommand) Interrupt() error {
+	syscall.Kill(-c.command.Process.Pid, syscall.SIGINT)
+	return nil
+}
+
+func (c *RunningCommand) Kill() error {
+	syscall.Kill(-c.command.Process.Pid, syscall.SIGKILL)
+	return nil
+}
+
+func (c *RunningCommand) Wait() {
+	<-c.done
 }
 
 type Logger interface {
@@ -124,7 +161,6 @@ func (r *Runner) restartService() error {
 }
 
 func (r *Runner) stopService() error {
-	r.messageLog.Printf("stopService")
 	command, err := r.service.GetCommand()
 	if err != nil {
 		r.messageLog.Printf("Could not get service command: %v\n", err)
@@ -145,23 +181,22 @@ func (r *Runner) stopService() error {
 		r.messageLog.Printf("Stop script did not effectively stop service, sending interrupt\n")
 	}
 
-	err = r.command.Process.Signal(os.Interrupt)
+	err = r.command.Interrupt()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	if r.waitForCompletionWithTimeout(1 * time.Second) {
-		r.messageLog.Printf("Interrupt succeeded")
+	if r.waitForCompletionWithTimeout(2 * time.Second) {
 		return nil
 	}
-	r.messageLog.Printf("Stop script did not effectively stop service, sending kill\n")
+	r.messageLog.Printf("Interrupt did not effectively stop service, sending kill\n")
 
-	err = r.command.Process.Kill()
+	err = r.command.Kill()
 	if err != nil {
-		return errors.WithStack(err)
+		return errors.WithMessage(err, "Kill failed")
 	}
 
-	if r.waitForCompletionWithTimeout(1 * time.Second) {
+	if r.waitForCompletionWithTimeout(2 * time.Second) {
 		return nil
 	}
 	return errors.New("kill did not stop service")
@@ -175,7 +210,6 @@ func (r *Runner) waitForCompletionWithTimeout(timeout time.Duration) bool {
 
 	go func() {
 		r.command.Wait()
-		r.messageLog.Printf("Command completed")
 		completed <- struct{}{}
 	}()
 
@@ -209,16 +243,13 @@ func (r *Runner) startService() error {
 	if r.service.Path != nil {
 		cmd.Dir = os.ExpandEnv(*r.service.Path)
 	}
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Stdout = standardLog
 	cmd.Stderr = errorLog
 
-	r.command = cmd
+	r.command = NewRunningCommand(cmd, &r.commandWait)
+	r.command.Start()
 
-	go func() {
-		cmd.Run()
-		r.messageLog.Printf("command run finished, sending done")
-		r.commandWait.Done()
-	}()
 	return nil
 }
 
