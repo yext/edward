@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/hpcloud/tail"
@@ -69,6 +70,12 @@ func (a ByTime) Less(i, j int) bool { return a[i].Time.Before(a[j].Time) }
 
 func printMessage(logMessage runner.LogLine, multiple bool) {
 
+	message := strings.TrimSpace(logMessage.Message)
+
+	if len(message) == 0 {
+		return
+	}
+
 	if multiple {
 		print("[")
 		color.Set(color.FgHiYellow)
@@ -87,7 +94,7 @@ func printMessage(logMessage runner.LogLine, multiple bool) {
 		color.Set(color.FgYellow)
 	}
 
-	fmt.Printf("%v\n", logMessage.Message)
+	fmt.Printf("%v\n", strings.TrimSpace(message))
 	color.Unset()
 }
 
