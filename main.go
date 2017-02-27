@@ -243,8 +243,7 @@ func getConfigPath() string {
 	for _, path := range pathOptions {
 		_, err := os.Stat(path)
 		if err != nil {
-			fmt.Println("Error getting config file: ", err)
-			return ""
+			continue
 		}
 		absfp, absErr := filepath.Abs(path)
 		if absErr != nil {
