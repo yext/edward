@@ -14,6 +14,7 @@ import (
 	"github.com/yext/edward/services"
 )
 
+// Config defines the structure for the Edward project configuration file
 type Config struct {
 	workingDir       string
 	MinEdwardVersion string                   `json:"edwardVersion,omitempty"`
@@ -30,16 +31,19 @@ type Config struct {
 	Logger common.Logger `json:"-"`
 }
 
+// GroupDef defines a group based on a list of children specified by name
 type GroupDef struct {
 	Name     string   `json:"name"`
 	Children []string `json:"children"`
 }
 
+// LoadConfig loads configuration from json provided in an io.Reader
 func LoadConfig(reader io.Reader, edwardVersion string, logger common.Logger) (Config, error) {
 	outCfg, err := LoadConfigWithDir(reader, "", edwardVersion, logger)
 	return outCfg, errors.WithStack(err)
 }
 
+// LoadConfigWithDir loads configuration from an io.Reader with the working directory explicitly specified
 func LoadConfigWithDir(reader io.Reader, workingDir string, edwardVersion string, logger common.Logger) (Config, error) {
 	config, err := loadConfigContents(reader, workingDir, logger)
 	if err != nil {
@@ -101,6 +105,7 @@ func loadConfigContents(reader io.Reader, workingDir string, logger common.Logge
 	return config, nil
 }
 
+// Save saves config to an io.Writer
 func (c Config) Save(writer io.Writer) error {
 	c.printf("Saving config")
 	content, err := json.MarshalIndent(c, "", "    ")
@@ -111,6 +116,7 @@ func (c Config) Save(writer io.Writer) error {
 	return errors.WithStack(err)
 }
 
+// NewConfig creates a Config from slices of services and groups
 func NewConfig(newServices []services.ServiceConfig, newGroups []services.ServiceGroupConfig, logger common.Logger) Config {
 
 	log := common.MaskLogger(logger)
@@ -144,6 +150,7 @@ func NewConfig(newServices []services.ServiceConfig, newGroups []services.Servic
 	return cfg
 }
 
+// EmptyConfig creates a Config with no services or groups
 func EmptyConfig(workingDir string, logger common.Logger) Config {
 
 	log := common.MaskLogger(logger)
@@ -162,13 +169,13 @@ func EmptyConfig(workingDir string, logger common.Logger) Config {
 
 // NormalizeServicePaths will modify the Paths for each of the provided services
 // to be relative to the working directory of this config file
-func (cfg *Config) NormalizeServicePaths(searchPath string, newServices []*services.ServiceConfig) ([]*services.ServiceConfig, error) {
-	cfg.printf("Normalizing paths for %d services.\n", len(newServices))
+func (c *Config) NormalizeServicePaths(searchPath string, newServices []*services.ServiceConfig) ([]*services.ServiceConfig, error) {
+	c.printf("Normalizing paths for %d services.\n", len(newServices))
 	var outServices []*services.ServiceConfig
 	for _, s := range newServices {
 		curService := *s
 		fullPath := filepath.Join(searchPath, *curService.Path)
-		relPath, err := filepath.Rel(cfg.workingDir, fullPath)
+		relPath, err := filepath.Rel(c.workingDir, fullPath)
 		if err != nil {
 			return outServices, errors.WithStack(err)
 		}
@@ -179,30 +186,32 @@ func (cfg *Config) NormalizeServicePaths(searchPath string, newServices []*servi
 }
 
 // AppendServices adds services to an existing config without replacing existing services
-func (cfg *Config) AppendServices(newServices []*services.ServiceConfig) error {
-	cfg.printf("Appending %d services.\n", len(newServices))
-	if cfg.ServiceMap == nil {
-		cfg.ServiceMap = make(map[string]*services.ServiceConfig)
+func (c *Config) AppendServices(newServices []*services.ServiceConfig) error {
+	c.printf("Appending %d services.\n", len(newServices))
+	if c.ServiceMap == nil {
+		c.ServiceMap = make(map[string]*services.ServiceConfig)
 	}
 	for _, s := range newServices {
-		if _, found := cfg.ServiceMap[s.Name]; !found {
-			cfg.ServiceMap[s.Name] = s
-			cfg.Services = append(cfg.Services, *s)
+		if _, found := c.ServiceMap[s.Name]; !found {
+			c.ServiceMap[s.Name] = s
+			c.Services = append(c.Services, *s)
 		}
 	}
 	return nil
 }
 
-func (cfg *Config) AppendGroups(groups []*services.ServiceGroupConfig) error {
-	var groups_dereferenced []services.ServiceGroupConfig
+// AppendGroups adds groups to an existing config without replacing existing groups
+func (c *Config) AppendGroups(groups []*services.ServiceGroupConfig) error {
+	var groupsDereferenced []services.ServiceGroupConfig
 	for _, group := range groups {
-		groups_dereferenced = append(groups_dereferenced, *group)
+		groupsDereferenced = append(groupsDereferenced, *group)
 	}
-	return errors.WithStack(cfg.AddGroups(groups_dereferenced))
+	return errors.WithStack(c.AddGroups(groupsDereferenced))
 }
 
-func (cfg *Config) AddGroups(groups []services.ServiceGroupConfig) error {
-	cfg.printf("Adding %d groups.\n", len(groups))
+// AddGroups adds a slice of groups to the Config
+func (c *Config) AddGroups(groups []services.ServiceGroupConfig) error {
+	c.printf("Adding %d groups.\n", len(groups))
 	for _, group := range groups {
 		grp := GroupDef{
 			Name:     group.Name,
@@ -218,7 +227,7 @@ func (cfg *Config) AddGroups(groups []services.ServiceGroupConfig) error {
 				grp.Children = append(grp.Children, cs.Name)
 			}
 		}
-		cfg.Groups = append(cfg.Groups, grp)
+		c.Groups = append(c.Groups, grp)
 	}
 	return nil
 }
@@ -271,7 +280,7 @@ func (c *Config) combinePath(path string) *string {
 }
 
 func (c *Config) initMaps() error {
-	var svcs map[string]*services.ServiceConfig = make(map[string]*services.ServiceConfig)
+	var svcs = make(map[string]*services.ServiceConfig)
 	var servicesSkipped = make(map[string]struct{})
 	for _, s := range append(c.Services, c.ImportedServices...) {
 		sc := s
@@ -287,9 +296,9 @@ func (c *Config) initMaps() error {
 		}
 	}
 
-	var groups map[string]*services.ServiceGroupConfig = make(map[string]*services.ServiceGroupConfig)
+	var groups = make(map[string]*services.ServiceGroupConfig)
 	// First pass: Services
-	var orphanNames map[string]struct{} = make(map[string]struct{})
+	var orphanNames = make(map[string]struct{})
 	for _, g := range append(c.Groups, c.ImportedGroups...) {
 		var childServices []*services.ServiceConfig
 
@@ -365,10 +374,10 @@ func (c *Config) printf(format string, v ...interface{}) {
 }
 
 func stringSliceIntersect(slices [][]string) []string {
-	var counts map[string]int = make(map[string]int)
+	var counts = make(map[string]int)
 	for _, s := range slices {
 		for _, v := range s {
-			counts[v] += 1
+			counts[v]++
 		}
 	}
 
@@ -382,7 +391,7 @@ func stringSliceIntersect(slices [][]string) []string {
 }
 
 func stringSliceRemoveCommon(common []string, original []string) []string {
-	var commonMap map[string]interface{} = make(map[string]interface{})
+	var commonMap = make(map[string]interface{})
 	for _, s := range common {
 		commonMap[s] = struct{}{}
 	}
