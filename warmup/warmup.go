@@ -37,6 +37,7 @@ type Warmup struct {
 	URL string `json:"URL,omitempty"`
 }
 
+// Run executes a warmup operation for a service
 func Run(service string, w *Warmup) {
 	if w == nil {
 		return
@@ -47,6 +48,7 @@ func Run(service string, w *Warmup) {
 	jobs <- w
 }
 
+// Wait blocks until all Warmup operations are complete
 func Wait() {
 	close(jobs)
 	for a := 1; a <= workers; a++ {
