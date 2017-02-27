@@ -10,23 +10,21 @@ import (
 	"github.com/yext/edward/services"
 )
 
+// IcbmGenerator generates services from an icbm build.spec file
 type IcbmGenerator struct {
 	generatorBase
 	foundServices []*services.ServiceConfig
 }
 
+// Name returns 'icbm' to identify this generator
 func (v *IcbmGenerator) Name() string {
 	return "icbm"
 }
 
-func (v *IcbmGenerator) StartWalk(path string) {
-	v.generatorBase.StartWalk(path)
-	v.foundServices = nil
-}
-
-func (v *IcbmGenerator) StopWalk() {
-}
-
+// VisitDir checks a directory for a build.spec file. If found, it will parse the file
+// to obtain service definitions.
+// Once a spec file has been parsed, true, filepath.SkipDir will be returned to ensure
+// no further directories below this are parsed.
 func (v *IcbmGenerator) VisitDir(path string) (bool, error) {
 	buildFilePath := filepath.Join(path, "build.spec")
 
@@ -52,6 +50,7 @@ func (v *IcbmGenerator) VisitDir(path string) (bool, error) {
 	return true, filepath.SkipDir
 }
 
+// Services returns a slice of all the services generated during this walk
 func (v *IcbmGenerator) Services() []*services.ServiceConfig {
 	return v.foundServices
 }

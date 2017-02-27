@@ -18,7 +18,8 @@ type directory struct {
 	ignores  *ignore.GitIgnore
 }
 
-func NewDirectory(path string, parent *directory) (*directory, error) {
+// newDirectory builds a directory structure under the specified path
+func newDirectory(path string, parent *directory) (*directory, error) {
 	if parent != nil && parent.Ignores() != nil && parent.Ignores().MatchesPath(path) {
 		return nil, nil
 	}
@@ -41,7 +42,7 @@ func NewDirectory(path string, parent *directory) (*directory, error) {
 
 	for _, file := range files {
 		if file.IsDir() {
-			child, err := NewDirectory(filepath.Join(path, file.Name()), d)
+			child, err := newDirectory(filepath.Join(path, file.Name()), d)
 			if err != nil {
 				return nil, errors.WithStack(err)
 			}

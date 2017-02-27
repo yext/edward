@@ -11,18 +11,26 @@ import (
 	"github.com/yext/edward/services"
 )
 
+// DockerGenerator generates services from Docker files.
+// Services are generated from a Dockerfile.
+//
+// The container is build with a tag based on the directory name suffixed with ':edward'.
+// For a Dockerfile under 'service', the tag would be 'service:edward'.
+//
+// Ports identified with EXPOSE in the Dockerfile will be forwarded from the container,
+// with the local port matching the port in the container.
 type DockerGenerator struct {
 	generatorBase
 	foundServices []*services.ServiceConfig
 }
 
+// Name returns 'docker' to identify this generator
 func (v *DockerGenerator) Name() string {
 	return "docker"
 }
 
-func (v *DockerGenerator) StopWalk() {
-}
-
+// VisitDir searches a directory for a Dockerfile and stores a service configuration if
+// one is found. Returns true in the first return value if a service was found.
 func (v *DockerGenerator) VisitDir(path string) (bool, error) {
 	files, _ := ioutil.ReadDir(path)
 	for _, f := range files {
@@ -81,6 +89,7 @@ func getPorts(dockerFilePath string) ([]int, []string, error) {
 	return ports, portCommands, nil
 }
 
+// Services returns a slice of services identified in the directory walk
 func (v *DockerGenerator) Services() []*services.ServiceConfig {
 	return v.foundServices
 }

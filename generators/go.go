@@ -15,23 +15,26 @@ import (
 	"github.com/yext/edward/services"
 )
 
+// GoGenerator generates go services from main packages
 type GoGenerator struct {
 	generatorBase
 	found map[string]string
 }
 
+// Name returns 'go' to identify this generator
 func (v *GoGenerator) Name() string {
 	return "go"
 }
 
+// StartWalk lets a generator know that a directory walk has been started, with the
+// given starting path
 func (v *GoGenerator) StartWalk(path string) {
 	v.generatorBase.StartWalk(path)
 	v.found = make(map[string]string)
 }
 
-func (v *GoGenerator) StopWalk() {
-}
-
+// VisitDir searches a directory for .go files, and will store a service if a main
+// package is detected. Returns true in the first return value if a service was found.
 func (v *GoGenerator) VisitDir(path string) (bool, error) {
 	files, _ := ioutil.ReadDir(path)
 	for _, f := range files {
@@ -61,6 +64,7 @@ func (v *GoGenerator) VisitDir(path string) (bool, error) {
 	return false, nil
 }
 
+// Services returns the services generated during the last walk
 func (v *GoGenerator) Services() []*services.ServiceConfig {
 	var outServices []*services.ServiceConfig
 

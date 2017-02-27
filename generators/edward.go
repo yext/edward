@@ -7,18 +7,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+// EdwardGenerator generates imports for all Edward config files in the directory
+// hierarchy.
 type EdwardGenerator struct {
 	generatorBase
 	found []string
 }
 
+// Name returns 'edward' to identify this generator.
 func (v *EdwardGenerator) Name() string {
 	return "edward"
 }
 
-func (v *EdwardGenerator) StopWalk() {
-}
-
+// VisitDir searches a directory for edward.json files, and will store an import
+// for any found. Returns true in the first return value if an import was found.
 func (v *EdwardGenerator) VisitDir(path string) (bool, error) {
 	files, _ := ioutil.ReadDir(path)
 	for _, f := range files {
@@ -35,6 +37,7 @@ func (v *EdwardGenerator) VisitDir(path string) (bool, error) {
 	return false, nil
 }
 
+// Imports returns all imports found during previous walks.
 func (v *EdwardGenerator) Imports() []string {
 	return v.found
 }
