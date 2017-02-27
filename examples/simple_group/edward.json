@@ -26,8 +26,7 @@
             "name": "buildtest",
             "path": "simple2",
             "commands": {
-                "build": "echo doing a build",
-                "launch": "simple2"
+                "build": "echo performing a build"
             }
         }
     ]

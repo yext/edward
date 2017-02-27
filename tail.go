@@ -118,6 +118,11 @@ func followGroupLog(group *services.ServiceGroupConfig, logChannel chan runner.L
 }
 
 func followServiceLog(service *services.ServiceConfig, logChannel chan runner.LogLine) ([]runner.LogLine, error) {
+	// Skip services that don't have a launch command
+	if service.Commands.Launch == "" {
+		return nil, nil
+	}
+
 	runLog := service.GetRunLog()
 	logFile, err := os.Open(runLog)
 	defer logFile.Close()
