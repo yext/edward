@@ -20,6 +20,7 @@ import (
 
 var runnerInstance = &Runner{}
 
+// Command defines the CLI config for the 'run' command
 var Command = cli.Command{
 	Name:   "run",
 	Hidden: true,
@@ -33,16 +34,18 @@ var Command = cli.Command{
 	},
 }
 
+// Runner provides state and functions for running a given service
 type Runner struct {
 	service    *services.ServiceConfig
 	command    *RunningCommand
 	logFile    *os.File
-	messageLog *RunnerLog
+	messageLog *Log
 
 	commandWait sync.WaitGroup
 	noWatch     bool
 }
 
+// NewRunningCommand creates a RunningCommand for a given service and exec.Cmd
 func NewRunningCommand(service *services.ServiceConfig, cmd *exec.Cmd, commandWait *sync.WaitGroup) *RunningCommand {
 	return &RunningCommand{
 		service:     service,
@@ -52,6 +55,7 @@ func NewRunningCommand(service *services.ServiceConfig, cmd *exec.Cmd, commandWa
 	}
 }
 
+// RunningCommand provides state and functions for running a service
 type RunningCommand struct {
 	service     *services.ServiceConfig
 	command     *exec.Cmd
@@ -59,6 +63,7 @@ type RunningCommand struct {
 	commandWait *sync.WaitGroup
 }
 
+// Start starts a command running in a goroutine
 func (c *RunningCommand) Start() {
 	go func() {
 		c.command.Run()
@@ -67,22 +72,26 @@ func (c *RunningCommand) Start() {
 	}()
 }
 
+// Interrupt sends an interrupt to a running command
 func (c *RunningCommand) Interrupt() error {
 	return errors.WithStack(
 		services.InterruptGroup(services.OperationConfig{}, c.command.Process.Pid, c.service),
 	)
 }
 
+// Kill sends a kill signal to a running command
 func (c *RunningCommand) Kill() error {
 	return errors.WithStack(
 		services.KillGroup(services.OperationConfig{}, c.command.Process.Pid, c.service),
 	)
 }
 
+// Wait blocks until this command has exited
 func (c *RunningCommand) Wait() {
 	<-c.done
 }
 
+// Logger provides a simple interface for logging
 type Logger interface {
 	Printf(format string, a ...interface{})
 }
@@ -108,7 +117,7 @@ func (r *Runner) run(c *cli.Context) error {
 		return errors.WithStack(err)
 	}
 
-	r.messageLog = &RunnerLog{
+	r.messageLog = &Log{
 		file:   r.logFile,
 		name:   r.service.Name,
 		stream: "messages",
@@ -228,12 +237,12 @@ func (r *Runner) waitForCompletionWithTimeout(timeout time.Duration) bool {
 func (r *Runner) startService() error {
 	r.messageLog.Printf("Service starting\n")
 
-	standardLog := &RunnerLog{
+	standardLog := &Log{
 		file:   r.logFile,
 		name:   r.service.Name,
 		stream: "stdout",
 	}
-	errorLog := &RunnerLog{
+	errorLog := &Log{
 		file:   r.logFile,
 		name:   r.service.Name,
 		stream: "stderr",
@@ -257,19 +266,21 @@ func (r *Runner) startService() error {
 	return nil
 }
 
-// RunnerLog provides the io.Writer interface to publish service logs to file
-type RunnerLog struct {
+// Log provides the io.Writer interface to publish service logs to file
+type Log struct {
 	file   *os.File
 	name   string
 	stream string
 }
 
-func (r *RunnerLog) Printf(format string, a ...interface{}) {
+// Printf prints a message to a RunnerLog
+func (r *Log) Printf(format string, a ...interface{}) {
 	msg := fmt.Sprintf(format, a...)
 	r.Write([]byte(msg))
 }
 
-func (r *RunnerLog) Write(p []byte) (int, error) {
+// Write writes a slice of bytes to a RunnerLog
+func (r *Log) Write(p []byte) (int, error) {
 	fmt.Println(strings.TrimRight(string(p), "\n"))
 	lineData := LogLine{
 		Name:    r.name,

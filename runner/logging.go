@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// LogLine represents a line in an Edward service log
 type LogLine struct {
 	Name    string
 	Time    time.Time
@@ -14,6 +15,7 @@ type LogLine struct {
 	Message string
 }
 
+// ParseLogLine parses the JSON representation of a log line into a LogLine
 func ParseLogLine(line string) (LogLine, error) {
 	var lineData LogLine
 	err := json.Unmarshal([]byte(line), &lineData)
