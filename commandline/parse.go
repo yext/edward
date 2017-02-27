@@ -5,38 +5,42 @@ import (
 	"fmt"
 )
 
-// Returns the executable path and arguments
+const quotes = "quotes"
+const start = "start"
+const arg = "arg"
+
+// ParseCommand returns the executable path and arguments
 // TODO: Clean this up
 func ParseCommand(cmd string) (string, []string, error) {
 	var args []string
-	state := "start"
+	state := start
 	current := ""
 	quote := "\""
 	for i := 0; i < len(cmd); i++ {
 		c := cmd[i]
 
-		if state == "quotes" {
+		if state == quotes {
 			if string(c) != quote {
 				current += string(c)
 			} else {
 				args = append(args, current)
 				current = ""
-				state = "start"
+				state = start
 			}
 			continue
 		}
 
 		if c == '"' || c == '\'' {
-			state = "quotes"
+			state = quotes
 			quote = string(c)
 			continue
 		}
 
-		if state == "arg" {
+		if state == arg {
 			if c == ' ' || c == '\t' {
 				args = append(args, current)
 				current = ""
-				state = "start"
+				state = start
 			} else {
 				current += string(c)
 			}
@@ -44,13 +48,13 @@ func ParseCommand(cmd string) (string, []string, error) {
 		}
 
 		if c != ' ' && c != '\t' {
-			state = "arg"
+			state = arg
 			current += string(c)
 		}
 	}
 
-	if state == "quotes" {
-		return "", []string{}, errors.New(fmt.Sprintf("Unclosed quote in command line: %s", cmd))
+	if state == quotes {
+		return "", []string{}, fmt.Errorf("Unclosed quote in command line: %s", cmd)
 	}
 
 	if current != "" {
