@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// EdwardConfiguration defines the application config for Edward
 type EdwardConfiguration struct {
 	Dir          string
 	EdwardLogDir string
@@ -16,7 +17,8 @@ type EdwardConfiguration struct {
 	ScriptDir    string
 }
 
-var EdwardConfig EdwardConfiguration = EdwardConfiguration{}
+// EdwardConfig stores a shared instance of EdwardConfiguration for use across the app
+var EdwardConfig = EdwardConfiguration{}
 
 func createDirIfNeeded(path string) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -24,6 +26,7 @@ func createDirIfNeeded(path string) {
 	}
 }
 
+// Initialize sets up EdwardConfig based on the location of .edward in the home dir
 func (e *EdwardConfiguration) Initialize() error {
 	user, err := user.Current()
 	if err != nil {
