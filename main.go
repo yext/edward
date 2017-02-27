@@ -241,13 +241,17 @@ func getConfigPath() string {
 	}
 
 	for _, path := range pathOptions {
-		if _, err := os.Stat(path); err == nil {
-			if absfp, err := filepath.Abs(path); err == nil {
-				return absfp
-			} else {
-				fmt.Println("Error getting config file: ", err)
-			}
+		_, err := os.Stat(path)
+		if err != nil {
+			fmt.Println("Error getting config file: ", err)
+			return ""
 		}
+		absfp, absErr := filepath.Abs(path)
+		if absErr != nil {
+			fmt.Println("Error getting config file: ", absErr)
+			return ""
+		}
+		return absfp
 	}
 
 	return ""
@@ -443,12 +447,13 @@ func status(c *cli.Context) error {
 	var err error
 	if len(c.Args()) == 0 {
 		for _, service := range config.GetAllServicesSorted() {
-			s, err := service.Status()
+			var s []services.ServiceStatus
+			s, err = service.Status()
 			if err != nil {
 				return errors.WithStack(err)
 			}
 			for _, status := range s {
-				if status.Status != "STOPPED" {
+				if status.Status != services.StatusStopped {
 					sgs = append(sgs, service)
 				}
 			}
@@ -547,12 +552,13 @@ func stop(c *cli.Context) error {
 	if len(c.Args()) == 0 {
 		allSrv := config.GetAllServicesSorted()
 		for _, service := range allSrv {
-			s, err := service.Status()
+			var s []services.ServiceStatus
+			s, err = service.Status()
 			if err != nil {
 				return errors.WithStack(err)
 			}
 			for _, status := range s {
-				if status.Status != "STOPPED" {
+				if status.Status != services.StatusStopped {
 					sgs = append(sgs, service)
 				}
 			}
@@ -591,7 +597,6 @@ func restart(c *cli.Context) error {
 }
 
 func restartAll() error {
-
 	var as []*services.ServiceConfig
 	for _, service := range config.GetServiceMap() {
 		s, err := service.Status()
@@ -599,13 +604,13 @@ func restartAll() error {
 			return errors.WithStack(err)
 		}
 		for _, status := range s {
-			if status.Status != "STOPPED" {
+			if status.Status != services.StatusStopped {
 				as = append(as, service)
 			}
 		}
 	}
 
-	sort.Sort(ServiceConfigByPID(as))
+	sort.Sort(serviceConfigByPID(as))
 	var serviceNames []string
 	for _, service := range as {
 		serviceNames = append(serviceNames, service.Name)
@@ -700,28 +705,8 @@ func prepareForSudo() error {
 	isChild := os.Getenv("ISCHILD")
 	if isChild == "" {
 		return errors.WithStack(ensureSudoAble())
-	} else {
-		logger.Println("Child process, sudo should be available")
 	}
-	return nil
-}
-
-func RemoveContents(dir string) error {
-	d, err := os.Open(dir)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	defer d.Close()
-	names, err := d.Readdirnames(-1)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	for _, name := range names {
-		err = os.RemoveAll(filepath.Join(dir, name))
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
+	logger.Println("Child process, sudo should be available")
 	return nil
 }
 
@@ -742,15 +727,15 @@ func getOperationConfig() services.OperationConfig {
 	}
 }
 
-type ServiceConfigByPID []*services.ServiceConfig
+type serviceConfigByPID []*services.ServiceConfig
 
-func (s ServiceConfigByPID) Len() int {
+func (s serviceConfigByPID) Len() int {
 	return len(s)
 }
-func (s ServiceConfigByPID) Swap(i, j int) {
+func (s serviceConfigByPID) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
-func (s ServiceConfigByPID) Less(i, j int) bool {
+func (s serviceConfigByPID) Less(i, j int) bool {
 	cmd1, _ := s[i].GetCommand()
 	cmd2, _ := s[j].GetCommand()
 	return cmd1.Pid < cmd2.Pid

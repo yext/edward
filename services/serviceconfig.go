@@ -320,11 +320,11 @@ func (sc *ServiceConfig) Status() ([]ServiceStatus, error) {
 
 	status := ServiceStatus{
 		Service: sc,
-		Status:  "STOPPED",
+		Status:  StatusStopped,
 	}
 
 	if command.Pid != 0 {
-		status.Status = "RUNNING"
+		status.Status = StatusRunning
 		status.Pid = command.Pid
 		proc, err := process.NewProcess(int32(command.Pid))
 		if err != nil {

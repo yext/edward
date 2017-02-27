@@ -30,7 +30,7 @@ func doLog(c *cli.Context) error {
 		return errors.WithStack(err)
 	}
 
-	var logChannel chan runner.LogLine = make(chan runner.LogLine)
+	var logChannel = make(chan runner.LogLine)
 	var lines []runner.LogLine
 	for _, sg := range sgs {
 		switch v := sg.(type) {
@@ -50,7 +50,7 @@ func doLog(c *cli.Context) error {
 	}
 
 	// Sort initial lines
-	sort.Sort(ByTime(lines))
+	sort.Sort(byTime(lines))
 	for _, line := range lines {
 		printMessage(line, services.CountServices(sgs) > 1)
 	}
@@ -62,11 +62,11 @@ func doLog(c *cli.Context) error {
 	return nil
 }
 
-type ByTime []runner.LogLine
+type byTime []runner.LogLine
 
-func (a ByTime) Len() int           { return len(a) }
-func (a ByTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByTime) Less(i, j int) bool { return a[i].Time.Before(a[j].Time) }
+func (a byTime) Len() int           { return len(a) }
+func (a byTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byTime) Less(i, j int) bool { return a[i].Time.Before(a[j].Time) }
 
 func printMessage(logMessage runner.LogLine, multiple bool) {
 
@@ -136,7 +136,8 @@ func followServiceLog(service *services.ServiceConfig, logChannel chan runner.Lo
 	for scanner.Scan() {
 		text := scanner.Text()
 		lineCount++
-		line, err := runner.ParseLogLine(text)
+		var line runner.LogLine
+		line, err = runner.ParseLogLine(text)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}

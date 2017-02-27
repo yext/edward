@@ -2,6 +2,9 @@ package services
 
 import "time"
 
+const StatusRunning = "RUNNING"
+const StatusStopped = "STOPPED"
+
 type ServiceStatus struct {
 	Service     *ServiceConfig
 	Status      string
