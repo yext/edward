@@ -10,6 +10,8 @@ import (
 	fsnotify "gopkg.in/fsnotify.v1"
 )
 
+// BeginWatch starts auto-restart watches for the provided services. The function returned will close the
+// watcher.
 func BeginWatch(service services.ServiceOrGroup, restart func() error, logger Logger) (func(), error) {
 	watches, err := service.Watch()
 	if err != nil {
@@ -68,7 +70,7 @@ func startWatch(watches *services.ServiceWatch, restart func() error, logger Log
 					}
 				}
 
-			case err := <-watcher.Errors:
+			case err = <-watcher.Errors:
 				if err != nil {
 					log.Println("error:", err)
 				}
