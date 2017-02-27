@@ -11,6 +11,7 @@ import (
 	"github.com/yext/edward/common"
 )
 
+// OperationTracker provides functions for tracking the progress of an operaiton on a service
 type OperationTracker interface {
 	Start()
 	Success()
@@ -62,24 +63,28 @@ func (c *CommandTracker) endWait() {
 	c.endChan <- struct{}{}
 }
 
+// Start is called when this shell command operation has started
 func (c *CommandTracker) Start() {
 	fmt.Printf("%-50s", c.Name+"...")
 	c.printf("%v\n", c.Name)
 	c.waitForInterrupt()
 }
 
+// Success is called when this shell command operation has succeeded
 func (c *CommandTracker) Success() {
 	printResult("OK", color.FgGreen)
 	c.printf("%v Succeeded\n", c.Name)
 	c.endWait()
 }
 
+// SoftFail is called when this shell command operation fails in a warning state.
 func (c *CommandTracker) SoftFail(err error) {
 	printResult(err.Error(), color.FgYellow)
 	c.printf("%v: %v\n", c.Name, err.Error())
 	c.endWait()
 }
 
+// Fail is called when this shell command operation fails in an error state.
 func (c *CommandTracker) Fail(err error) {
 	printResult("Failed", color.FgRed)
 	c.printf("%v Failed: %v\n", c.Name, err.Error())
@@ -89,6 +94,8 @@ func (c *CommandTracker) Fail(err error) {
 	c.endWait()
 }
 
+// FailWithOutput is called when this shell command operation fails in an error state.
+// A string containing output from the command is also included to be displayed to the user.
 func (c *CommandTracker) FailWithOutput(err error, output string) {
 	printResult("Failed", color.FgRed)
 	c.printf("%v Failed: %v\n", c.Name, err.Error())
@@ -105,7 +112,7 @@ func printResult(message string, c color.Attribute) {
 	println("]")
 }
 
-type LogLine struct {
+type logLine struct {
 	Stream  string
 	Message string
 }
@@ -121,8 +128,8 @@ func (c *CommandTracker) printFile(path string) {
 	scanner := bufio.NewScanner(logFile)
 	for scanner.Scan() {
 		text := scanner.Text()
-		var lineData LogLine
-		err := json.Unmarshal([]byte(text), &lineData)
+		var lineData logLine
+		err = json.Unmarshal([]byte(text), &lineData)
 		if err != nil {
 			c.printf("%v", err)
 			fmt.Print(err)

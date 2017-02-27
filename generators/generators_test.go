@@ -71,7 +71,7 @@ func TestEdwardGenerator(t *testing.T) {
 					Name:      "goproject",
 					Path:      common.StringToStringPointer("goproject"),
 					Env:       []string{},
-					WatchJson: []byte("{\"include\":[\"goproject\"]}"),
+					WatchJSON: []byte("{\"include\":[\"goproject\"]}"),
 					Commands: services.ServiceConfigCommands{
 						Build:  "go install",
 						Launch: "goproject",
@@ -121,7 +121,7 @@ func TestGoGenerator(t *testing.T) {
 					Name:      "simple",
 					Path:      common.StringToStringPointer("gocode/src/yext/simple"),
 					Env:       []string{},
-					WatchJson: []byte("{\"include\":[\"gocode/src/yext/simple\"]}"),
+					WatchJSON: []byte("{\"include\":[\"gocode/src/yext/simple\"]}"),
 					Commands: services.ServiceConfigCommands{
 						Build:  "go install",
 						Launch: "simple",
@@ -138,7 +138,7 @@ func TestGoGenerator(t *testing.T) {
 					Name:      "service1",
 					Path:      common.StringToStringPointer("service1"),
 					Env:       []string{},
-					WatchJson: []byte("{\"include\":[\"service1\"]}"),
+					WatchJSON: []byte("{\"include\":[\"service1\"]}"),
 					Commands: services.ServiceConfigCommands{
 						Build:  "go install",
 						Launch: "service1",
@@ -148,7 +148,7 @@ func TestGoGenerator(t *testing.T) {
 					Name:      "service2",
 					Path:      common.StringToStringPointer("service2"),
 					Env:       []string{},
-					WatchJson: []byte("{\"include\":[\"service2\"]}"),
+					WatchJSON: []byte("{\"include\":[\"service2\"]}"),
 					Commands: services.ServiceConfigCommands{
 						Build:  "go install",
 						Launch: "service2",
@@ -166,7 +166,7 @@ func TestGoGenerator(t *testing.T) {
 					Name:      "service1",
 					Path:      common.StringToStringPointer("service1"),
 					Env:       []string{},
-					WatchJson: []byte("{\"include\":[\"service1\"]}"),
+					WatchJSON: []byte("{\"include\":[\"service1\"]}"),
 					Commands: services.ServiceConfigCommands{
 						Build:  "go install",
 						Launch: "service1",

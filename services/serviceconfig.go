@@ -45,76 +45,79 @@ type ServiceConfig struct {
 	Logger common.Logger `json:"-"`
 
 	// Path to watch for updates, relative to config file. If specified, will enable hot reloading.
-	WatchJson json.RawMessage `json:"watch,omitempty"`
+	WatchJSON json.RawMessage `json:"watch,omitempty"`
 
 	// Action for warming up this service
 	Warmup *warmup.Warmup `json:"warmup,omitempty"`
 }
 
-// Handle legacy fields
-func (sc *ServiceConfig) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON provides additional handling when unmarshaling a service from config.
+// Currently, this handles legacy fields and fields with multiple possible types.
+func (c *ServiceConfig) UnmarshalJSON(data []byte) error {
 	type Alias ServiceConfig
 	aux := &struct {
 		Properties *ServiceConfigProperties `json:"log_properties,omitempty"`
 		*Alias
 	}{
-		Alias: (*Alias)(sc),
+		Alias: (*Alias)(c),
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return errors.Wrap(err, "could not parse service config")
 	}
 	if aux.Properties != nil {
-		if sc.LaunchChecks != nil {
-			sc.LaunchChecks.LogText = aux.Properties.Started
+		if c.LaunchChecks != nil {
+			c.LaunchChecks.LogText = aux.Properties.Started
 		} else {
-			sc.LaunchChecks = &LaunchChecks{
+			c.LaunchChecks = &LaunchChecks{
 				LogText: aux.Properties.Started,
 			}
 		}
 	}
 
-	return errors.WithStack(sc.validate())
+	return errors.WithStack(c.validate())
 }
 
 // validate checks if this config is allowed
-func (sc *ServiceConfig) validate() error {
-	if sc.LaunchChecks != nil {
-		if len(sc.LaunchChecks.LogText) > 0 && len(sc.LaunchChecks.Ports) > 0 {
+func (c *ServiceConfig) validate() error {
+	if c.LaunchChecks != nil {
+		if len(c.LaunchChecks.LogText) > 0 && len(c.LaunchChecks.Ports) > 0 {
 			return errors.New("cannot specify both a log and port launch check")
 		}
 	}
 	return nil
 }
 
+// SetWatch sets the watch configuration for this service
 func (c *ServiceConfig) SetWatch(watch ServiceWatch) error {
 	msg, err := json.Marshal(watch)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	c.WatchJson = json.RawMessage(msg)
+	c.WatchJSON = json.RawMessage(msg)
 	return nil
 }
 
+// Watch returns the watch configuration for this service
 func (c *ServiceConfig) Watch() ([]ServiceWatch, error) {
-	var watch ServiceWatch = ServiceWatch{
+	var watch = ServiceWatch{
 		Service: c,
 	}
 
-	if len(c.WatchJson) == 0 {
+	if len(c.WatchJSON) == 0 {
 		return nil, nil
 	}
 
 	var err error
 
 	// Handle multiple
-	err = json.Unmarshal(c.WatchJson, &watch)
+	err = json.Unmarshal(c.WatchJSON, &watch)
 	if err == nil {
 		return []ServiceWatch{watch}, nil
 	}
 
 	// Handle string version
 	var include string
-	err = json.Unmarshal(c.WatchJson, &include)
+	err = json.Unmarshal(c.WatchJSON, &include)
 	if err != nil {
 		return nil, err
 	}
@@ -126,6 +129,7 @@ func (c *ServiceConfig) Watch() ([]ServiceWatch, error) {
 	return nil, nil
 }
 
+// ServiceWatch defines a set of directories to be watched for changes to a service's source.
 type ServiceWatch struct {
 	Service       *ServiceConfig `json:"-"`
 	IncludedPaths []string       `json:"include,omitempty"`
@@ -144,6 +148,7 @@ func (c *ServiceConfig) printf(format string, v ...interface{}) {
 	c.Logger.Printf(format, v...)
 }
 
+// LaunchChecks defines the mechanism for testing whether a service has started successfully
 type LaunchChecks struct {
 	// A string to look for in the service's logs that indicates it has completed startup
 	LogText string `json:"log_text,omitempty"`
@@ -160,6 +165,8 @@ type ServiceConfigProperties struct {
 	Custom map[string]string `json:"-"`
 }
 
+// ServiceConfigCommands define the commands for building, launching and stopping a service
+// All commands are optional
 type ServiceConfigCommands struct {
 	// Command to build
 	Build string `json:"build,omitempty"`
@@ -169,60 +176,65 @@ type ServiceConfigCommands struct {
 	Stop string `json:"stop,omitempty"`
 }
 
-func (sc *ServiceConfig) GetName() string {
-	return sc.Name
+// GetName returns the name for this service
+func (c *ServiceConfig) GetName() string {
+	return c.Name
 }
 
-func (sc *ServiceConfig) Build(cfg OperationConfig) error {
-	if cfg.IsExcluded(sc) {
+// Build builds this service
+func (c *ServiceConfig) Build(cfg OperationConfig) error {
+	if cfg.IsExcluded(c) {
 		return nil
 	}
 
-	command, err := sc.GetCommand()
+	command, err := c.GetCommand()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 	return errors.WithStack(command.BuildSync(false))
 }
 
-func (sc *ServiceConfig) Launch(cfg OperationConfig) error {
-	if cfg.IsExcluded(sc) {
+// Launch launches this service
+func (c *ServiceConfig) Launch(cfg OperationConfig) error {
+	if cfg.IsExcluded(c) {
 		return nil
 	}
 
-	command, err := sc.GetCommand()
+	command, err := c.GetCommand()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 	return errors.WithStack(command.StartAsync(cfg))
 }
 
-func (sc *ServiceConfig) Start(cfg OperationConfig) error {
-	if cfg.IsExcluded(sc) {
+// Start builds then launches this service
+func (c *ServiceConfig) Start(cfg OperationConfig) error {
+	if cfg.IsExcluded(c) {
 		return nil
 	}
 
-	err := sc.Build(cfg)
+	err := c.Build(cfg)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	err = sc.Launch(cfg)
+	err = c.Launch(cfg)
 	return errors.WithStack(err)
 }
 
-func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
-	if cfg.IsExcluded(sc) {
+// Stop stops this service
+func (c *ServiceConfig) Stop(cfg OperationConfig) error {
+	if cfg.IsExcluded(c) {
 		return nil
 	}
 
 	tracker := CommandTracker{
-		Name:       "Stopping " + sc.Name,
-		Logger:     sc.Logger,
+		Name:       "Stopping " + c.Name,
+		Logger:     c.Logger,
 		OutputFile: "",
 	}
 	tracker.Start()
 
-	command, err := sc.GetCommand()
+	command, err := c.GetCommand()
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -232,21 +244,21 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 		return nil
 	}
 
-	stopped, err := sc.interruptProcess(cfg, command)
+	stopped, err := c.interruptProcess(cfg, command)
 	if err != nil {
 		tracker.Fail(err)
 		return nil
 	}
 
 	if !stopped {
-		sc.printf("SIGINT failed to stop service, waiting for 5s before sending SIGKILL\n")
+		c.printf("SIGINT failed to stop service, waiting for 5s before sending SIGKILL\n")
 		stopped, err := waitForTerm(command, time.Second*5)
 		if err != nil {
 			tracker.Fail(err)
 			return nil
 		}
 		if !stopped {
-			stopped, err := sc.killProcess(cfg, command)
+			stopped, err := c.killProcess(cfg, command)
 			if err != nil {
 				tracker.Fail(err)
 				return nil
@@ -266,7 +278,7 @@ func (sc *ServiceConfig) Stop(cfg OperationConfig) error {
 	return nil
 }
 
-func (sc *ServiceConfig) interruptProcess(cfg OperationConfig, command *ServiceCommand) (success bool, err error) {
+func (c *ServiceConfig) interruptProcess(cfg OperationConfig, command *ServiceCommand) (success bool, err error) {
 	p, err := process.NewProcess(int32(command.Pid))
 	if err != nil {
 		return false, errors.WithStack(err)
@@ -284,7 +296,7 @@ func (sc *ServiceConfig) interruptProcess(cfg OperationConfig, command *ServiceC
 	return !exists, nil
 }
 
-func (sc *ServiceConfig) killProcess(cfg OperationConfig, command *ServiceCommand) (success bool, err error) {
+func (c *ServiceConfig) killProcess(cfg OperationConfig, command *ServiceCommand) (success bool, err error) {
 	pgid, err := syscall.Getpgid(command.Pid)
 	if err != nil {
 		return false, errors.WithStack(err)
@@ -294,7 +306,7 @@ func (sc *ServiceConfig) killProcess(cfg OperationConfig, command *ServiceComman
 		return false, errors.WithStack(errors.New("suspect pgid: " + strconv.Itoa(pgid)))
 	}
 
-	err = KillGroup(cfg, pgid, sc)
+	err = KillGroup(cfg, pgid, c)
 	return true, errors.WithStack(err)
 }
 
@@ -312,14 +324,15 @@ func waitForTerm(command *ServiceCommand, timeout time.Duration) (bool, error) {
 	return false, nil
 }
 
-func (sc *ServiceConfig) Status() ([]ServiceStatus, error) {
-	command, err := sc.GetCommand()
+// Status returns the status for this service
+func (c *ServiceConfig) Status() ([]ServiceStatus, error) {
+	command, err := c.GetCommand()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
 	status := ServiceStatus{
-		Service: sc,
+		Service: c,
 		Status:  StatusStopped,
 	}
 
@@ -335,8 +348,8 @@ func (sc *ServiceConfig) Status() ([]ServiceStatus, error) {
 			return nil, errors.WithStack(err)
 		}
 		status.StartTime = time.Unix(epochStart/1000, 0)
-		status.Ports, err = sc.getPorts(proc)
-		status.StdoutCount, status.StderrCount = sc.getLogCounts()
+		status.Ports, err = c.getPorts(proc)
+		status.StdoutCount, status.StderrCount = c.getLogCounts()
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -350,21 +363,21 @@ func (sc *ServiceConfig) Status() ([]ServiceStatus, error) {
 // Connection list cache, created once per session.
 var connectionsCache []net.ConnectionStat
 
-func (sc *ServiceConfig) getPorts(proc *process.Process) ([]string, error) {
-	ports, err := sc.doGetPorts(proc)
+func (c *ServiceConfig) getPorts(proc *process.Process) ([]string, error) {
+	ports, err := c.doGetPorts(proc)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	if sc.LaunchChecks != nil {
-		for _, port := range sc.LaunchChecks.Ports {
+	if c.LaunchChecks != nil {
+		for _, port := range c.LaunchChecks.Ports {
 			ports = append(ports, strconv.Itoa(port))
 		}
 	}
 	return ports, nil
 }
 
-func (sc *ServiceConfig) getLogCounts() (int, int) {
-	logFile, err := os.Open(sc.GetRunLog())
+func (c *ServiceConfig) getLogCounts() (int, int) {
+	logFile, err := os.Open(c.GetRunLog())
 	if err != nil {
 		return 0, 0
 	}
@@ -389,7 +402,7 @@ func (sc *ServiceConfig) getLogCounts() (int, int) {
 	return stdoutCount, stderrCount
 }
 
-func (sc *ServiceConfig) doGetPorts(proc *process.Process) ([]string, error) {
+func (c *ServiceConfig) doGetPorts(proc *process.Process) ([]string, error) {
 	var err error
 	if len(connectionsCache) == 0 {
 		connectionsCache, err = net.Connections("all")
@@ -400,8 +413,8 @@ func (sc *ServiceConfig) doGetPorts(proc *process.Process) ([]string, error) {
 
 	var ports []string
 	var knownPorts = make(map[int]struct{})
-	if sc.LaunchChecks != nil {
-		for _, port := range sc.LaunchChecks.Ports {
+	if c.LaunchChecks != nil {
+		for _, port := range c.LaunchChecks.Ports {
 			knownPorts[port] = struct{}{}
 		}
 	}
@@ -419,7 +432,7 @@ func (sc *ServiceConfig) doGetPorts(proc *process.Process) ([]string, error) {
 		return ports, nil
 	}
 	for _, child := range children {
-		childPorts, err := sc.doGetPorts(child)
+		childPorts, err := c.doGetPorts(child)
 		if err == nil {
 			ports = append(ports, childPorts...)
 		}
@@ -427,30 +440,34 @@ func (sc *ServiceConfig) doGetPorts(proc *process.Process) ([]string, error) {
 	return ports, nil
 }
 
-func (sc *ServiceConfig) IsSudo(cfg OperationConfig) bool {
-	if cfg.IsExcluded(sc) {
+// IsSudo returns true if this service requires sudo to run.
+// If this service is excluded by cfg, then will always return false.
+func (c *ServiceConfig) IsSudo(cfg OperationConfig) bool {
+	if cfg.IsExcluded(c) {
 		return false
 	}
 
-	return sc.RequiresSudo
+	return c.RequiresSudo
 }
 
-func (s *ServiceConfig) GetRunLog() string {
+// GetRunLog returns the path to the run log for this service
+func (c *ServiceConfig) GetRunLog() string {
 	dir := home.EdwardConfig.LogDir
-	return path.Join(dir, s.Name+".log")
+	return path.Join(dir, c.Name+".log")
 }
 
-func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
+// GetCommand returns the ServiceCommand for this service
+func (c *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 
-	s.printf("Building control command for: %v\n", s.Name)
+	c.printf("Building control command for: %v\n", c.Name)
 	command := &ServiceCommand{
-		Service: s,
-		Logger:  s.Logger,
+		Service: c,
+		Logger:  c.Logger,
 	}
 
 	// Retrieve the PID if available
 	pidFile := command.getPidPath()
-	s.printf("Checking pidfile for %v: %v\n", s.Name, pidFile)
+	c.printf("Checking pidfile for %v: %v\n", c.Name, pidFile)
 	if _, err := os.Stat(pidFile); err == nil {
 		dat, err := ioutil.ReadFile(pidFile)
 		if err != nil {
@@ -467,7 +484,7 @@ func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 			return nil, errors.WithStack(err)
 		}
 		if !exists {
-			s.printf("Process for %v was not found, resetting.\n", s.Name)
+			c.printf("Process for %v was not found, resetting.\n", c.Name)
 			command.clearState()
 		}
 
@@ -479,13 +496,13 @@ func (s *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-		if !strings.Contains(cmdline, s.Name) {
-			s.printf("Process for %v was not as expected (found %v), resetting.\n", s.Name, cmdline)
+		if !strings.Contains(cmdline, c.Name) {
+			c.printf("Process for %v was not as expected (found %v), resetting.\n", c.Name, cmdline)
 			command.clearState()
 		}
 
 	} else {
-		s.printf("No pidfile for %v", s.Name)
+		c.printf("No pidfile for %v", c.Name)
 	}
 
 	return command, nil

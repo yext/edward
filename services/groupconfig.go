@@ -26,23 +26,25 @@ func (c *ServiceGroupConfig) printf(format string, v ...interface{}) {
 	c.Logger.Printf(format, v...)
 }
 
-func (sg *ServiceGroupConfig) GetName() string {
-	return sg.Name
+// GetName returns the name for this group
+func (c *ServiceGroupConfig) GetName() string {
+	return c.Name
 }
 
-func (sg *ServiceGroupConfig) Build(cfg OperationConfig) error {
-	if cfg.IsExcluded(sg) {
+// Build builds all services within this group
+func (c *ServiceGroupConfig) Build(cfg OperationConfig) error {
+	if cfg.IsExcluded(c) {
 		return nil
 	}
 
-	println("Building group: ", sg.Name)
-	for _, group := range sg.Groups {
+	println("Building group: ", c.Name)
+	for _, group := range c.Groups {
 		err := group.Build(cfg)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 	}
-	for _, service := range sg.Services {
+	for _, service := range c.Services {
 		err := service.Build(cfg)
 		if err != nil {
 			return errors.WithStack(err)
@@ -51,21 +53,22 @@ func (sg *ServiceGroupConfig) Build(cfg OperationConfig) error {
 	return nil
 }
 
-func (sg *ServiceGroupConfig) Start(cfg OperationConfig) error {
-	if cfg.IsExcluded(sg) {
+// Start will build and launch all services within this group
+func (c *ServiceGroupConfig) Start(cfg OperationConfig) error {
+	if cfg.IsExcluded(c) {
 		return nil
 	}
 
-	println("Starting group:", sg.Name)
-	for _, group := range sg.Groups {
+	println("Starting group:", c.Name)
+	for _, group := range c.Groups {
 		err := group.Start(cfg)
 		if err != nil {
 			// Always fail if any services in a dependant group failed
 			return errors.WithStack(err)
 		}
 	}
-	var outErr error = nil
-	for _, service := range sg.Services {
+	var outErr error
+	for _, service := range c.Services {
 		err := service.Start(cfg)
 		if err != nil {
 			return errors.WithStack(err)
@@ -74,21 +77,22 @@ func (sg *ServiceGroupConfig) Start(cfg OperationConfig) error {
 	return outErr
 }
 
-func (sg *ServiceGroupConfig) Launch(cfg OperationConfig) error {
-	if cfg.IsExcluded(sg) {
+// Launch will launch all services within this group
+func (c *ServiceGroupConfig) Launch(cfg OperationConfig) error {
+	if cfg.IsExcluded(c) {
 		return nil
 	}
 
-	println("Launching group:", sg.Name)
-	for _, group := range sg.Groups {
+	println("Launching group:", c.Name)
+	for _, group := range c.Groups {
 		err := group.Launch(cfg)
 		if err != nil {
 			// Always fail if any services in a dependant group failed
 			return errors.WithStack(err)
 		}
 	}
-	var outErr error = nil
-	for _, service := range sg.Services {
+	var outErr error
+	for _, service := range c.Services {
 		err := service.Launch(cfg)
 		if err != nil {
 			return errors.WithStack(err)
@@ -97,20 +101,21 @@ func (sg *ServiceGroupConfig) Launch(cfg OperationConfig) error {
 	return outErr
 }
 
-func (sg *ServiceGroupConfig) Stop(cfg OperationConfig) error {
-	if cfg.IsExcluded(sg) {
+// Stop stops all services within this group
+func (c *ServiceGroupConfig) Stop(cfg OperationConfig) error {
+	if cfg.IsExcluded(c) {
 		return nil
 	}
 
-	println("=== Group:", sg.Name, "===")
+	println("=== Group:", c.Name, "===")
 	// TODO: Do this in reverse
-	for _, service := range sg.Services {
+	for _, service := range c.Services {
 		err := service.Stop(cfg)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 	}
-	for _, group := range sg.Groups {
+	for _, group := range c.Groups {
 		err := group.Stop(cfg)
 		if err != nil {
 			return errors.WithStack(err)
@@ -119,16 +124,17 @@ func (sg *ServiceGroupConfig) Stop(cfg OperationConfig) error {
 	return nil
 }
 
-func (sg *ServiceGroupConfig) Status() ([]ServiceStatus, error) {
+// Status returns the status for all services within this group
+func (c *ServiceGroupConfig) Status() ([]ServiceStatus, error) {
 	var outStatus []ServiceStatus
-	for _, service := range sg.Services {
+	for _, service := range c.Services {
 		statuses, err := service.Status()
 		if err != nil {
 			return outStatus, errors.WithStack(err)
 		}
 		outStatus = append(outStatus, statuses...)
 	}
-	for _, group := range sg.Groups {
+	for _, group := range c.Groups {
 		statuses, err := group.Status()
 		if err != nil {
 			return outStatus, errors.WithStack(err)
@@ -138,16 +144,17 @@ func (sg *ServiceGroupConfig) Status() ([]ServiceStatus, error) {
 	return outStatus, nil
 }
 
-func (sg *ServiceGroupConfig) IsSudo(cfg OperationConfig) bool {
-	if cfg.IsExcluded(sg) {
+// IsSudo returns true if any of the services in this group require sudo to run
+func (c *ServiceGroupConfig) IsSudo(cfg OperationConfig) bool {
+	if cfg.IsExcluded(c) {
 		return false
 	}
-	for _, service := range sg.Services {
+	for _, service := range c.Services {
 		if service.IsSudo(cfg) {
 			return true
 		}
 	}
-	for _, group := range sg.Groups {
+	for _, group := range c.Groups {
 		if group.IsSudo(cfg) {
 			return true
 		}
@@ -156,16 +163,17 @@ func (sg *ServiceGroupConfig) IsSudo(cfg OperationConfig) bool {
 	return false
 }
 
-func (sg *ServiceGroupConfig) Watch() ([]ServiceWatch, error) {
+// Watch returns all service watches configured for this group
+func (c *ServiceGroupConfig) Watch() ([]ServiceWatch, error) {
 	var watches []ServiceWatch
-	for _, service := range sg.Services {
+	for _, service := range c.Services {
 		sw, err := service.Watch()
 		if err != nil {
 			return nil, err
 		}
 		watches = append(watches, sw...)
 	}
-	for _, group := range sg.Groups {
+	for _, group := range c.Groups {
 		gw, err := group.Watch()
 		if err != nil {
 			return nil, err

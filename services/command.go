@@ -20,6 +20,7 @@ import (
 	"github.com/yext/edward/warmup"
 )
 
+// ServiceCommand provides state and functions for managing a service
 type ServiceCommand struct {
 	// Parent service config
 	Service *ServiceConfig
@@ -34,8 +35,8 @@ func (c *ServiceCommand) printf(format string, v ...interface{}) {
 	c.Logger.Printf(format, v...)
 }
 
-func (sc *ServiceCommand) createScript(content string, scriptType string) (*os.File, error) {
-	file, err := os.Create(path.Join(home.EdwardConfig.ScriptDir, sc.Service.Name+"-"+scriptType))
+func (c *ServiceCommand) createScript(content string, scriptType string) (*os.File, error) {
+	file, err := os.Create(path.Join(home.EdwardConfig.ScriptDir, c.Service.Name+"-"+scriptType))
 	if err != nil {
 		return nil, err
 	}
@@ -50,39 +51,40 @@ func (sc *ServiceCommand) createScript(content string, scriptType string) (*os.F
 	return file, nil
 }
 
-func (sc *ServiceCommand) deleteScript(scriptType string) error {
+func (c *ServiceCommand) deleteScript(scriptType string) error {
 	return errors.WithStack(
 		os.Remove(
-			path.Join(home.EdwardConfig.ScriptDir, sc.Service.Name+"-"+scriptType),
+			path.Join(home.EdwardConfig.ScriptDir, c.Service.Name+"-"+scriptType),
 		),
 	)
 }
 
 // BuildSync will buid the service synchronously.
 // If force is false, the build will be skipped if the service is already running.
-func (sc *ServiceCommand) BuildSync(force bool) error {
+func (c *ServiceCommand) BuildSync(force bool) error {
 	tracker := &CommandTracker{
-		Name:   "Building " + sc.Service.Name,
-		Logger: sc.Logger,
+		Name:   "Building " + c.Service.Name,
+		Logger: c.Logger,
 	}
-	return errors.WithStack(sc.BuildWithTracker(force, tracker))
+	return errors.WithStack(c.BuildWithTracker(force, tracker))
 }
 
+// BuildWithTracker builds a service.
 // If force is false, the build will be skipped if the service is already running.
-func (sc *ServiceCommand) BuildWithTracker(force bool, tracker OperationTracker) error {
+func (c *ServiceCommand) BuildWithTracker(force bool, tracker OperationTracker) error {
 	tracker.Start()
 
-	if !force && sc.Pid != 0 {
+	if !force && c.Pid != 0 {
 		tracker.SoftFail(errors.New("Already running"))
 		return nil
 	}
 
-	if sc.Service.Commands.Build == "" {
+	if c.Service.Commands.Build == "" {
 		tracker.SoftFail(errors.New("No build"))
 		return nil
 	}
 
-	cmd, err := sc.constructCommand(sc.Service.Commands.Build)
+	cmd, err := c.constructCommand(c.Service.Commands.Build)
 	if err != nil {
 		tracker.Fail(err)
 		return errors.WithStack(err)
@@ -98,23 +100,23 @@ func (sc *ServiceCommand) BuildWithTracker(force bool, tracker OperationTracker)
 	return nil
 }
 
-func (sc *ServiceCommand) constructCommand(command string) (*exec.Cmd, error) {
+func (c *ServiceCommand) constructCommand(command string) (*exec.Cmd, error) {
 	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(command))
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 	cmd := exec.Command(command, cmdArgs...)
-	if sc.Service.Path != nil {
-		cmd.Dir = os.ExpandEnv(*sc.Service.Path)
+	if c.Service.Path != nil {
+		cmd.Dir = os.ExpandEnv(*c.Service.Path)
 	}
 	return cmd, nil
 }
 
-func (sc *ServiceCommand) waitForLogText(line string, cancel <-chan struct{}) error {
+func (c *ServiceCommand) waitForLogText(line string, cancel <-chan struct{}) error {
 	// Read output until we get the success
 	var t *tail.Tail
 	var err error
-	t, err = tail.TailFile(sc.Service.GetRunLog(), tail.Config{Follow: true, Logger: tail.DiscardingLogger})
+	t, err = tail.TailFile(c.Service.GetRunLog(), tail.Config{Follow: true, Logger: tail.DiscardingLogger})
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -133,7 +135,9 @@ func (sc *ServiceCommand) waitForLogText(line string, cancel <-chan struct{}) er
 	return nil
 }
 
-func (sc *ServiceCommand) areAnyListeningPortsOpen(ports []int) (bool, error) {
+const portStatusListen = "LISTEN"
+
+func (c *ServiceCommand) areAnyListeningPortsOpen(ports []int) (bool, error) {
 
 	var matchedPorts = make(map[int]struct{})
 	for _, port := range ports {
@@ -145,7 +149,7 @@ func (sc *ServiceCommand) areAnyListeningPortsOpen(ports []int) (bool, error) {
 		return false, errors.WithStack(err)
 	}
 	for _, connection := range connections {
-		if connection.Status == "LISTEN" {
+		if connection.Status == portStatusListen {
 			if _, ok := matchedPorts[int(connection.Laddr.Port)]; ok {
 				return true, nil
 			}
@@ -154,7 +158,7 @@ func (sc *ServiceCommand) areAnyListeningPortsOpen(ports []int) (bool, error) {
 	return false, nil
 }
 
-func (sc *ServiceCommand) waitForListeningPorts(ports []int, cancel <-chan struct{}, command *exec.Cmd) error {
+func (c *ServiceCommand) waitForListeningPorts(ports []int, cancel <-chan struct{}, command *exec.Cmd) error {
 	for true {
 		time.Sleep(100 * time.Millisecond)
 
@@ -171,7 +175,7 @@ func (sc *ServiceCommand) waitForListeningPorts(ports []int, cancel <-chan struc
 			return errors.WithStack(err)
 		}
 		for _, connection := range connections {
-			if connection.Status == "LISTEN" {
+			if connection.Status == portStatusListen {
 				matchedPorts[int(connection.Laddr.Port)] = struct{}{}
 			}
 		}
@@ -188,7 +192,7 @@ func (sc *ServiceCommand) waitForListeningPorts(ports []int, cancel <-chan struc
 	return errors.New("exited check loop unexpectedly")
 }
 
-func (sc *ServiceCommand) waitForAnyPort(cancel <-chan struct{}, command *exec.Cmd) error {
+func (c *ServiceCommand) waitForAnyPort(cancel <-chan struct{}, command *exec.Cmd) error {
 	for true {
 		time.Sleep(100 * time.Millisecond)
 
@@ -216,7 +220,7 @@ func (sc *ServiceCommand) waitForAnyPort(cancel <-chan struct{}, command *exec.C
 
 func hasPort(proc *process.Process, connections []net.ConnectionStat) bool {
 	for _, connection := range connections {
-		if connection.Status == "LISTEN" && connection.Pid == int32(proc.Pid) {
+		if connection.Status == portStatusListen && connection.Pid == int32(proc.Pid) {
 			return true
 		}
 	}
@@ -242,27 +246,27 @@ func cancelableWait(cancel chan struct{}, task func(cancel <-chan struct{}) erro
 	return finished
 }
 
-func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
+func (c *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 
-	sc.printf("Waiting for %v to start.\n", sc.Service.Name)
+	c.printf("Waiting for %v to start.\n", c.Service.Name)
 
 	var startCheck func(cancel <-chan struct{}) error
-	if sc.Service.LaunchChecks != nil && len(sc.Service.LaunchChecks.LogText) > 0 {
+	if c.Service.LaunchChecks != nil && len(c.Service.LaunchChecks.LogText) > 0 {
 		startCheck = func(cancel <-chan struct{}) error {
 			return errors.WithStack(
-				sc.waitForLogText(sc.Service.LaunchChecks.LogText, cancel),
+				c.waitForLogText(c.Service.LaunchChecks.LogText, cancel),
 			)
 		}
-	} else if sc.Service.LaunchChecks != nil && len(sc.Service.LaunchChecks.Ports) > 0 {
+	} else if c.Service.LaunchChecks != nil && len(c.Service.LaunchChecks.Ports) > 0 {
 		startCheck = func(cancel <-chan struct{}) error {
 			return errors.WithStack(
-				sc.waitForListeningPorts(sc.Service.LaunchChecks.Ports, cancel, command),
+				c.waitForListeningPorts(c.Service.LaunchChecks.Ports, cancel, command),
 			)
 		}
 	} else {
 		startCheck = func(cancel <-chan struct{}) error {
 			return errors.WithStack(
-				sc.waitForAnyPort(cancel, command),
+				c.waitForAnyPort(cancel, command),
 			)
 		}
 	}
@@ -295,26 +299,29 @@ func (sc *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 
 }
 
-func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
+// StartAsync starts the service in the background
+// Will block until the service is known to have started successfully.
+// If the service fails to launch, an error will be returned.
+func (c *ServiceCommand) StartAsync(cfg OperationConfig) error {
 	tracker := CommandTracker{
-		Name:       "Launching " + sc.Service.Name,
-		OutputFile: sc.Service.GetRunLog(),
-		Logger:     sc.Logger,
+		Name:       "Launching " + c.Service.Name,
+		OutputFile: c.Service.GetRunLog(),
+		Logger:     c.Logger,
 	}
 	tracker.Start()
 
-	if sc.Pid != 0 {
+	if c.Pid != 0 {
 		tracker.SoftFail(errors.New("Already running"))
 		return nil
 	}
 
-	if sc.Service.Commands.Launch == "" {
+	if c.Service.Commands.Launch == "" {
 		tracker.SoftFail(errors.New("No launch"))
 		return nil
 	}
 
-	if sc.Service.LaunchChecks != nil && len(sc.Service.LaunchChecks.Ports) > 0 {
-		inUse, err := sc.areAnyListeningPortsOpen(sc.Service.LaunchChecks.Ports)
+	if c.Service.LaunchChecks != nil && len(c.Service.LaunchChecks.Ports) > 0 {
+		inUse, err := c.areAnyListeningPortsOpen(c.Service.LaunchChecks.Ports)
 		if err != nil {
 			tracker.Fail(err)
 			return errors.WithStack(err)
@@ -326,15 +333,15 @@ func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 		}
 	}
 
-	os.Remove(sc.Service.GetRunLog())
+	os.Remove(c.Service.GetRunLog())
 
-	cmd, err := sc.GetLaunchCommand(cfg)
+	cmd, err := c.getLaunchCommand(cfg)
 	if err != nil {
 		tracker.Fail(err)
 		return errors.WithStack(err)
 	}
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, sc.Service.Env...)
+	cmd.Env = append(cmd.Env, c.Service.Env...)
 	err = cmd.Start()
 	if err != nil {
 		tracker.Fail(err)
@@ -343,32 +350,32 @@ func (sc *ServiceCommand) StartAsync(cfg OperationConfig) error {
 
 	pid := cmd.Process.Pid
 
-	sc.printf("%v has PID: %d.\n", sc.Service.Name, pid)
+	c.printf("%v has PID: %d.\n", c.Service.Name, pid)
 
 	pidStr := strconv.Itoa(pid)
-	f, err := os.Create(sc.getPidPath())
+	f, err := os.Create(c.getPidPath())
 	if err != nil {
 		return errors.WithStack(err)
 	}
 	f.WriteString(pidStr)
 	f.Close()
 
-	err = sc.waitUntilLive(cmd)
+	err = c.waitUntilLive(cmd)
 	if err == nil {
 		tracker.Success()
-		warmup.Run(sc.Service.Name, sc.Service.Warmup)
+		warmup.Run(c.Service.Name, c.Service.Warmup)
 		return nil
 	}
 
 	tracker.Fail(err)
-	stopErr := sc.Service.Stop(cfg)
+	stopErr := c.Service.Stop(cfg)
 	if stopErr != nil {
 		return errors.WithStack(stopErr)
 	}
 	return errors.WithStack(err)
 }
 
-func (sc *ServiceCommand) GetLaunchCommand(cfg OperationConfig) (*exec.Cmd, error) {
+func (c *ServiceCommand) getLaunchCommand(cfg OperationConfig) (*exec.Cmd, error) {
 	command := os.Args[0]
 	cmdArgs := []string{
 		"run",
@@ -376,16 +383,19 @@ func (sc *ServiceCommand) GetLaunchCommand(cfg OperationConfig) (*exec.Cmd, erro
 	if cfg.NoWatch {
 		cmdArgs = append(cmdArgs, "--no-watch")
 	}
-	cmdArgs = append(cmdArgs, sc.Service.Name)
+	cmdArgs = append(cmdArgs, c.Service.Name)
 
 	cmd := exec.Command(command, cmdArgs...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	return cmd, nil
 }
 
-func (sc *ServiceCommand) RunStopScript() ([]byte, error) {
-	sc.printf("Running stop script for %v\n", sc.Service.Name)
-	cmd, err := sc.constructCommand(sc.Service.Commands.Stop)
+// RunStopScript will execute the stop script for this command, returning full output
+// from running the script.
+// Assumes the service has a stop script configured.
+func (c *ServiceCommand) RunStopScript() ([]byte, error) {
+	c.printf("Running stop script for %v\n", c.Service.Name)
+	cmd, err := c.constructCommand(c.Service.Commands.Stop)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -397,27 +407,31 @@ func (sc *ServiceCommand) RunStopScript() ([]byte, error) {
 	return nil, nil
 }
 
-func (sc *ServiceCommand) clearPid() {
-	sc.Pid = 0
-	os.Remove(sc.getPidPath())
+func (c *ServiceCommand) clearPid() {
+	c.Pid = 0
+	os.Remove(c.getPidPath())
 }
 
-func (sc *ServiceCommand) clearState() {
-	sc.clearPid()
-	sc.deleteScript("Stop")
-	sc.deleteScript("Launch")
-	sc.deleteScript("Build")
+func (c *ServiceCommand) clearState() {
+	c.clearPid()
+	c.deleteScript("Stop")
+	c.deleteScript("Launch")
+	c.deleteScript("Build")
 }
 
-func (sc *ServiceCommand) getPidPath() string {
+func (c *ServiceCommand) getPidPath() string {
 	dir := home.EdwardConfig.PidDir
-	return path.Join(dir, sc.Service.Name+".pid")
+	return path.Join(dir, c.Service.Name+".pid")
 }
 
+// InterruptGroup sends an interrupt signal to a process group.
+// Will use sudo if required by this service.
 func InterruptGroup(cfg OperationConfig, pgid int, service *ServiceConfig) error {
 	return errors.WithStack(signalGroup(cfg, pgid, service, "-2"))
 }
 
+// KillGroup sends a kill signal to a process group.
+// Will use sudo priviledges if required by this service.
 func KillGroup(cfg OperationConfig, pgid int, service *ServiceConfig) error {
 	return errors.WithStack(signalGroup(cfg, pgid, service, "-9"))
 }

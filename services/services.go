@@ -2,9 +2,13 @@ package services
 
 import "time"
 
+// StatusRunning is the status string for a running service
 const StatusRunning = "RUNNING"
+
+// StatusStopped is the status string for a stopped service
 const StatusStopped = "STOPPED"
 
+// ServiceStatus contains the status for a service at a given point in time
 type ServiceStatus struct {
 	Service     *ServiceConfig
 	Status      string
@@ -22,6 +26,8 @@ type OperationConfig struct {
 	NoWatch    bool
 }
 
+// IsExcluded returns true if the given service/group is excluded by this OperationConfig.
+// No operations should be performed on excluded services.
 func (o *OperationConfig) IsExcluded(sg ServiceOrGroup) bool {
 	name := sg.GetName()
 	for _, e := range o.Exclusions {
@@ -32,6 +38,7 @@ func (o *OperationConfig) IsExcluded(sg ServiceOrGroup) bool {
 	return false
 }
 
+// ServiceOrGroup provides a common interface to services and groups
 type ServiceOrGroup interface {
 	GetName() string
 	Build(cfg OperationConfig) error  // Build this service/group from source
@@ -43,6 +50,7 @@ type ServiceOrGroup interface {
 	Watch() ([]ServiceWatch, error)
 }
 
+// CountServices returns the total number of services in the slice of services and groups.
 func CountServices(sgs []ServiceOrGroup) int {
 	var count int
 	for _, sg := range sgs {
