@@ -143,7 +143,7 @@ func (r *Runner) run(c *cli.Context) error {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
 	go func() {
-		for _ = range signalChan {
+		for range signalChan {
 			r.messageLog.Printf("Received interrupt\n")
 			err := r.stopService()
 			if err != nil {

@@ -233,7 +233,7 @@ var basicTests = []struct {
 		`,
 		outServiceMap: map[string]*services.ServiceConfig{},
 		outGroupMap: map[string]*services.ServiceGroupConfig{
-			"group1": &services.ServiceGroupConfig{
+			"group1": {
 				Name:   "group1",
 				Logger: common.NullLogger{},
 			},
@@ -261,16 +261,16 @@ var basicTests = []struct {
 		}
 		`,
 		outServiceMap: map[string]*services.ServiceConfig{
-			"service1": &services.ServiceConfig{
+			"service1": {
 				Name:   "service1",
 				Logger: common.NullLogger{},
 			},
 		},
 		outGroupMap: map[string]*services.ServiceGroupConfig{
-			"group1": &services.ServiceGroupConfig{
+			"group1": {
 				Name: "group1",
 				Services: []*services.ServiceConfig{
-					&services.ServiceConfig{
+					{
 						Name:   "service1",
 						Logger: common.NullLogger{},
 					},
@@ -301,16 +301,16 @@ var basicTests = []struct {
 		}
 		`,
 		outServiceMap: map[string]*services.ServiceConfig{
-			"service1": &services.ServiceConfig{
+			"service1": {
 				Name:   "service1",
 				Logger: common.NullLogger{},
 			},
 		},
 		outGroupMap: map[string]*services.ServiceGroupConfig{
-			"group1": &services.ServiceGroupConfig{
+			"group1": {
 				Name: "group1",
 				Services: []*services.ServiceConfig{
-					&services.ServiceConfig{
+					{
 						Name:   "service1",
 						Logger: common.NullLogger{},
 					},
