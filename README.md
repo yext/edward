@@ -5,17 +5,13 @@
 
 A command line tool for managing local instances of microservices.
 
+[![asciicast](https://asciinema.org/a/c49y8xmkvv140rgnlvl0an908.png)](https://asciinema.org/a/c49y8xmkvv140rgnlvl0an908)
+
 Full documentation available at [http://engblog.yext.com/edward/](http://engblog.yext.com/edward/).
 
 ## Table of Contents  
 
 * [Features](#features)
-  * [Start multiple services with one command](#start-multiple-services-with-one-command)
-  * [See status for running services](#see-status-for-running-services)
-  * [Follow service logs](#follow-service-logs)
-  * [Restart as needed](#restart-as-needed)
-  * [Auto-restart on edits](#auto-restart-on-edits)
-  * [Generate configuration automatically](#generate-configuration-automatically)
 * [Installation](#installation)  
 * [Updating](#updating)
 
@@ -26,38 +22,26 @@ Full documentation available at [http://engblog.yext.com/edward/](http://engblog
 No need to start each service in its own terminal tab, just run `edward start` to build and launch multiple
 services in the background!
 
-![Starting services](images/start.gif)
-
 ### See status for running services
 
 Run `edward status` to see which of your services are up and running, how long for, and on which ports
 they are listening.
 
-![View Status](images/status.gif)
-
 ### Follow service logs
 
 Follow stdout and stderr for one or more services with `edward tail`.
-
-![Follow logs](images/tail.gif)
 
 ### Restart as needed
 
 Made some changes? Run `edward restart` to re-build and re-launch a service.
 
-![Restart services](images/restart.gif)
-
 ### Auto-restart on edits
 
 Edward will even automatically restart services when source files are changed.
 
-![Auto-restart when files are edited](images/autorestart.gif)
-
 ### Generate configuration automatically
 
 New services? Run `edward generate` to create a config file automatically.
-
-![Generate configuration](images/generate.gif)
 
 Edward can generate configuration for projects using:
 
