@@ -41,6 +41,8 @@ Follow stdout and stderr for one or more services with `edward tail`.
 
 Made some changes? Run `edward restart` to re-build and re-launch a service.
 
+[See it in action](https://asciinema.org/a/0epxufbswt2c8vf8lw10g92qo?autoplay=1)
+
 ### Auto-restart on edits
 
 Edward will even automatically restart services when source files are changed.
