@@ -22,10 +22,14 @@ Full documentation available at [http://engblog.yext.com/edward/](http://engblog
 No need to start each service in its own terminal tab, just run `edward start` to build and launch multiple
 services in the background!
 
+[See it in action](https://asciinema.org/a/c49y8xmkvv140rgnlvl0an908)
+
 ### See status for running services
 
 Run `edward status` to see which of your services are up and running, how long for, and on which ports
 they are listening.
+
+[See it in action](https://asciinema.org/a/c49y8xmkvv140rgnlvl0an908?t=10)
 
 ### Follow service logs
 
