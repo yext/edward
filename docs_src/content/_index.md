@@ -4,10 +4,12 @@ title: About Edward
 type: index
 ---
 
-A command line tool for managing local instances of microservices.
+Edward is a command line tool for managing local instances of microservices.
 
 Edward will build and launch groups of services in your development environment
 with just a single call to `edward start`. No more long rows of Terminal tabs!
+
+<script type="text/javascript" src="https://asciinema.org/a/105889.js" id="asciicast-105889" async></script>
 
 Services run in the background, and you can follow the logs for a single service
 as and when you need with `edward log`
