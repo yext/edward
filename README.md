@@ -53,6 +53,8 @@ Edward will even automatically restart services when source files are changed.
 
 New services? Run `edward generate` to create a config file automatically.
 
+[See it in action](https://asciinema.org/a/dhbv5v0dpd65sgfjud92auyt0?autoplay=1)
+
 Edward can generate configuration for projects using:
 
 * Go
