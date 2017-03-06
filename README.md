@@ -35,6 +35,8 @@ they are listening.
 
 Follow stdout and stderr for one or more services with `edward tail`.
 
+[See it in action](https://asciinema.org/a/5yt0iobii6f62swt4l67sm513)
+
 ### Restart as needed
 
 Made some changes? Run `edward restart` to re-build and re-launch a service.
