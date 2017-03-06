@@ -47,6 +47,8 @@ Made some changes? Run `edward restart` to re-build and re-launch a service.
 
 Edward will even automatically restart services when source files are changed.
 
+[See it in action](https://asciinema.org/a/7shqwxugaxxstccyry6c8ox2r?autoplay=1)
+
 ### Generate configuration automatically
 
 New services? Run `edward generate` to create a config file automatically.
