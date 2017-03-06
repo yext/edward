@@ -5,7 +5,7 @@
 
 A command line tool for managing local instances of microservices.
 
-<script type="text/javascript" src="https://asciinema.org/a/c49y8xmkvv140rgnlvl0an908.js" id="asciicast-c49y8xmkvv140rgnlvl0an908" async></script>
+[![asciicast](https://asciinema.org/a/c49y8xmkvv140rgnlvl0an908.png)](https://asciinema.org/a/c49y8xmkvv140rgnlvl0an908)
 
 Full documentation available at [http://engblog.yext.com/edward/](http://engblog.yext.com/edward/).
 
