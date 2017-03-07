@@ -64,9 +64,12 @@ type RunningCommand struct {
 }
 
 // Start starts a command running in a goroutine
-func (c *RunningCommand) Start() {
+func (c *RunningCommand) Start(errorLog Logger) {
 	go func() {
-		c.command.Run()
+		err := c.command.Run()
+		if err != nil {
+			errorLog.Printf("%v", err)
+		}
 		c.commandWait.Done()
 		close(c.done)
 	}()
@@ -261,7 +264,7 @@ func (r *Runner) startService() error {
 	cmd.Stderr = errorLog
 
 	r.command = NewRunningCommand(r.service, cmd, &r.commandWait)
-	r.command.Start()
+	r.command.Start(errorLog)
 
 	return nil
 }
