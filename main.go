@@ -48,6 +48,8 @@ func main() {
 		MaxAge:     1, //days
 	}, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 
+	checkUpdateChan := make(chan interface{})
+
 	app := cli.NewApp()
 	app.Name = "Edward"
 	app.Usage = "Manage local microservices"
@@ -67,6 +69,12 @@ func main() {
 			}
 		} else {
 			config.InitEmptyConfig()
+		}
+
+		if command != "run" {
+			go checkUpdateAvailable(checkUpdateChan)
+		} else {
+			close(checkUpdateChan)
 		}
 
 		return nil
@@ -185,9 +193,6 @@ func main() {
 	logger.Printf("=== %v v%v ===\n", app.Name, app.Version)
 	logger.Printf("Args: %v\n", os.Args)
 	defer logger.Printf("=== Exiting ===\n")
-
-	checkUpdateChan := make(chan interface{})
-	go checkUpdateAvailable(checkUpdateChan)
 
 	err := app.Run(os.Args)
 	if err != nil {
