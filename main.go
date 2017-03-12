@@ -48,7 +48,7 @@ func main() {
 		MaxAge:     1, //days
 	}, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 
-	checkUpdateChan := make(chan interface{})
+	var checkUpdateChan chan interface{}
 
 	app := cli.NewApp()
 	app.Name = "Edward"
@@ -72,9 +72,8 @@ func main() {
 		}
 
 		if command != "run" {
+			checkUpdateChan = make(chan interface{})
 			go checkUpdateAvailable(checkUpdateChan)
-		} else {
-			close(checkUpdateChan)
 		}
 
 		return nil
@@ -202,10 +201,12 @@ func main() {
 
 	warmup.Wait()
 
-	updateAvailable, ok := (<-checkUpdateChan).(bool)
-	if ok && updateAvailable {
-		latestVersion := (<-checkUpdateChan).(string)
-		fmt.Printf("A new version of Edward is available (%v), update with:\n\tgo get -u github.com/yext/edward\n", latestVersion)
+	if checkUpdateChan != nil {
+		updateAvailable, ok := (<-checkUpdateChan).(bool)
+		if ok && updateAvailable {
+			latestVersion := (<-checkUpdateChan).(string)
+			fmt.Printf("A new version of Edward is available (%v), update with:\n\tgo get -u github.com/yext/edward\n", latestVersion)
+		}
 	}
 
 }
