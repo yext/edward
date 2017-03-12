@@ -61,6 +61,10 @@ func main() {
 			if err != nil {
 				return errors.WithStack(err)
 			}
+			err = os.Chdir(config.GetBasePath())
+			if err != nil {
+				return errors.WithStack(err)
+			}
 		} else {
 			config.InitEmptyConfig()
 		}

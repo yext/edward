@@ -10,8 +10,14 @@ import (
 	"github.com/yext/edward/services"
 )
 
+var basePath string
 var groupMap map[string]*services.ServiceGroupConfig
 var serviceMap map[string]*services.ServiceConfig
+
+// GetBasePath returns the base directory for the current shared config
+func GetBasePath() string {
+	return basePath
+}
 
 // GetServiceMap returns the shared map of Services
 func GetServiceMap() map[string]*services.ServiceConfig {
@@ -26,7 +32,8 @@ func LoadSharedConfig(configPath string, edwardVersion string, logger *log.Logge
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		cfg, err := LoadConfigWithDir(r, filepath.Dir(configPath), edwardVersion, logger)
+		basePath = filepath.Dir(configPath)
+		cfg, err := LoadConfigWithDir(r, basePath, edwardVersion, logger)
 		if err != nil {
 			workingDir, _ := os.Getwd()
 			configRel, _ := filepath.Rel(workingDir, configPath)
