@@ -117,10 +117,10 @@
 			"revisionTime": "2016-08-15T01:22:05Z"
 		},
 		{
-			"checksumSHA1": "rEIS5EfbhPRBasakArGCeOWwY8c=",
+			"checksumSHA1": "K/CP3EBR0TUpw8DPpjRExGEYNkY=",
 			"path": "github.com/urfave/cli",
-			"revision": "55f715e28c46073d0e217e2ce8eb46b0b45e3db6",
-			"revisionTime": "2016-10-06T03:53:53Z"
+			"revision": "9e5b04886c4bfee2ceba1465b8121057355c4e53",
+			"revisionTime": "2017-03-04T22:33:36Z"
 		},
 		{
 			"checksumSHA1": "AHhuIKGGOtr2wVEjLddGdyTzifA=",

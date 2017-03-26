@@ -71,7 +71,7 @@ func main() {
 			config.InitEmptyConfig()
 		}
 
-		if command != "run" && !hasBashCompletion(c) {
+		if command != "run" {
 			checkUpdateChan = make(chan interface{})
 			go checkUpdateAvailable(checkUpdateChan)
 		}
@@ -185,7 +185,7 @@ func main() {
 			Aliases:      []string{"tail"},
 			Usage:        "Tail the log for a service",
 			Action:       doLog,
-			BashComplete: autocompleteServices,
+			BashComplete: autocompleteServicesAndGroups,
 		},
 	}
 
@@ -195,13 +195,13 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Printf("%+v", err)
+		fmt.Printf("%+v\n", err.Error())
 		logger.Printf("%+v", err)
 	}
 
 	warmup.Wait()
 
-	if checkUpdateChan != nil {
+	if checkUpdateChan != nil && !didAutoComplete {
 		updateAvailable, ok := (<-checkUpdateChan).(bool)
 		if ok && updateAvailable {
 			latestVersion := (<-checkUpdateChan).(string)
@@ -296,15 +296,11 @@ func sudoIfNeeded(sgs []services.ServiceOrGroup) error {
 	return nil
 }
 
-func autocompleteServices(c *cli.Context) {
-	config.LoadSharedConfig(getConfigPath(), edwardVersion, logger)
-	names := config.GetAllServiceNames()
-	for _, name := range names {
-		fmt.Println(name)
-	}
-}
+// didAutoComplete indicates whether or not autocompletion was called
+var didAutoComplete bool
 
 func autocompleteServicesAndGroups(c *cli.Context) {
+	didAutoComplete = true
 	config.LoadSharedConfig(getConfigPath(), edwardVersion, logger)
 	names := append(config.GetAllGroupNames(), config.GetAllServiceNames()...)
 	for _, name := range names {
