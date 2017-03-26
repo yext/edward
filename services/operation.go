@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/yext/edward/common"
@@ -29,6 +30,7 @@ type CommandTracker struct {
 	Logger     common.Logger
 	sigChan    chan os.Signal
 	endChan    chan struct{}
+	startTime  time.Time
 }
 
 func (c *CommandTracker) printf(format string, v ...interface{}) {
@@ -45,7 +47,7 @@ func (c *CommandTracker) waitForInterrupt() {
 	go func() {
 		select {
 		case _ = <-c.sigChan:
-			printResult("Interrupted", color.FgRed)
+			c.printResult("Interrupted", color.FgRed)
 			c.printf("%v Interrupted\n", c.Name)
 			if len(c.OutputFile) > 0 {
 				c.printFile(c.OutputFile)
@@ -65,6 +67,7 @@ func (c *CommandTracker) endWait() {
 
 // Start is called when this shell command operation has started
 func (c *CommandTracker) Start() {
+	c.startTime = time.Now()
 	fmt.Printf("%-50s", c.Name+"...")
 	c.printf("%v\n", c.Name)
 	c.waitForInterrupt()
@@ -72,21 +75,21 @@ func (c *CommandTracker) Start() {
 
 // Success is called when this shell command operation has succeeded
 func (c *CommandTracker) Success() {
-	printResult("OK", color.FgGreen)
+	c.printResult("OK", color.FgGreen)
 	c.printf("%v Succeeded\n", c.Name)
 	c.endWait()
 }
 
 // SoftFail is called when this shell command operation fails in a warning state.
 func (c *CommandTracker) SoftFail(err error) {
-	printResult(err.Error(), color.FgYellow)
+	c.printResult(err.Error(), color.FgYellow)
 	c.printf("%v: %v\n", c.Name, err.Error())
 	c.endWait()
 }
 
 // Fail is called when this shell command operation fails in an error state.
 func (c *CommandTracker) Fail(err error) {
-	printResult("Failed", color.FgRed)
+	c.printResult("Failed", color.FgRed)
 	c.printf("%v Failed: %v\n", c.Name, err.Error())
 	if len(c.OutputFile) > 0 {
 		c.printFile(c.OutputFile)
@@ -97,19 +100,56 @@ func (c *CommandTracker) Fail(err error) {
 // FailWithOutput is called when this shell command operation fails in an error state.
 // A string containing output from the command is also included to be displayed to the user.
 func (c *CommandTracker) FailWithOutput(err error, output string) {
-	printResult("Failed", color.FgRed)
+	c.printResult("Failed", color.FgRed)
 	c.printf("%v Failed: %v\n", c.Name, err.Error())
 	c.printf("%v\n", output)
 	fmt.Println(output)
 	c.endWait()
 }
 
-func printResult(message string, c color.Attribute) {
+func (tracker *CommandTracker) printResult(message string, c color.Attribute) {
 	print("[")
 	color.Set(c)
 	print(message)
 	color.Unset()
-	println("]")
+	print("] ")
+	fmt.Printf("(%v)\n", autoRoundTime(time.Since(tracker.startTime)))
+}
+
+func autoRoundTime(d time.Duration) time.Duration {
+	if d > time.Hour {
+		return roundTime(d, time.Second)
+	}
+	if d > time.Minute {
+		return roundTime(d, time.Second)
+	}
+	if d > time.Second {
+		return roundTime(d, time.Millisecond)
+	}
+	if d > time.Millisecond {
+		return roundTime(d, time.Microsecond)
+	}
+	return d
+}
+
+// Based on the example at https://play.golang.org/p/QHocTHl8iR
+func roundTime(d, r time.Duration) time.Duration {
+	if r <= 0 {
+		return d
+	}
+	neg := d < 0
+	if neg {
+		d = -d
+	}
+	if m := d % r; m+m < r {
+		d = d - m
+	} else {
+		d = d + r - m
+	}
+	if neg {
+		return -d
+	}
+	return d
 }
 
 type logLine struct {
