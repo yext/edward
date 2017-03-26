@@ -71,7 +71,7 @@ func main() {
 			config.InitEmptyConfig()
 		}
 
-		if command != "run" {
+		if command != "run" && !hasBashCompletion(c) {
 			checkUpdateChan = make(chan interface{})
 			go checkUpdateAvailable(checkUpdateChan)
 		}
@@ -209,6 +209,17 @@ func main() {
 		}
 	}
 
+}
+
+// hasBashCompletion identifies whether this call uses the bash completion
+// flag.
+func hasBashCompletion(c *cli.Context) bool {
+	for _, arg := range c.Args() {
+		if arg == "--generate-bash-completion" {
+			return true
+		}
+	}
+	return false
 }
 
 func checkUpdateAvailable(checkUpdateChan chan interface{}) {
