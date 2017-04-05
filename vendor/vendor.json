@@ -99,12 +99,6 @@
 			"revisionTime": "2016-01-16T02:08:57Z"
 		},
 		{
-			"checksumSHA1": "UkExAUfzi5jJ08QYurU223nLThM=",
-			"path": "github.com/shirou/gopsutil",
-			"revision": "ca63fa830d76df9fad479ff3737349bcbeddc543",
-			"revisionTime": "2016-07-11T23:19:29Z"
-		},
-		{
 			"checksumSHA1": "1eyDAmLQeWwdVKmfPzCGo28u4kw=",
 			"path": "github.com/shirou/w32",
 			"revision": "3c9377fc6748f222729a8270fe2775d149a249ad",
@@ -115,6 +109,48 @@
 			"path": "github.com/theothertomelliott/go-must",
 			"revision": "28be1411ccfceeb6321944beb661f1248398a069",
 			"revisionTime": "2016-08-15T01:22:05Z"
+		},
+		{
+			"checksumSHA1": "NnvV9LaxR/B79grlScfyen7tyQ0=",
+			"path": "github.com/theothertomelliott/gopsutil-nocgo",
+			"revision": "e1dd81b10a4c9d53c4a85518d8d0481618c1bd2b",
+			"revisionTime": "2017-04-05T21:50:31Z"
+		},
+		{
+			"checksumSHA1": "tRckqD2X/QNqXWYga+ngfItt/94=",
+			"path": "github.com/theothertomelliott/gopsutil-nocgo/cpu",
+			"revision": "e1dd81b10a4c9d53c4a85518d8d0481618c1bd2b",
+			"revisionTime": "2017-04-05T21:50:31Z"
+		},
+		{
+			"checksumSHA1": "CdhRtCeDvZ8QOPzD991Xq5apV0I=",
+			"path": "github.com/theothertomelliott/gopsutil-nocgo/host",
+			"revision": "e1dd81b10a4c9d53c4a85518d8d0481618c1bd2b",
+			"revisionTime": "2017-04-05T21:50:31Z"
+		},
+		{
+			"checksumSHA1": "M+KPpDjbTJx8pkCi7BNtsCBEw2c=",
+			"path": "github.com/theothertomelliott/gopsutil-nocgo/internal/common",
+			"revision": "e1dd81b10a4c9d53c4a85518d8d0481618c1bd2b",
+			"revisionTime": "2017-04-05T21:50:31Z"
+		},
+		{
+			"checksumSHA1": "USltEYE/E+6lqv43CoumS/wp8V0=",
+			"path": "github.com/theothertomelliott/gopsutil-nocgo/mem",
+			"revision": "e1dd81b10a4c9d53c4a85518d8d0481618c1bd2b",
+			"revisionTime": "2017-04-05T21:50:31Z"
+		},
+		{
+			"checksumSHA1": "VQNJ0U0jsCdikRrNoq/QXzB9CO0=",
+			"path": "github.com/theothertomelliott/gopsutil-nocgo/net",
+			"revision": "e1dd81b10a4c9d53c4a85518d8d0481618c1bd2b",
+			"revisionTime": "2017-04-05T21:50:31Z"
+		},
+		{
+			"checksumSHA1": "3t+d4m5KgiW8Yh6PrTd7MvYgBr0=",
+			"path": "github.com/theothertomelliott/gopsutil-nocgo/process",
+			"revision": "e1dd81b10a4c9d53c4a85518d8d0481618c1bd2b",
+			"revisionTime": "2017-04-05T21:50:31Z"
 		},
 		{
 			"checksumSHA1": "K/CP3EBR0TUpw8DPpjRExGEYNkY=",

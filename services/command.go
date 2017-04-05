@@ -12,8 +12,8 @@ import (
 
 	"github.com/hpcloud/tail"
 	"github.com/pkg/errors"
-	"github.com/shirou/gopsutil/net"
-	"github.com/shirou/gopsutil/process"
+	"github.com/theothertomelliott/gopsutil-nocgo/net"
+	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/commandline"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
