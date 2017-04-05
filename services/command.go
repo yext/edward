@@ -20,6 +20,10 @@ import (
 	"github.com/yext/edward/warmup"
 )
 
+// StartupTimeoutSeconds is the amount of time in seconds that Edward will wait
+// for a service to start before timing out
+var StartupTimeoutSeconds = 30
+
 // ServiceCommand provides state and functions for managing a service
 type ServiceCommand struct {
 	// Parent service config
@@ -282,7 +286,7 @@ func (c *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 		return errors.New("service terminated prematurely")
 	}
 
-	timeout := time.NewTimer(30 * time.Second)
+	timeout := time.NewTimer(time.Duration(StartupTimeoutSeconds) * time.Second)
 	defer timeout.Stop()
 
 	done := make(chan struct{})

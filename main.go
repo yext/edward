@@ -85,6 +85,13 @@ func main() {
 		Value: &(flags.exclude),
 	}
 
+	timeoutFlag := cli.IntFlag{
+		Name:        "timeout",
+		Usage:       "The amount of time in seconds that Edward will wait for a service to launch before timing out. Defaults to 30",
+		Destination: &services.StartupTimeoutSeconds,
+		Value:       30,
+	}
+
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:        "config, c",
@@ -145,6 +152,7 @@ func main() {
 					Usage:       "After starting, tail logs for services.",
 					Destination: &(flags.tail),
 				},
+				timeoutFlag,
 			},
 		},
 		{
@@ -178,6 +186,7 @@ func main() {
 					Usage:       "Disable autorestart",
 					Destination: &(flags.noWatch),
 				},
+				timeoutFlag,
 			},
 		},
 		{
