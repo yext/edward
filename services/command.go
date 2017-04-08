@@ -17,6 +17,7 @@ import (
 	"github.com/yext/edward/commandline"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
+	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/warmup"
 )
 
@@ -65,42 +66,40 @@ func (c *ServiceCommand) deleteScript(scriptType string) error {
 
 // BuildSync will buid the service synchronously.
 // If force is false, the build will be skipped if the service is already running.
-func (c *ServiceCommand) BuildSync(force bool) error {
-	tracker := &CommandTracker{
-		Name:   "Building " + c.Service.Name,
-		Logger: c.Logger,
-	}
-	return errors.WithStack(c.BuildWithTracker(force, tracker))
+func (c *ServiceCommand) BuildSync(force bool, operationTracker tracker.Operation) error {
+	name := c.Service.GetName()
+	t := operationTracker.GetJob(name)
+	return errors.WithStack(c.BuildWithTracker(force, t))
 }
 
 // BuildWithTracker builds a service.
 // If force is false, the build will be skipped if the service is already running.
-func (c *ServiceCommand) BuildWithTracker(force bool, tracker OperationTracker) error {
-	tracker.Start()
+func (c *ServiceCommand) BuildWithTracker(force bool, job tracker.Job) error {
+	job.State("Building")
 
 	if !force && c.Pid != 0 {
-		tracker.SoftFail(errors.New("Already running"))
+		job.Warning("Already running")
 		return nil
 	}
 
 	if c.Service.Commands.Build == "" {
-		tracker.SoftFail(errors.New("No build"))
+		job.Warning("No build")
 		return nil
 	}
 
 	cmd, err := c.constructCommand(c.Service.Commands.Build)
 	if err != nil {
-		tracker.Fail(err)
+		job.Fail("Failed", err.Error())
 		return errors.WithStack(err)
 	}
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		tracker.FailWithOutput(err, string(out))
+		job.Fail("Failed", err.Error(), string(out))
 		return errors.WithStack(err)
 	}
 
-	tracker.Success()
+	job.Success("Built")
 	return nil
 }
 
@@ -307,32 +306,28 @@ func (c *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 // Will block until the service is known to have started successfully.
 // If the service fails to launch, an error will be returned.
 func (c *ServiceCommand) StartAsync(cfg OperationConfig) error {
-	tracker := CommandTracker{
-		Name:       "Launching " + c.Service.Name,
-		OutputFile: c.Service.GetRunLog(),
-		Logger:     c.Logger,
-	}
-	tracker.Start()
+	job := cfg.Tracker.GetJob(c.Service.GetName())
+	job.State("Launching")
 
 	if c.Pid != 0 {
-		tracker.SoftFail(errors.New("Already running"))
+		job.Warning("Already running")
 		return nil
 	}
 
 	if c.Service.Commands.Launch == "" {
-		tracker.SoftFail(errors.New("No launch"))
+		job.Warning("No launch")
 		return nil
 	}
 
 	if c.Service.LaunchChecks != nil && len(c.Service.LaunchChecks.Ports) > 0 {
 		inUse, err := c.areAnyListeningPortsOpen(c.Service.LaunchChecks.Ports)
 		if err != nil {
-			tracker.Fail(err)
+			job.Fail("Failed", err.Error())
 			return errors.WithStack(err)
 		}
 		if inUse {
 			inUseErr := errors.New("one or more of the ports required by this service are in use")
-			tracker.Fail(inUseErr)
+			job.Fail("Failed", inUseErr.Error())
 			return errors.WithStack(inUseErr)
 		}
 	}
@@ -341,14 +336,14 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig) error {
 
 	cmd, err := c.getLaunchCommand(cfg)
 	if err != nil {
-		tracker.Fail(err)
+		job.Fail("Failed", err.Error())
 		return errors.WithStack(err)
 	}
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, c.Service.Env...)
 	err = cmd.Start()
 	if err != nil {
-		tracker.Fail(err)
+		job.Fail("Failed", err.Error())
 		return errors.WithStack(err)
 	}
 
@@ -366,12 +361,12 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig) error {
 
 	err = c.waitUntilLive(cmd)
 	if err == nil {
-		tracker.Success()
+		job.Success("Started")
 		warmup.Run(c.Service.Name, c.Service.Warmup)
 		return nil
 	}
 
-	tracker.Fail(err)
+	job.Fail("Failed", err.Error())
 	stopErr := c.Service.Stop(cfg)
 	if stopErr != nil {
 		return errors.WithStack(stopErr)

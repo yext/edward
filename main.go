@@ -14,11 +14,13 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/fatih/color"
+	"github.com/gosuri/uilive"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
@@ -27,6 +29,7 @@ import (
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/runner"
 	"github.com/yext/edward/services"
+	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/updates"
 	"github.com/yext/edward/warmup"
 )
@@ -553,22 +556,34 @@ func start(c *cli.Context) error {
 		return errors.WithStack(err)
 	}
 
-	for _, s := range sgs {
-		if flags.skipBuild {
-			err = s.Launch(getOperationConfig())
-		} else {
-			err = s.Start(getOperationConfig())
-		}
-		if err != nil {
-			return errors.New("Error launching " + s.GetName() + ": " + err.Error())
-		}
+	err = startAndTrack(c, sgs)
+	if err != nil {
+		return errors.WithStack(err)
 	}
-
 	if flags.tail {
 		return errors.WithStack(tailFromFlag(c))
 	}
 
 	return nil
+}
+
+func startAndTrack(c *cli.Context, sgs []services.ServiceOrGroup) error {
+	cfg := getOperationConfig()
+	err := trackOperation(cfg.Tracker, func() error {
+		var err error
+		for _, s := range sgs {
+			if flags.skipBuild {
+				err = s.Launch(cfg)
+			} else {
+				err = s.Start(cfg)
+			}
+			if err != nil {
+				return errors.New("Error launching " + s.GetName() + ": " + err.Error())
+			}
+		}
+		return nil
+	})
+	return errors.WithStack(err)
 }
 
 func stop(c *cli.Context) error {
@@ -599,10 +614,15 @@ func stop(c *cli.Context) error {
 		return errors.WithStack(err)
 	}
 
-	for _, s := range sgs {
-		_ = s.Stop(getOperationConfig())
-	}
-	return nil
+	cfg := getOperationConfig()
+	err = trackOperation(cfg.Tracker, func() error {
+		for _, s := range sgs {
+			_ = s.Stop(cfg)
+		}
+		return nil
+	})
+
+	return errors.WithStack(err)
 }
 
 func restart(c *cli.Context) error {
@@ -653,21 +673,51 @@ func restartOneOrMoreServices(serviceNames []string) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	for _, s := range sgs {
-		err = s.Stop(getOperationConfig())
-		if err != nil {
-			return errors.WithStack(err)
+
+	cfg := getOperationConfig()
+
+	err = trackOperation(cfg.Tracker, func() error {
+		for _, s := range sgs {
+			err = s.Stop(cfg)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			if flags.skipBuild {
+				err = s.Launch(cfg)
+			} else {
+				err = s.Start(cfg)
+			}
+			if err != nil {
+				return errors.WithStack(err)
+			}
 		}
-		if flags.skipBuild {
-			err = s.Launch(getOperationConfig())
-		} else {
-			err = s.Start(getOperationConfig())
+		return nil
+	})
+	return errors.WithStack(err)
+}
+
+func trackOperation(operation tracker.Operation, f func() error) error {
+	writer := uilive.New()
+	writer.Start()
+
+	var updateWait sync.WaitGroup
+	updateWait.Add(1)
+
+	go func() {
+		for _ = range operation.StateUpdate() {
+			fmt.Fprintf(writer, "%v\n", operation.RenderState())
+			writer.Flush()
 		}
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	return nil
+		updateWait.Done()
+	}()
+
+	defer func() {
+		operation.Close()
+		updateWait.Wait()
+		writer.Stop()
+	}()
+
+	return errors.WithStack(f())
 }
 
 func checkNotSudo() error {
@@ -747,6 +797,7 @@ var flags = struct {
 
 func getOperationConfig() services.OperationConfig {
 	return services.OperationConfig{
+		Tracker:    tracker.NewOperation(),
 		Exclusions: []string(flags.exclude),
 		NoWatch:    flags.noWatch,
 	}

@@ -1,6 +1,12 @@
 package tracker
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+	"time"
+
+	"github.com/fatih/color"
+)
 
 // Job provides an interface to follow a job within an operation
 type Job interface {
@@ -30,43 +36,149 @@ type simpleJob struct {
 	stateMessage string
 	state        jobState
 	extra        []string
+
+	startTime time.Time
+	endTime   time.Time
+
+	// Simplified rendering for test
+	testRender bool
 }
 
 func newJob(name string, update chan struct{}) Job {
 	return &simpleJob{
-		name:   name,
-		update: update,
-		state:  jobStateInProgress,
+		name:      name,
+		update:    update,
+		state:     jobStateInProgress,
+		startTime: time.Now(),
 	}
 }
 
 func (s *simpleJob) State(state string) {
+	if s == nil {
+		return
+	}
+	s.state = jobStateInProgress
+	s.setState(state)
+}
+
+func (s *simpleJob) setState(state string) {
 	s.stateMessage = state
 	s.update <- struct{}{}
 }
 
 func (s *simpleJob) Success(state string) {
+	if s == nil {
+		return
+	}
 	s.state = jobStateSuccess
-	s.State(state)
+	s.endTime = time.Now()
+	s.setState(state)
 }
 
 func (s *simpleJob) Warning(message string) {
+	if s == nil {
+		return
+	}
 	s.state = jobStateWarning
-	s.State(message)
+	s.endTime = time.Now()
+	s.setState(message)
 }
 
 func (s *simpleJob) Fail(message string, extra ...string) {
+	if s == nil {
+		return
+	}
 	s.state = jobStateFailed
 	s.extra = extra
-	s.State(message)
+	s.endTime = time.Now()
+	s.setState(message)
 }
 
 func (s *simpleJob) Render() string {
-	return fmt.Sprintf("%v: [%v]", s.name, s.stateMessage)
+	if s == nil {
+		return ""
+	}
+	if s.testRender {
+		return fmt.Sprintf("%v: [%v]", s.name, s.stateMessage)
+	}
+
+	var b bytes.Buffer
+	tmpOutput := color.Output
+	defer func() {
+		color.Output = tmpOutput
+	}()
+	color.Output = &b
+	fmt.Fprintf(&b, "%-30s", s.name+"...")
+	fmt.Fprint(&b, "[")
+	s.setStateColor()
+	fmt.Fprint(&b, s.stateMessage)
+	color.Unset()
+	fmt.Fprintf(&b, "]")
+	if s.Done() {
+		fmt.Fprintf(&b, " (%v)", autoRoundTime(s.endTime.Sub(s.startTime)))
+	}
+	fmt.Fprintf(&b, "%-10s", " ")
+	return string(b.Bytes())
 }
+
+func (s *simpleJob) setStateColor() {
+	switch s.state {
+	case jobStateFailed:
+		color.Set(color.FgRed)
+	case jobStateWarning:
+		color.Set(color.FgYellow)
+	case jobStateSuccess:
+		color.Set(color.FgGreen)
+	default:
+		color.Set(color.FgWhite)
+	}
+}
+
 func (s *simpleJob) Done() bool {
+	if s == nil {
+		return false
+	}
 	return s.state != jobStateInProgress
 }
 func (s *simpleJob) Failed() bool {
+	if s == nil {
+		return false
+	}
 	return s.state == jobStateFailed
+}
+
+func autoRoundTime(d time.Duration) time.Duration {
+	if d > time.Hour {
+		return roundTime(d, time.Second)
+	}
+	if d > time.Minute {
+		return roundTime(d, time.Second)
+	}
+	if d > time.Second {
+		return roundTime(d, time.Millisecond)
+	}
+	if d > time.Millisecond {
+		return roundTime(d, time.Microsecond)
+	}
+	return d
+}
+
+// Based on the example at https://play.golang.org/p/QHocTHl8iR
+func roundTime(d, r time.Duration) time.Duration {
+	if r <= 0 {
+		return d
+	}
+	neg := d < 0
+	if neg {
+		d = -d
+	}
+	if m := d % r; m+m < r {
+		d = d - m
+	} else {
+		d = d + r - m
+	}
+	if neg {
+		return -d
+	}
+	return d
 }

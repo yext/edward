@@ -88,38 +88,17 @@ func startWatch(watches *services.ServiceWatch, restart func() error, logger Log
 	return watcher, nil
 }
 
-type rebuildTracker struct {
-	logger Logger
-}
-
-func (t *rebuildTracker) Start() {
-	t.logger.Printf("Build starting\n")
-}
-func (t *rebuildTracker) Success() {
-	t.logger.Printf("Build complete\n")
-}
-func (t *rebuildTracker) SoftFail(err error) {
-	t.logger.Printf("Build skipped: %v\n", err)
-}
-func (t *rebuildTracker) Fail(err error) {
-	t.logger.Printf("Build failed: %v\n", err)
-}
-func (t *rebuildTracker) FailWithOutput(err error, output string) {
-	t.logger.Printf("%v\n", output)
-	t.logger.Printf("Build failed: %v\n", err)
-}
-
 func rebuildService(service *services.ServiceConfig, restart func() error, logger Logger) error {
 	command, err := service.GetCommand()
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	err = command.BuildWithTracker(true, &rebuildTracker{
-		logger: logger,
-	})
+	logger.Printf("Build starting\n")
+	err = command.BuildWithTracker(true, nil)
 	if err != nil {
 		return errors.New("build failed")
 	}
+	logger.Printf("Build suceeded\n")
 	err = restart()
 	if err != nil {
 		return errors.WithStack(err)

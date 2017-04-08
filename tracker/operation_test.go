@@ -90,6 +90,7 @@ func TestOperation(t *testing.T) {
 			operation := NewOperation()
 			for _, state := range test.jobs {
 				job := operation.GetJob(state.name)
+				job.(*simpleJob).testRender = true
 				if state.state == jobStateInProgress {
 					job.State(state.message)
 				}

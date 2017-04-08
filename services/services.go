@@ -1,6 +1,10 @@
 package services
 
-import "time"
+import (
+	"time"
+
+	"github.com/yext/edward/tracker"
+)
 
 // StatusRunning is the status string for a running service
 const StatusRunning = "RUNNING"
@@ -24,6 +28,7 @@ type ServiceStatus struct {
 type OperationConfig struct {
 	Exclusions []string // Names of services/groups to be excluded from this operation
 	NoWatch    bool
+	Tracker    tracker.Operation
 }
 
 // IsExcluded returns true if the given service/group is excluded by this OperationConfig.

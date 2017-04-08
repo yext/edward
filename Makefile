@@ -9,6 +9,7 @@ build:
 test:
 	go test ./generators
 	go test ./config
+	go test ./tracker
 
 checkdocs:
 	./check_docs.sh

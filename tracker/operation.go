@@ -29,6 +29,10 @@ func NewOperation() Operation {
 }
 
 func (o *op) GetJob(name string) Job {
+	if o == nil {
+		return nil
+	}
+
 	o.mtx.Lock()
 	defer o.mtx.Unlock()
 
@@ -42,10 +46,17 @@ func (o *op) GetJob(name string) Job {
 }
 
 func (o *op) StateUpdate() <-chan struct{} {
+	if o == nil {
+		return nil
+	}
 	return o.updates
 }
 
 func (o *op) RenderState() string {
+	if o == nil {
+		return ""
+	}
+
 	o.mtx.Lock()
 	defer o.mtx.Unlock()
 
@@ -60,6 +71,10 @@ func (o *op) RenderState() string {
 }
 
 func (o *op) Done() bool {
+	if o == nil {
+		return true
+	}
+
 	o.mtx.Lock()
 	defer o.mtx.Unlock()
 
@@ -76,6 +91,10 @@ func (o *op) Done() bool {
 }
 
 func (o *op) Close() {
+	if o == nil {
+		return
+	}
+
 	o.mtx.Lock()
 	defer o.mtx.Unlock()
 	close(o.updates)

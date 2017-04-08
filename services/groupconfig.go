@@ -59,7 +59,6 @@ func (c *ServiceGroupConfig) Start(cfg OperationConfig) error {
 		return nil
 	}
 
-	println("Starting group:", c.Name)
 	for _, group := range c.Groups {
 		err := group.Start(cfg)
 		if err != nil {
@@ -107,7 +106,6 @@ func (c *ServiceGroupConfig) Stop(cfg OperationConfig) error {
 		return nil
 	}
 
-	println("=== Group:", c.Name, "===")
 	// TODO: Do this in reverse
 	for _, service := range c.Services {
 		err := service.Stop(cfg)

@@ -191,7 +191,7 @@ func (c *ServiceConfig) Build(cfg OperationConfig) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	return errors.WithStack(command.BuildSync(false))
+	return errors.WithStack(command.BuildSync(false, cfg.Tracker))
 }
 
 // Launch launches this service
@@ -227,12 +227,8 @@ func (c *ServiceConfig) Stop(cfg OperationConfig) error {
 		return nil
 	}
 
-	tracker := CommandTracker{
-		Name:       "Stopping " + c.Name,
-		Logger:     c.Logger,
-		OutputFile: "",
-	}
-	tracker.Start()
+	job := cfg.Tracker.GetJob(c.GetName())
+	job.State("Stopping")
 
 	command, err := c.GetCommand()
 	if err != nil {
@@ -240,13 +236,13 @@ func (c *ServiceConfig) Stop(cfg OperationConfig) error {
 	}
 
 	if command.Pid == 0 {
-		tracker.SoftFail(errors.New("Not running"))
+		job.Warning("Not running")
 		return nil
 	}
 
 	stopped, err := c.interruptProcess(cfg, command)
 	if err != nil {
-		tracker.Fail(err)
+		job.Fail("Failed", err.Error())
 		return nil
 	}
 
@@ -254,27 +250,27 @@ func (c *ServiceConfig) Stop(cfg OperationConfig) error {
 		c.printf("SIGINT failed to stop service, waiting for 5s before sending SIGKILL\n")
 		stopped, err := waitForTerm(command, time.Second*5)
 		if err != nil {
-			tracker.Fail(err)
+			job.Fail("Failed", err.Error())
 			return nil
 		}
 		if !stopped {
 			stopped, err := c.killProcess(cfg, command)
 			if err != nil {
-				tracker.Fail(err)
+				job.Fail("Failed", err.Error())
 				return nil
 			}
 			if stopped {
-				tracker.SoftFail(errors.New("Killed"))
+				job.Warning("Killed")
 				return nil
 			}
-			tracker.Fail(errors.New("Process was not killed"))
+			job.Fail("Failed", "Process was not killed")
 			return nil
 		}
 	}
 
 	// Remove leftover files
 	command.clearState()
-	tracker.Success()
+	job.Success("Stopped")
 	return nil
 }
 
