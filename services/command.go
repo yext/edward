@@ -1,6 +1,8 @@
 package services
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -343,7 +345,7 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, tracker tracker.Operati
 	cmd.Env = append(cmd.Env, c.Service.Env...)
 	err = cmd.Start()
 	if err != nil {
-		job.Fail("Failed", err.Error())
+		job.Fail("Failed")
 		return errors.WithStack(err)
 	}
 
@@ -366,8 +368,13 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, tracker tracker.Operati
 		return nil
 	}
 
-	job.Fail("Failed", err.Error())
-	stopErr := c.Service.Stop(cfg, tracker)
+	log, err := logToStringSlice(c.Service.GetRunLog())
+	if err != nil {
+		job.Fail("Failed", "Could not read log", err.Error())
+	} else {
+		job.Fail("Failed", log...)
+	}
+	stopErr := c.Service.Stop(cfg, tracker.GetOperation("Cleanup"))
 	if stopErr != nil {
 		return errors.WithStack(stopErr)
 	}
@@ -447,4 +454,37 @@ func signalGroup(cfg OperationConfig, pgid int, service *ServiceConfig, flag str
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	err := cmd.Run()
 	return errors.WithStack(err)
+}
+
+type logLine struct {
+	Stream  string
+	Message string
+}
+
+func logToStringSlice(path string) ([]string, error) {
+	logFile, err := os.Open(path)
+	defer logFile.Close()
+
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	scanner := bufio.NewScanner(logFile)
+	var lines []string
+	for scanner.Scan() {
+		text := scanner.Text()
+		var lineData logLine
+		err = json.Unmarshal([]byte(text), &lineData)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		if lineData.Stream != "messages" {
+			lines = append(lines, lineData.Message)
+		}
+	}
+
+	// check for errors
+	if err = scanner.Err(); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return lines, nil
 }

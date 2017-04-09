@@ -60,8 +60,9 @@ func (o *op) GetOperation(name string) Operation {
 
 	o.jobNames = append(o.jobNames, name)
 	o.operations[name] = &op{
-		jobs:    make(map[string]Job),
-		updates: o.updates,
+		jobs:       make(map[string]Job),
+		operations: make(map[string]Operation),
+		updates:    o.updates,
 	}
 	return o.operations[name]
 }

@@ -3,6 +3,7 @@ package tracker
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -103,6 +104,9 @@ func (s *simpleJob) Render() string {
 		fmt.Fprintf(&b, " (%v)", autoRoundTime(s.endTime.Sub(s.startTime)))
 	}
 	fmt.Fprintf(&b, "%-10s", " ")
+	if s.state == jobStateFailed {
+		fmt.Fprintf(&b, "\n%v", strings.Join(s.extra, "\n"))
+	}
 	return string(b.Bytes())
 }
 
