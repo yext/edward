@@ -569,13 +569,14 @@ func start(c *cli.Context) error {
 
 func startAndTrack(c *cli.Context, sgs []services.ServiceOrGroup) error {
 	cfg := getOperationConfig()
-	err := trackOperation(cfg.Tracker, func() error {
+	t := tracker.NewOperation()
+	err := trackOperation(t, func() error {
 		var err error
 		for _, s := range sgs {
 			if flags.skipBuild {
-				err = s.Launch(cfg)
+				err = s.Launch(cfg, t)
 			} else {
-				err = s.Start(cfg)
+				err = s.Start(cfg, t)
 			}
 			if err != nil {
 				return errors.New("Error launching " + s.GetName() + ": " + err.Error())
@@ -615,9 +616,10 @@ func stop(c *cli.Context) error {
 	}
 
 	cfg := getOperationConfig()
-	err = trackOperation(cfg.Tracker, func() error {
+	t := tracker.NewOperation()
+	err = trackOperation(t, func() error {
 		for _, s := range sgs {
-			_ = s.Stop(cfg)
+			_ = s.Stop(cfg, t)
 		}
 		return nil
 	})
@@ -675,17 +677,18 @@ func restartOneOrMoreServices(serviceNames []string) error {
 	}
 
 	cfg := getOperationConfig()
+	t := tracker.NewOperation()
 
-	err = trackOperation(cfg.Tracker, func() error {
+	err = trackOperation(t, func() error {
 		for _, s := range sgs {
-			err = s.Stop(cfg)
+			err = s.Stop(cfg, t)
 			if err != nil {
 				return errors.WithStack(err)
 			}
 			if flags.skipBuild {
-				err = s.Launch(cfg)
+				err = s.Launch(cfg, t)
 			} else {
-				err = s.Start(cfg)
+				err = s.Start(cfg, t)
 			}
 			if err != nil {
 				return errors.WithStack(err)
@@ -705,7 +708,7 @@ func trackOperation(operation tracker.Operation, f func() error) error {
 
 	go func() {
 		for _ = range operation.StateUpdate() {
-			fmt.Fprintf(writer, "%v\n", operation.RenderState())
+			fmt.Fprintf(writer, "%v\n", operation.Render())
 			writer.Flush()
 		}
 		updateWait.Done()
@@ -797,7 +800,6 @@ var flags = struct {
 
 func getOperationConfig() services.OperationConfig {
 	return services.OperationConfig{
-		Tracker:    tracker.NewOperation(),
 		Exclusions: []string(flags.exclude),
 		NoWatch:    flags.noWatch,
 	}

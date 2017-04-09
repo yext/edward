@@ -17,6 +17,7 @@ import (
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
+	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/warmup"
 )
 
@@ -182,7 +183,7 @@ func (c *ServiceConfig) GetName() string {
 }
 
 // Build builds this service
-func (c *ServiceConfig) Build(cfg OperationConfig) error {
+func (c *ServiceConfig) Build(cfg OperationConfig, tracker tracker.Operation) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
@@ -191,11 +192,11 @@ func (c *ServiceConfig) Build(cfg OperationConfig) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	return errors.WithStack(command.BuildSync(false, cfg.Tracker))
+	return errors.WithStack(command.BuildSync(false, tracker))
 }
 
 // Launch launches this service
-func (c *ServiceConfig) Launch(cfg OperationConfig) error {
+func (c *ServiceConfig) Launch(cfg OperationConfig, tracker tracker.Operation) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
@@ -204,30 +205,30 @@ func (c *ServiceConfig) Launch(cfg OperationConfig) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	return errors.WithStack(command.StartAsync(cfg))
+	return errors.WithStack(command.StartAsync(cfg, tracker))
 }
 
 // Start builds then launches this service
-func (c *ServiceConfig) Start(cfg OperationConfig) error {
+func (c *ServiceConfig) Start(cfg OperationConfig, tracker tracker.Operation) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
 
-	err := c.Build(cfg)
+	err := c.Build(cfg, tracker)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	err = c.Launch(cfg)
+	err = c.Launch(cfg, tracker)
 	return errors.WithStack(err)
 }
 
 // Stop stops this service
-func (c *ServiceConfig) Stop(cfg OperationConfig) error {
+func (c *ServiceConfig) Stop(cfg OperationConfig, tracker tracker.Operation) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
 
-	job := cfg.Tracker.GetJob(c.GetName())
+	job := tracker.GetJob(c.GetName())
 	job.State("Stopping")
 
 	command, err := c.GetCommand()

@@ -28,7 +28,6 @@ type ServiceStatus struct {
 type OperationConfig struct {
 	Exclusions []string // Names of services/groups to be excluded from this operation
 	NoWatch    bool
-	Tracker    tracker.Operation
 }
 
 // IsExcluded returns true if the given service/group is excluded by this OperationConfig.
@@ -46,10 +45,10 @@ func (o *OperationConfig) IsExcluded(sg ServiceOrGroup) bool {
 // ServiceOrGroup provides a common interface to services and groups
 type ServiceOrGroup interface {
 	GetName() string
-	Build(cfg OperationConfig) error  // Build this service/group from source
-	Start(cfg OperationConfig) error  // Build and Launch this service/group
-	Launch(cfg OperationConfig) error // Launch this service/group without building
-	Stop(cfg OperationConfig) error
+	Build(cfg OperationConfig, tracker tracker.Operation) error  // Build this service/group from source
+	Start(cfg OperationConfig, tracker tracker.Operation) error  // Build and Launch this service/group
+	Launch(cfg OperationConfig, tracker tracker.Operation) error // Launch this service/group without building
+	Stop(cfg OperationConfig, tracker tracker.Operation) error
 	Status() ([]ServiceStatus, error)
 	IsSudo(cfg OperationConfig) bool
 	Watch() ([]ServiceWatch, error)

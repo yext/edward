@@ -305,9 +305,9 @@ func (c *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 // StartAsync starts the service in the background
 // Will block until the service is known to have started successfully.
 // If the service fails to launch, an error will be returned.
-func (c *ServiceCommand) StartAsync(cfg OperationConfig) error {
-	job := cfg.Tracker.GetJob(c.Service.GetName())
-	job.State("Launching")
+func (c *ServiceCommand) StartAsync(cfg OperationConfig, tracker tracker.Operation) error {
+	job := tracker.GetJob(c.Service.GetName())
+	job.State("Starting")
 
 	if c.Pid != 0 {
 		job.Warning("Already running")
@@ -367,7 +367,7 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig) error {
 	}
 
 	job.Fail("Failed", err.Error())
-	stopErr := c.Service.Stop(cfg)
+	stopErr := c.Service.Stop(cfg, tracker)
 	if stopErr != nil {
 		return errors.WithStack(stopErr)
 	}
