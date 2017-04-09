@@ -54,9 +54,6 @@ func newJob(name string, update chan struct{}) Job {
 }
 
 func (s *simpleJob) State(state string) {
-	if s == nil {
-		return
-	}
 	s.state = jobStateInProgress
 	s.setState(state)
 }
@@ -67,27 +64,18 @@ func (s *simpleJob) setState(state string) {
 }
 
 func (s *simpleJob) Success(state string) {
-	if s == nil {
-		return
-	}
 	s.state = jobStateSuccess
 	s.endTime = time.Now()
 	s.setState(state)
 }
 
 func (s *simpleJob) Warning(message string) {
-	if s == nil {
-		return
-	}
 	s.state = jobStateWarning
 	s.endTime = time.Now()
 	s.setState(message)
 }
 
 func (s *simpleJob) Fail(message string, extra ...string) {
-	if s == nil {
-		return
-	}
 	s.state = jobStateFailed
 	s.extra = extra
 	s.endTime = time.Now()
@@ -95,9 +83,6 @@ func (s *simpleJob) Fail(message string, extra ...string) {
 }
 
 func (s *simpleJob) Render() string {
-	if s == nil {
-		return ""
-	}
 	if s.testRender {
 		return fmt.Sprintf("%v: [%v]", s.name, s.stateMessage)
 	}
@@ -135,15 +120,9 @@ func (s *simpleJob) setStateColor() {
 }
 
 func (s *simpleJob) Done() bool {
-	if s == nil {
-		return false
-	}
 	return s.state != jobStateInProgress
 }
 func (s *simpleJob) Failed() bool {
-	if s == nil {
-		return false
-	}
 	return s.state == jobStateFailed
 }
 
