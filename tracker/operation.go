@@ -11,10 +11,11 @@ type Operation interface {
 	GetJob(name string) Job
 	GetOperation(name string) Operation
 	StateUpdate() <-chan struct{}
-	Render() string
+	Render(maxServiceWidth int) string
 	Failed() bool
 	Done() bool
 	Close()
+	getMaxServiceWidth(defaultMaxWidth int) int
 }
 
 type op struct {
@@ -71,21 +72,23 @@ func (o *op) StateUpdate() <-chan struct{} {
 	return o.updates
 }
 
-func (o *op) Render() string {
+func (o *op) Render(maxServiceWidth int) string {
 	o.mtx.Lock()
 	defer o.mtx.Unlock()
+
+	maxWidth := o.getMaxServiceWidth(maxServiceWidth)
 
 	var lines []string
 	for _, name := range o.jobNames {
 		if job, ok := o.jobs[name]; ok {
-			lines = append(lines, job.Render())
+			lines = append(lines, job.Render(maxWidth))
 			if job.Failed() {
 				break
 			}
 		}
 		if operation, ok := o.operations[name]; ok {
 			lines = append(lines, fmt.Sprintf("%v:", name))
-			for _, jobLine := range strings.Split(operation.Render(), "\n") {
+			for _, jobLine := range strings.Split(operation.Render(maxWidth+2), "\n") {
 				lines = append(lines, fmt.Sprintf("  %v", jobLine))
 			}
 			if operation.Failed() {
@@ -94,6 +97,22 @@ func (o *op) Render() string {
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+func (o *op) getMaxServiceWidth(defaultMaxWidth int) int {
+	max := defaultMaxWidth
+	for _, name := range o.jobNames {
+		if job, ok := o.jobs[name]; ok {
+			jm := len(job.Name())
+			if jm > max {
+				max = jm
+			}
+		}
+		if operation, ok := o.operations[name]; ok {
+			max = operation.getMaxServiceWidth(max + 2)
+		}
+	}
+	return max
 }
 
 func (o *op) Done() bool {

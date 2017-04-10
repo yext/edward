@@ -3,15 +3,17 @@ package warmup
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/yext/edward/tracker"
 )
 
-var jobs chan *Warmup
+var jobs chan *job
 var finished chan struct{}
 
 const workers = 3
 
 func init() {
-	jobs = make(chan *Warmup)
+	jobs = make(chan *job)
 	finished = make(chan struct{})
 
 	for w := 1; w <= workers; w++ {
@@ -19,16 +21,24 @@ func init() {
 	}
 }
 
-func worker(id int, jobs <-chan *Warmup, finished chan<- struct{}) {
-	for w := range jobs {
-		if w.URL != "" {
-			_, err := http.Get(w.URL)
+func worker(id int, jobs <-chan *job, finished chan<- struct{}) {
+	for j := range jobs {
+		if j.task != nil && j.task.URL != "" {
+			j.tracker.State("Running")
+			_, err := http.Get(j.task.URL)
 			if err != nil {
-				fmt.Println("[", id, "] Warmup error: ", err)
+				j.tracker.Warning(err.Error())
+				continue
 			}
+			j.tracker.Success("Done")
 		}
 	}
 	finished <- struct{}{}
+}
+
+type job struct {
+	task    *Warmup
+	tracker tracker.Job
 }
 
 // Warmup defines an action to take to "warm up" a service after launch
@@ -38,14 +48,15 @@ type Warmup struct {
 }
 
 // Run executes a warmup operation for a service
-func Run(service string, w *Warmup) {
+func Run(service string, w *Warmup, tracker tracker.Operation) {
 	if w == nil {
 		return
 	}
-	if w.URL != "" {
-		fmt.Printf("Warming up %v: %v\n", service, w.URL)
+	t := tracker.GetJob(fmt.Sprintf("%v warmup", service))
+	jobs <- &job{
+		task:    w,
+		tracker: t,
 	}
-	jobs <- w
 }
 
 // Wait blocks until all Warmup operations are complete

@@ -11,13 +11,14 @@ import (
 
 // Job provides an interface to follow a job within an operation
 type Job interface {
+	Name() string
 	State(state string)
 
 	Success(state string)
 	Warning(message string)
 	Fail(message string, extra ...string)
 
-	Render() string
+	Render(maxServiceWidth int) string
 	Done() bool
 	Failed() bool
 }
@@ -54,6 +55,10 @@ func newJob(name string, update chan struct{}) Job {
 	}
 }
 
+func (s *simpleJob) Name() string {
+	return s.name
+}
+
 func (s *simpleJob) State(state string) {
 	s.state = jobStateInProgress
 	s.setState(state)
@@ -83,7 +88,7 @@ func (s *simpleJob) Fail(message string, extra ...string) {
 	s.setState(message)
 }
 
-func (s *simpleJob) Render() string {
+func (s *simpleJob) Render(maxServiceWidth int) string {
 	if s.testRender {
 		return fmt.Sprintf("%v: [%v]", s.name, s.stateMessage)
 	}
@@ -94,7 +99,8 @@ func (s *simpleJob) Render() string {
 		color.Output = tmpOutput
 	}()
 	color.Output = &b
-	fmt.Fprintf(&b, "%-30s", s.name+"...")
+	nameFormat := fmt.Sprintf("%%-%ds", maxServiceWidth+7)
+	fmt.Fprintf(&b, nameFormat, s.name+"...")
 	fmt.Fprint(&b, "[")
 	s.setStateColor()
 	fmt.Fprint(&b, s.stateMessage)

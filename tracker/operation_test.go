@@ -117,7 +117,7 @@ func TestOperation(t *testing.T) {
 					t.Error("Expected state update message")
 				}
 			}
-			result := operation.Render()
+			result := operation.Render(0)
 			if result != test.expectedOutput {
 				t.Errorf("Result was not expected.\nExpected:\n'%v'\n\nGot:\n'%v'", test.expectedOutput, result)
 			}
@@ -249,7 +249,7 @@ func TestSubOperation(t *testing.T) {
 					t.Error("Expected state update message")
 				}
 			}
-			result := operation.Render()
+			result := operation.Render(0)
 			if result != test.expectedOutput {
 				t.Errorf("Result was not expected.\nExpected:\n'%v'\n\nGot:\n'%v'", test.expectedOutput, result)
 			}

@@ -364,7 +364,7 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, tracker tracker.Operati
 	err = c.waitUntilLive(cmd)
 	if err == nil {
 		job.Success("Started")
-		warmup.Run(c.Service.Name, c.Service.Warmup)
+		warmup.Run(c.Service.Name, c.Service.Warmup, tracker)
 		return nil
 	}
 

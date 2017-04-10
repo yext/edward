@@ -211,8 +211,6 @@ func main() {
 		logger.Printf("%+v", err)
 	}
 
-	warmup.Wait()
-
 	if checkUpdateChan != nil && !didAutoComplete {
 		updateAvailable, ok := (<-checkUpdateChan).(bool)
 		if ok && updateAvailable {
@@ -708,9 +706,10 @@ func trackOperation(operation tracker.Operation, f func() error) error {
 
 	go func() {
 		for _ = range operation.StateUpdate() {
-			fmt.Fprintf(writer, "%v\n", operation.Render())
+			fmt.Fprintf(writer, "%v\n", operation.Render(0))
 			writer.Flush()
 		}
+		warmup.Wait()
 		updateWait.Done()
 	}()
 
