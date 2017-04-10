@@ -48,10 +48,6 @@ func (o *op) GetJob(name string) Job {
 }
 
 func (o *op) GetOperation(name string) Operation {
-	if o == nil {
-		return nil
-	}
-
 	o.mtx.Lock()
 	defer o.mtx.Unlock()
 
@@ -73,10 +69,10 @@ func (o *op) StateUpdate() <-chan struct{} {
 }
 
 func (o *op) Render(maxServiceWidth int) string {
+	maxWidth := o.getMaxServiceWidth(maxServiceWidth)
+
 	o.mtx.Lock()
 	defer o.mtx.Unlock()
-
-	maxWidth := o.getMaxServiceWidth(maxServiceWidth)
 
 	var lines []string
 	for _, name := range o.jobNames {
@@ -100,6 +96,9 @@ func (o *op) Render(maxServiceWidth int) string {
 }
 
 func (o *op) getMaxServiceWidth(defaultMaxWidth int) int {
+	o.mtx.Lock()
+	defer o.mtx.Unlock()
+
 	max := defaultMaxWidth
 	for _, name := range o.jobNames {
 		if job, ok := o.jobs[name]; ok {
