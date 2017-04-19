@@ -1,6 +1,7 @@
 package tracker
 
 import (
+	"os"
 	"reflect"
 	"testing"
 )
@@ -89,7 +90,7 @@ func TestTracker(t *testing.T) {
 				message []string
 			}{
 				{name: "job1"},
-				{name: "job4", state: TaskStateFailed},
+				{name: "very_long_job_name", state: TaskStateFailed},
 				{name: "job2", state: TaskStateSuccess},
 				{name: "job3", state: TaskStateWarning},
 			},
@@ -124,6 +125,11 @@ func TestTracker(t *testing.T) {
 			}
 			if !reflect.DeepEqual(task.Messages(), test.expectedMessage) {
 				t.Errorf("Messages were not as expected")
+			}
+			renderer := &ANSIRenderer{}
+			err := renderer.Render(os.Stdout, task)
+			if err != nil {
+				t.Errorf(err.Error())
 			}
 			task.Close()
 			expectUpdate(t, task)
