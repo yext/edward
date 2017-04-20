@@ -2,6 +2,7 @@ package tracker
 
 import (
 	"sync"
+	"time"
 )
 
 type Task interface {
@@ -10,7 +11,7 @@ type Task interface {
 	State() TaskState
 	SetState(TaskState, ...string)
 
-	// TODO: Add support for duration
+	Duration() time.Duration
 
 	Updates() <-chan struct{}
 	Close()
@@ -38,15 +39,19 @@ type task struct {
 	childNames []string
 	children   map[string]Task
 
+	startTime time.Time
+	endTime   time.Time
+
 	updates chan struct{}
 	mtx     sync.Mutex
 }
 
 func NewTask() Task {
 	return &task{
-		name:     "",
-		children: make(map[string]Task),
-		updates:  make(chan struct{}, 2),
+		name:      "",
+		children:  make(map[string]Task),
+		updates:   make(chan struct{}, 2),
+		startTime: time.Now(),
 	}
 }
 
@@ -81,6 +86,15 @@ func (t *task) State() TaskState {
 	return state
 }
 
+func (t *task) Duration() time.Duration {
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
+	if t.state == TaskStateInProgress {
+		return time.Since(t.startTime)
+	}
+	return t.endTime.Sub(t.startTime)
+}
+
 func (t *task) Updates() <-chan struct{} {
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
@@ -102,6 +116,10 @@ func (t *task) SetState(state TaskState, messages ...string) {
 
 	t.state = state
 	t.messages = messages
+
+	if state != TaskStateInProgress {
+		t.endTime = time.Now()
+	}
 }
 
 func (t *task) Messages() []string {

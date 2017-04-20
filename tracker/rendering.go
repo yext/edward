@@ -76,6 +76,9 @@ func (r *ANSIRenderer) renderWithIndent(i int, maxNameWidth int, w io.Writer, ta
 		}
 		color.Unset()
 		fmt.Fprint(w, "]")
+		if ts != TaskStateInProgress {
+			fmt.Fprintf(w, " (%v)", task.Duration())
+		}
 		fmt.Fprintln(w)
 		if ts == TaskStateFailed || ts == TaskStateWarning {
 			for _, line := range task.Messages() {
