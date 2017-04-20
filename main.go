@@ -567,7 +567,7 @@ func start(c *cli.Context) error {
 
 func startAndTrack(c *cli.Context, sgs []services.ServiceOrGroup) error {
 	cfg := getOperationConfig()
-	t := tracker.NewOperation()
+	t := tracker.NewTask()
 	err := trackOperation(t, func() error {
 		var err error
 		for _, s := range sgs {
@@ -614,7 +614,7 @@ func stop(c *cli.Context) error {
 	}
 
 	cfg := getOperationConfig()
-	t := tracker.NewOperation()
+	t := tracker.NewTask()
 	err = trackOperation(t, func() error {
 		for _, s := range sgs {
 			_ = s.Stop(cfg, t)
@@ -675,7 +675,7 @@ func restartOneOrMoreServices(serviceNames []string) error {
 	}
 
 	cfg := getOperationConfig()
-	t := tracker.NewOperation()
+	t := tracker.NewTask()
 
 	err = trackOperation(t, func() error {
 		for _, s := range sgs {
@@ -697,7 +697,7 @@ func restartOneOrMoreServices(serviceNames []string) error {
 	return errors.WithStack(err)
 }
 
-func trackOperation(operation tracker.Operation, f func() error) error {
+func trackOperation(task tracker.Task, f func() error) error {
 	writer := uilive.New()
 	writer.Start()
 
@@ -705,8 +705,9 @@ func trackOperation(operation tracker.Operation, f func() error) error {
 	updateWait.Add(1)
 
 	go func() {
-		for _ = range operation.StateUpdate() {
-			fmt.Fprintf(writer, "%v\n", operation.Render(0))
+		renderer := tracker.NewAnsiRenderer()
+		for _ = range task.Updates() {
+			renderer.Render(writer, task)
 			writer.Flush()
 		}
 		warmup.Wait()
@@ -714,7 +715,7 @@ func trackOperation(operation tracker.Operation, f func() error) error {
 	}()
 
 	defer func() {
-		operation.Close()
+		task.Close()
 		updateWait.Wait()
 		writer.Stop()
 	}()

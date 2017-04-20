@@ -1,12 +1,16 @@
 package tracker
 
-import "sync"
+import (
+	"sync"
+)
 
 type Task interface {
 	Name() string
 
 	State() TaskState
 	SetState(TaskState, ...string)
+
+	// TODO: Add support for duration
 
 	Updates() <-chan struct{}
 	Close()
@@ -38,15 +42,17 @@ type task struct {
 	mtx     sync.Mutex
 }
 
-func NewTask(name string) Task {
+func NewTask() Task {
 	return &task{
-		name:     name,
+		name:     "",
 		children: make(map[string]Task),
 		updates:  make(chan struct{}, 2),
 	}
 }
 
 func (t *task) Name() string {
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
 	return t.name
 }
 
@@ -89,12 +95,13 @@ func (t *task) Close() {
 
 func (t *task) SetState(state TaskState, messages ...string) {
 	t.mtx.Lock()
-	defer t.mtx.Unlock()
+	defer func() {
+		t.mtx.Unlock()
+		t.updates <- struct{}{}
+	}()
 
 	t.state = state
 	t.messages = messages
-
-	t.updates <- struct{}{}
 }
 
 func (t *task) Messages() []string {
@@ -105,8 +112,14 @@ func (t *task) Messages() []string {
 }
 
 func (t *task) Child(name string) Task {
+	var added bool
 	t.mtx.Lock()
-	defer t.mtx.Unlock()
+	defer func() {
+		t.mtx.Unlock()
+		if added {
+			t.updates <- struct{}{}
+		}
+	}()
 
 	if c, ok := t.children[name]; ok {
 		return c
@@ -118,8 +131,7 @@ func (t *task) Child(name string) Task {
 		children: make(map[string]Task),
 		updates:  t.updates,
 	}
-
-	t.updates <- struct{}{}
+	added = true
 	return t.children[name]
 }
 

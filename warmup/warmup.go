@@ -1,7 +1,6 @@
 package warmup
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/yext/edward/tracker"
@@ -24,13 +23,13 @@ func init() {
 func worker(id int, jobs <-chan *job, finished chan<- struct{}) {
 	for j := range jobs {
 		if j.task != nil && j.task.URL != "" {
-			j.tracker.State("Running")
+			tr := j.tracker.Child("Warmup")
 			_, err := http.Get(j.task.URL)
 			if err != nil {
-				j.tracker.Warning(err.Error())
+				tr.SetState(tracker.TaskStateWarning, err.Error())
 				continue
 			}
-			j.tracker.Success("Done")
+			tr.SetState(tracker.TaskStateSuccess)
 		}
 	}
 	finished <- struct{}{}
@@ -38,7 +37,7 @@ func worker(id int, jobs <-chan *job, finished chan<- struct{}) {
 
 type job struct {
 	task    *Warmup
-	tracker tracker.Job
+	tracker tracker.Task
 }
 
 // Warmup defines an action to take to "warm up" a service after launch
@@ -48,11 +47,11 @@ type Warmup struct {
 }
 
 // Run executes a warmup operation for a service
-func Run(service string, w *Warmup, tracker tracker.Operation) {
+func Run(service string, w *Warmup, tracker tracker.Task) {
 	if w == nil {
 		return
 	}
-	t := tracker.GetJob(fmt.Sprintf("%v warmup", service))
+	t := tracker.Child(service)
 	jobs <- &job{
 		task:    w,
 		tracker: t,

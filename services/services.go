@@ -45,10 +45,10 @@ func (o *OperationConfig) IsExcluded(sg ServiceOrGroup) bool {
 // ServiceOrGroup provides a common interface to services and groups
 type ServiceOrGroup interface {
 	GetName() string
-	Build(cfg OperationConfig, tracker tracker.Operation) error  // Build this service/group from source
-	Start(cfg OperationConfig, tracker tracker.Operation) error  // Build and Launch this service/group
-	Launch(cfg OperationConfig, tracker tracker.Operation) error // Launch this service/group without building
-	Stop(cfg OperationConfig, tracker tracker.Operation) error
+	Build(cfg OperationConfig, task tracker.Task) error  // Build this service/group from source
+	Start(cfg OperationConfig, task tracker.Task) error  // Build and Launch this service/group
+	Launch(cfg OperationConfig, task tracker.Task) error // Launch this service/group without building
+	Stop(cfg OperationConfig, task tracker.Task) error
 	Status() ([]ServiceStatus, error)
 	IsSudo(cfg OperationConfig) bool
 	Watch() ([]ServiceWatch, error)

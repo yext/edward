@@ -68,40 +68,34 @@ func (c *ServiceCommand) deleteScript(scriptType string) error {
 
 // BuildSync will buid the service synchronously.
 // If force is false, the build will be skipped if the service is already running.
-func (c *ServiceCommand) BuildSync(force bool, operationTracker tracker.Operation) error {
+func (c *ServiceCommand) BuildSync(force bool, task tracker.Task) error {
 	name := c.Service.GetName()
-	t := operationTracker.GetJob(name)
+	t := task.Child(name)
 	return errors.WithStack(c.BuildWithTracker(force, t))
 }
 
 // BuildWithTracker builds a service.
 // If force is false, the build will be skipped if the service is already running.
-func (c *ServiceCommand) BuildWithTracker(force bool, job tracker.Job) error {
-	job.State("Building")
-
-	if !force && c.Pid != 0 {
-		job.Warning("Already running")
+func (c *ServiceCommand) BuildWithTracker(force bool, task tracker.Task) error {
+	if c.Service.Commands.Build == "" || (!force && c.Pid != 0) {
 		return nil
 	}
 
-	if c.Service.Commands.Build == "" {
-		job.Warning("No build")
-		return nil
-	}
+	job := task.Child("Build")
 
 	cmd, err := c.constructCommand(c.Service.Commands.Build)
 	if err != nil {
-		job.Fail("Failed", err.Error())
+		job.SetState(tracker.TaskStateFailed, err.Error())
 		return errors.WithStack(err)
 	}
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		job.Fail("Failed", err.Error(), string(out))
+		job.SetState(tracker.TaskStateFailed, err.Error(), string(out))
 		return errors.WithStack(err)
 	}
 
-	job.Success("Built")
+	job.SetState(tracker.TaskStateSuccess)
 	return nil
 }
 
@@ -307,29 +301,27 @@ func (c *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 // StartAsync starts the service in the background
 // Will block until the service is known to have started successfully.
 // If the service fails to launch, an error will be returned.
-func (c *ServiceCommand) StartAsync(cfg OperationConfig, tracker tracker.Operation) error {
-	job := tracker.GetJob(c.Service.GetName())
-	job.State("Starting")
-
-	if c.Pid != 0 {
-		job.Warning("Already running")
+func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) error {
+	if c.Service.Commands.Launch == "" {
 		return nil
 	}
 
-	if c.Service.Commands.Launch == "" {
-		job.Warning("No launch")
+	startTask := task.Child(c.Service.GetName()).Child("Start")
+
+	if c.Pid != 0 {
+		startTask.SetState(tracker.TaskStateWarning, "Already running")
 		return nil
 	}
 
 	if c.Service.LaunchChecks != nil && len(c.Service.LaunchChecks.Ports) > 0 {
 		inUse, err := c.areAnyListeningPortsOpen(c.Service.LaunchChecks.Ports)
 		if err != nil {
-			job.Fail("Failed", err.Error())
+			startTask.SetState(tracker.TaskStateFailed, err.Error())
 			return errors.WithStack(err)
 		}
 		if inUse {
 			inUseErr := errors.New("one or more of the ports required by this service are in use")
-			job.Fail("Failed", inUseErr.Error())
+			startTask.SetState(tracker.TaskStateFailed, inUseErr.Error())
 			return errors.WithStack(inUseErr)
 		}
 	}
@@ -338,14 +330,14 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, tracker tracker.Operati
 
 	cmd, err := c.getLaunchCommand(cfg)
 	if err != nil {
-		job.Fail("Failed", err.Error())
+		startTask.SetState(tracker.TaskStateFailed, err.Error())
 		return errors.WithStack(err)
 	}
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, c.Service.Env...)
 	err = cmd.Start()
 	if err != nil {
-		job.Fail("Failed")
+		startTask.SetState(tracker.TaskStateFailed)
 		return errors.WithStack(err)
 	}
 
@@ -363,18 +355,18 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, tracker tracker.Operati
 
 	err = c.waitUntilLive(cmd)
 	if err == nil {
-		job.Success("Started")
-		warmup.Run(c.Service.Name, c.Service.Warmup, tracker)
+		startTask.SetState(tracker.TaskStateSuccess)
+		warmup.Run(c.Service.Name, c.Service.Warmup, task)
 		return nil
 	}
 
 	log, err := logToStringSlice(c.Service.GetRunLog())
 	if err != nil {
-		job.Fail("Failed", "Could not read log", err.Error())
+		startTask.SetState(tracker.TaskStateFailed, "Could not read log", err.Error())
 	} else {
-		job.Fail("Failed", log...)
+		startTask.SetState(tracker.TaskStateFailed, log...)
 	}
-	stopErr := c.Service.Stop(cfg, tracker.GetOperation("Cleanup"))
+	stopErr := c.Service.Stop(cfg, task.Child("Cleanup"))
 	if stopErr != nil {
 		return errors.WithStack(stopErr)
 	}

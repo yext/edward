@@ -33,12 +33,12 @@ func (c *ServiceGroupConfig) GetName() string {
 }
 
 // Build builds all services within this group
-func (c *ServiceGroupConfig) Build(cfg OperationConfig, tracker tracker.Operation) error {
+func (c *ServiceGroupConfig) Build(cfg OperationConfig, task tracker.Task) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
+	groupTracker := task.Child(c.GetName())
 
-	groupTracker := tracker.GetOperation(c.GetName())
 	for _, group := range c.Groups {
 		err := group.Build(cfg, groupTracker)
 		if err != nil {
@@ -46,7 +46,7 @@ func (c *ServiceGroupConfig) Build(cfg OperationConfig, tracker tracker.Operatio
 		}
 	}
 	for _, service := range c.Services {
-		err := service.Build(cfg, tracker)
+		err := service.Build(cfg, groupTracker)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -55,11 +55,11 @@ func (c *ServiceGroupConfig) Build(cfg OperationConfig, tracker tracker.Operatio
 }
 
 // Start will build and launch all services within this group
-func (c *ServiceGroupConfig) Start(cfg OperationConfig, tracker tracker.Operation) error {
+func (c *ServiceGroupConfig) Start(cfg OperationConfig, task tracker.Task) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
-	groupTracker := tracker.GetOperation(c.GetName())
+	groupTracker := task.Child(c.GetName())
 
 	for _, group := range c.Groups {
 		err := group.Start(cfg, groupTracker)
@@ -79,12 +79,12 @@ func (c *ServiceGroupConfig) Start(cfg OperationConfig, tracker tracker.Operatio
 }
 
 // Launch will launch all services within this group
-func (c *ServiceGroupConfig) Launch(cfg OperationConfig, tracker tracker.Operation) error {
+func (c *ServiceGroupConfig) Launch(cfg OperationConfig, task tracker.Task) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
 
-	groupTracker := tracker.GetOperation(c.GetName())
+	groupTracker := task.Child(c.GetName())
 	for _, group := range c.Groups {
 		err := group.Launch(cfg, groupTracker)
 		if err != nil {
@@ -103,11 +103,11 @@ func (c *ServiceGroupConfig) Launch(cfg OperationConfig, tracker tracker.Operati
 }
 
 // Stop stops all services within this group
-func (c *ServiceGroupConfig) Stop(cfg OperationConfig, tracker tracker.Operation) error {
+func (c *ServiceGroupConfig) Stop(cfg OperationConfig, task tracker.Task) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
-	groupTracker := tracker.GetOperation(c.GetName())
+	groupTracker := task.Child(c.GetName())
 
 	// TODO: Do this in reverse
 	for _, service := range c.Services {

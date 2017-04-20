@@ -99,8 +99,8 @@ func TestTracker(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			task := NewTask("parent")
-			if task.Name() != "parent" {
+			task := NewTask()
+			if task.Name() != "" {
 				t.Errorf("Task name was not as expected. Got '%v'", task.Name())
 			}
 			for _, state := range test.jobs {

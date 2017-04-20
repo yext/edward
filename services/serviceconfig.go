@@ -183,7 +183,7 @@ func (c *ServiceConfig) GetName() string {
 }
 
 // Build builds this service
-func (c *ServiceConfig) Build(cfg OperationConfig, tracker tracker.Operation) error {
+func (c *ServiceConfig) Build(cfg OperationConfig, task tracker.Task) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
@@ -192,11 +192,11 @@ func (c *ServiceConfig) Build(cfg OperationConfig, tracker tracker.Operation) er
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	return errors.WithStack(command.BuildSync(false, tracker))
+	return errors.WithStack(command.BuildSync(false, task))
 }
 
 // Launch launches this service
-func (c *ServiceConfig) Launch(cfg OperationConfig, tracker tracker.Operation) error {
+func (c *ServiceConfig) Launch(cfg OperationConfig, task tracker.Task) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
@@ -205,31 +205,30 @@ func (c *ServiceConfig) Launch(cfg OperationConfig, tracker tracker.Operation) e
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	return errors.WithStack(command.StartAsync(cfg, tracker))
+	return errors.WithStack(command.StartAsync(cfg, task))
 }
 
 // Start builds then launches this service
-func (c *ServiceConfig) Start(cfg OperationConfig, tracker tracker.Operation) error {
+func (c *ServiceConfig) Start(cfg OperationConfig, task tracker.Task) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
 
-	err := c.Build(cfg, tracker)
+	err := c.Build(cfg, task)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	err = c.Launch(cfg, tracker)
+	err = c.Launch(cfg, task)
 	return errors.WithStack(err)
 }
 
 // Stop stops this service
-func (c *ServiceConfig) Stop(cfg OperationConfig, tracker tracker.Operation) error {
+func (c *ServiceConfig) Stop(cfg OperationConfig, task tracker.Task) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
 
-	job := tracker.GetJob(c.GetName())
-	job.State("Stopping")
+	job := task.Child(c.GetName()).Child("Stop")
 
 	command, err := c.GetCommand()
 	if err != nil {
@@ -237,13 +236,13 @@ func (c *ServiceConfig) Stop(cfg OperationConfig, tracker tracker.Operation) err
 	}
 
 	if command.Pid == 0 {
-		job.Warning("Not running")
+		job.SetState(tracker.TaskStateWarning, "Not running")
 		return nil
 	}
 
 	stopped, err := c.interruptProcess(cfg, command)
 	if err != nil {
-		job.Fail("Failed", err.Error())
+		job.SetState(tracker.TaskStateFailed, err.Error())
 		return nil
 	}
 
@@ -251,27 +250,27 @@ func (c *ServiceConfig) Stop(cfg OperationConfig, tracker tracker.Operation) err
 		c.printf("SIGINT failed to stop service, waiting for 5s before sending SIGKILL\n")
 		stopped, err := waitForTerm(command, time.Second*5)
 		if err != nil {
-			job.Fail("Failed", err.Error())
+			job.SetState(tracker.TaskStateFailed, err.Error())
 			return nil
 		}
 		if !stopped {
 			stopped, err := c.killProcess(cfg, command)
 			if err != nil {
-				job.Fail("Failed", err.Error())
+				job.SetState(tracker.TaskStateFailed, err.Error())
 				return nil
 			}
 			if stopped {
-				job.Warning("Killed")
+				job.SetState(tracker.TaskStateWarning, "Killed")
 				return nil
 			}
-			job.Fail("Failed", "Process was not killed")
+			job.SetState(tracker.TaskStateFailed, "Process was not killed")
 			return nil
 		}
 	}
 
 	// Remove leftover files
 	command.clearState()
-	job.Success("Stopped")
+	job.SetState(tracker.TaskStateSuccess)
 	return nil
 }
 
