@@ -145,9 +145,10 @@ func (t *task) Child(name string) Task {
 
 	t.childNames = append(t.childNames, name)
 	t.children[name] = &task{
-		name:     name,
-		children: make(map[string]Task),
-		updates:  t.updates,
+		name:      name,
+		children:  make(map[string]Task),
+		updates:   t.updates,
+		startTime: time.Now(),
 	}
 	added = true
 	return t.children[name]

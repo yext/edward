@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
@@ -77,7 +78,7 @@ func (r *ANSIRenderer) renderWithIndent(i int, maxNameWidth int, w io.Writer, ta
 		color.Unset()
 		fmt.Fprint(w, "]")
 		if ts != TaskStateInProgress {
-			fmt.Fprintf(w, " (%v)", task.Duration())
+			fmt.Fprintf(w, " (%v)", autoRoundTime(task.Duration()))
 		}
 		fmt.Fprintln(w)
 		if ts == TaskStateFailed || ts == TaskStateWarning {
@@ -100,4 +101,40 @@ func (r *ANSIRenderer) getLongestNameWithIndent(w io.Writer, i int, task Task) i
 		}
 	}
 	return max
+}
+
+func autoRoundTime(d time.Duration) time.Duration {
+	if d > time.Hour {
+		return roundTime(d, time.Second)
+	}
+	if d > time.Minute {
+		return roundTime(d, time.Second)
+	}
+	if d > time.Second {
+		return roundTime(d, time.Millisecond)
+	}
+	if d > time.Millisecond {
+		return roundTime(d, time.Microsecond)
+	}
+	return d
+}
+
+// Based on the example at https://play.golang.org/p/QHocTHl8iR
+func roundTime(d, r time.Duration) time.Duration {
+	if r <= 0 {
+		return d
+	}
+	neg := d < 0
+	if neg {
+		d = -d
+	}
+	if m := d % r; m+m < r {
+		d = d - m
+	} else {
+		d = d + r - m
+	}
+	if neg {
+		return -d
+	}
+	return d
 }
