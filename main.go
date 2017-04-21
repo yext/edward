@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"gopkg.in/natefinch/lumberjack.v2"
 
