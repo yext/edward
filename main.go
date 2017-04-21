@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -671,6 +672,7 @@ func restartOneOrMoreServices(serviceNames []string) error {
 }
 
 func trackOperation(task tracker.Task, f func() error) error {
+	uilive.RefreshInterval = time.Hour
 	writer := uilive.New()
 	writer.Start()
 

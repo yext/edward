@@ -77,11 +77,16 @@ func (c *ServiceCommand) BuildSync(force bool, task tracker.Task) error {
 // BuildWithTracker builds a service.
 // If force is false, the build will be skipped if the service is already running.
 func (c *ServiceCommand) BuildWithTracker(force bool, task tracker.Task) error {
-	if c.Service.Commands.Build == "" || (!force && c.Pid != 0) {
+	if c.Service.Commands.Build == "" {
 		return nil
 	}
 
 	job := task.Child("Build")
+
+	if !force && c.Pid != 0 {
+		job.SetState(tracker.TaskStateWarning, "Already running")
+		return nil
+	}
 
 	cmd, err := c.constructCommand(c.Service.Commands.Build)
 	if err != nil {
