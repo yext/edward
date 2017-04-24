@@ -229,6 +229,7 @@ func (c *ServiceConfig) Stop(cfg OperationConfig, task tracker.Task) error {
 	}
 
 	job := task.Child(c.GetName()).Child("Stop")
+	job.SetState(tracker.TaskStateInProgress)
 
 	command, err := c.GetCommand()
 	if err != nil {

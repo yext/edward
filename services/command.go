@@ -82,6 +82,7 @@ func (c *ServiceCommand) BuildWithTracker(force bool, task tracker.Task) error {
 	}
 
 	job := task.Child("Build")
+	job.SetState(tracker.TaskStateInProgress)
 
 	if !force && c.Pid != 0 {
 		job.SetState(tracker.TaskStateWarning, "Already running")
@@ -312,6 +313,7 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) erro
 	}
 
 	startTask := task.Child(c.Service.GetName()).Child("Start")
+	startTask.SetState(tracker.TaskStateInProgress)
 
 	if c.Pid != 0 {
 		startTask.SetState(tracker.TaskStateWarning, "Already running")
