@@ -11,24 +11,21 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
-	"time"
 
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/fatih/color"
-	"github.com/gosuri/uilive"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/generators"
 	"github.com/yext/edward/home"
+	"github.com/yext/edward/output"
 	"github.com/yext/edward/runner"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/updates"
-	"github.com/yext/edward/warmup"
 )
 
 var logger *log.Logger
@@ -542,7 +539,7 @@ func start(c *cli.Context) error {
 func startAndTrack(c *cli.Context, sgs []services.ServiceOrGroup) error {
 	cfg := getOperationConfig()
 	t := tracker.NewTask()
-	err := trackOperation(t, func() error {
+	err := output.FollowTask(t, func() error {
 		var err error
 		for _, s := range sgs {
 			if flags.skipBuild {
@@ -589,7 +586,7 @@ func stop(c *cli.Context) error {
 
 	cfg := getOperationConfig()
 	t := tracker.NewTask()
-	err = trackOperation(t, func() error {
+	err = output.FollowTask(t, func() error {
 		for _, s := range sgs {
 			_ = s.Stop(cfg, t)
 		}
@@ -651,7 +648,7 @@ func restartOneOrMoreServices(serviceNames []string) error {
 	cfg := getOperationConfig()
 	t := tracker.NewTask()
 
-	err = trackOperation(t, func() error {
+	err = output.FollowTask(t, func() error {
 		for _, s := range sgs {
 			err = s.Stop(cfg, t)
 			if err != nil {
@@ -669,33 +666,6 @@ func restartOneOrMoreServices(serviceNames []string) error {
 		return nil
 	})
 	return errors.WithStack(err)
-}
-
-func trackOperation(task tracker.Task, f func() error) error {
-	uilive.RefreshInterval = time.Hour
-	writer := uilive.New()
-	writer.Start()
-
-	var updateWait sync.WaitGroup
-	updateWait.Add(1)
-
-	go func() {
-		renderer := tracker.NewAnsiRenderer()
-		for _ = range task.Updates() {
-			renderer.Render(writer, task)
-			writer.Flush()
-		}
-		warmup.Wait()
-		updateWait.Done()
-	}()
-
-	defer func() {
-		task.Close()
-		updateWait.Wait()
-		writer.Stop()
-	}()
-
-	return errors.WithStack(f())
 }
 
 var flags = struct {

@@ -13,7 +13,7 @@ type Task interface {
 
 	Duration() time.Duration
 
-	Updates() <-chan struct{}
+	Updates() <-chan Task
 	Close()
 
 	Messages() []string
@@ -42,7 +42,7 @@ type task struct {
 	startTime time.Time
 	endTime   time.Time
 
-	updates chan struct{}
+	updates chan Task
 	mtx     sync.Mutex
 }
 
@@ -50,7 +50,7 @@ func NewTask() Task {
 	return &task{
 		name:      "",
 		children:  make(map[string]Task),
-		updates:   make(chan struct{}, 2),
+		updates:   make(chan Task, 2),
 		startTime: time.Now(),
 	}
 }
@@ -95,7 +95,7 @@ func (t *task) Duration() time.Duration {
 	return t.endTime.Sub(t.startTime)
 }
 
-func (t *task) Updates() <-chan struct{} {
+func (t *task) Updates() <-chan Task {
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
 	return t.updates
@@ -111,7 +111,7 @@ func (t *task) SetState(state TaskState, messages ...string) {
 	t.mtx.Lock()
 	defer func() {
 		t.mtx.Unlock()
-		t.updates <- struct{}{}
+		t.updates <- t
 	}()
 
 	t.state = state
@@ -130,12 +130,12 @@ func (t *task) Messages() []string {
 }
 
 func (t *task) Child(name string) Task {
-	var added bool
+	var added Task
 	t.mtx.Lock()
 	defer func() {
 		t.mtx.Unlock()
-		if added {
-			t.updates <- struct{}{}
+		if added != nil {
+			t.updates <- added
 		}
 	}()
 
@@ -150,7 +150,7 @@ func (t *task) Child(name string) Task {
 		updates:   t.updates,
 		startTime: time.Now(),
 	}
-	added = true
+	added = t.children[name]
 	return t.children[name]
 }
 
