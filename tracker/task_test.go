@@ -19,7 +19,7 @@ func TestTracker(t *testing.T) {
 	}{
 		{
 			name:          "empty",
-			expectedState: TaskStateInProgress,
+			expectedState: TaskStatePending,
 		},
 		{
 			name: "Single job, in progress",
@@ -30,7 +30,7 @@ func TestTracker(t *testing.T) {
 			}{
 				{name: "job1", message: []string{"testState"}},
 			},
-			expectedState: TaskStateInProgress,
+			expectedState: TaskStatePending,
 		},
 		{
 			name: "Single job, succeeded",
@@ -58,13 +58,26 @@ func TestTracker(t *testing.T) {
 			expectedState: TaskStateFailed,
 		},
 		{
-			name: "Some finished, in progress",
+			name: "Some finished, some pending",
 			jobs: []struct {
 				name    string
 				state   TaskState
 				message []string
 			}{
 				{name: "job1"},
+				{name: "job2", state: TaskStateSuccess},
+				{name: "job3", state: TaskStateWarning},
+			},
+			expectedState: TaskStateInProgress,
+		},
+		{
+			name: "Some finished, some in progress",
+			jobs: []struct {
+				name    string
+				state   TaskState
+				message []string
+			}{
+				{name: "job1", state: TaskStateInProgress},
 				{name: "job2", state: TaskStateSuccess},
 				{name: "job3", state: TaskStateWarning},
 			},

@@ -87,13 +87,16 @@ func (r *ANSIRenderer) renderWithIndent(i int, maxNameWidth int, w io.Writer, ta
 	case TaskStateWarning:
 		color.Set(color.FgYellow)
 		fmt.Fprint(w, "Warning")
+	case TaskStatePending:
+		color.Set(color.FgCyan)
+		fmt.Fprint(w, "Pending")
 	default:
 		color.Set(color.FgCyan)
 		fmt.Fprint(w, "In Progress")
 	}
 	color.Unset()
 	fmt.Fprint(w, "]")
-	if ts != TaskStateInProgress {
+	if ts != TaskStateInProgress && ts != TaskStatePending {
 		fmt.Fprintf(w, " (%v)", autoRoundTime(task.Duration()))
 	}
 	fmt.Fprintln(w)

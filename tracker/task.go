@@ -25,7 +25,8 @@ type Task interface {
 type TaskState int
 
 const (
-	TaskStateInProgress TaskState = iota
+	TaskStatePending TaskState = iota
+	TaskStateInProgress
 	TaskStateSuccess
 	TaskStateWarning
 	TaskStateFailed
@@ -69,27 +70,38 @@ func (t *task) State() TaskState {
 		return t.state
 	}
 
-	var state = TaskStateSuccess
+	var states = make(map[TaskState]int)
+
 	for _, n := range t.childNames {
 		child := t.children[n]
-		switch child.State() {
-		case TaskStateFailed:
-			return TaskStateFailed
-		case TaskStateInProgress:
-			state = TaskStateInProgress
-		case TaskStateWarning:
-			if state != TaskStateInProgress {
-				state = TaskStateWarning
-			}
-		}
+		states[child.State()]++
 	}
-	return state
+
+	if count, ok := states[TaskStateFailed]; ok && count > 0 {
+		return TaskStateFailed
+	}
+	if count, ok := states[TaskStatePending]; ok {
+		if count == len(t.childNames) {
+			return TaskStatePending
+		}
+		return TaskStateInProgress
+	}
+	if count, ok := states[TaskStateInProgress]; ok && count > 0 {
+		return TaskStateInProgress
+	}
+	if count, ok := states[TaskStateWarning]; ok && count > 0 {
+		return TaskStateWarning
+	}
+	if count, ok := states[TaskStateSuccess]; ok && count == len(t.childNames) {
+		return TaskStateSuccess
+	}
+	return TaskStateInProgress
 }
 
 func (t *task) Duration() time.Duration {
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
-	if t.state == TaskStateInProgress {
+	if t.state == TaskStateInProgress || t.state == TaskStatePending {
 		return time.Since(t.startTime)
 	}
 	return t.endTime.Sub(t.startTime)
@@ -117,7 +129,7 @@ func (t *task) SetState(state TaskState, messages ...string) {
 	t.state = state
 	t.messages = messages
 
-	if state != TaskStateInProgress {
+	if state != TaskStateInProgress && state != TaskStatePending {
 		t.endTime = time.Now()
 	}
 }
