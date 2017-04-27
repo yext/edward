@@ -1,6 +1,7 @@
 package output
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -12,26 +13,44 @@ import (
 
 func FollowTask(task tracker.Task, f func() error) error {
 	uilive.RefreshInterval = time.Hour
-	writer := uilive.New()
-	writer.Start()
 
 	var updateWait sync.WaitGroup
 	updateWait.Add(1)
 
 	go func() {
-		renderer := tracker.NewAnsiRenderer()
-		for _ = range task.Updates() {
-			renderer.Render(writer, task)
+		writer := uilive.New()
+		writer.Start()
+
+		inProgress := NewInProgressRenderer()
+
+		//renderer := tracker.NewAnsiRenderer()
+		for updatedTask := range task.Updates() {
+			state := updatedTask.State()
+			if state != tracker.TaskStatePending &&
+				state != tracker.TaskStateInProgress {
+				renderer := NewCompletionRenderer(updatedTask)
+				renderer.Render(writer, task)
+				writer.Stop()
+
+				writer = uilive.New()
+				writer.Start()
+			}
+
+			inProgress.Render(writer, task)
 			writer.Flush()
 		}
+
 		warmup.Wait()
 		updateWait.Done()
+
+		fmt.Fprintln(writer, "All tasks complete")
+		writer.Flush()
+		writer.Stop()
 	}()
 
 	defer func() {
 		task.Close()
 		updateWait.Wait()
-		writer.Stop()
 	}()
 
 	return errors.WithStack(f())
