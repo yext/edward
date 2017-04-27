@@ -22,7 +22,6 @@ func FollowTask(task tracker.Task, f func() error) error {
 
 		inProgress := NewInProgressRenderer()
 
-		//renderer := tracker.NewAnsiRenderer()
 		for updatedTask := range task.Updates() {
 			state := updatedTask.State()
 			if state != tracker.TaskStatePending &&
