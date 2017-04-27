@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/juju/errgo"
 	"github.com/pkg/errors"
 	"github.com/yext/edward/tracker"
 )
@@ -28,7 +27,7 @@ func NewCompletionRenderer(task tracker.Task) *CompletionRenderer {
 func (r *CompletionRenderer) Render(w io.Writer, task tracker.Task) error {
 	err := errors.WithStack(r.doRenderWithPrefix("", 0, w, task))
 	if err != nil {
-		return errgo.Mask(err)
+		return errors.WithStack(err)
 	}
 	return nil
 }
