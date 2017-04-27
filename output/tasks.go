@@ -1,7 +1,6 @@
 package output
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -42,9 +41,6 @@ func FollowTask(task tracker.Task, f func() error) error {
 
 		warmup.Wait()
 		updateWait.Done()
-
-		fmt.Fprintln(writer, "All tasks complete")
-		writer.Flush()
 		writer.Stop()
 	}()
 
