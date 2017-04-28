@@ -38,12 +38,12 @@ func FollowTask(task tracker.Task, f func() error) error {
 			writer.Flush()
 		}
 
-		warmup.Wait()
 		updateWait.Done()
 		writer.Stop()
 	}()
 
 	defer func() {
+		warmup.Wait()
 		task.Close()
 		updateWait.Wait()
 	}()

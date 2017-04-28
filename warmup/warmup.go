@@ -24,6 +24,7 @@ func worker(id int, jobs <-chan *job, finished chan<- struct{}) {
 	for j := range jobs {
 		if j.task != nil && j.task.URL != "" {
 			tr := j.tracker.Child("Warmup")
+			tr.SetState(tracker.TaskStateInProgress)
 			_, err := http.Get(j.task.URL)
 			if err != nil {
 				tr.SetState(tracker.TaskStateWarning, err.Error())

@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/fatih/color"
-	"github.com/juju/errgo"
 	"github.com/pkg/errors"
 	"github.com/yext/edward/tracker"
 )
@@ -23,11 +22,7 @@ func NewInProgressRenderer() *InProgressRenderer {
 }
 
 func (r *InProgressRenderer) Render(w io.Writer, task tracker.Task) error {
-	err := errors.WithStack(r.doRenderWithPrefix("", 0, w, task))
-	if err != nil {
-		return errgo.Mask(err)
-	}
-	return nil
+	return errors.WithStack(r.doRenderWithPrefix("", 0, w, task))
 }
 
 func (r *InProgressRenderer) doRenderWithPrefix(prefix string, maxNameWidth int, w io.Writer, task tracker.Task) error {
