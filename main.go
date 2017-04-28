@@ -669,14 +669,15 @@ func restartOneOrMoreServices(serviceNames []string) error {
 		defer func() {
 			launchPool.Stop()
 			_ = <-launchPool.Complete()
-			stopPool.Stop()
-			_ = <-stopPool.Complete()
 		}()
 		for _, s := range sgs {
 			err = s.Stop(cfg, t, stopPool)
 			if err != nil {
 				return errors.WithStack(err)
 			}
+			stopPool.Stop()
+			_ = <-stopPool.Complete()
+
 			if flags.skipBuild {
 				err = s.Launch(cfg, t, launchPool)
 			} else {
