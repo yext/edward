@@ -8,7 +8,8 @@
           "products",
           "carts",
           "checkout",
-          "tracking"
+          "tracking",
+          "nolaunch"
         ]
       }
     ],
@@ -25,6 +26,13 @@
                 "include": [
                     "carts"
                 ]
+            }
+        },
+        {
+            "name": "nolaunch",
+            "path": ".",
+            "commands": {
+                "build": "echo Hello"
             }
         },
         {

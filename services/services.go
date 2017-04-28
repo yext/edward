@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/yext/edward/tracker"
+	"github.com/yext/edward/worker"
 )
 
 // StatusRunning is the status string for a running service
@@ -45,10 +46,10 @@ func (o *OperationConfig) IsExcluded(sg ServiceOrGroup) bool {
 // ServiceOrGroup provides a common interface to services and groups
 type ServiceOrGroup interface {
 	GetName() string
-	Build(cfg OperationConfig, task tracker.Task) error  // Build this service/group from source
-	Start(cfg OperationConfig, task tracker.Task) error  // Build and Launch this service/group
-	Launch(cfg OperationConfig, task tracker.Task) error // Launch this service/group without building
-	Stop(cfg OperationConfig, task tracker.Task) error
+	Build(cfg OperationConfig, task tracker.Task) error                     // Build this service/group from source
+	Start(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error  // Build and Launch this service/group
+	Launch(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error // Launch this service/group without building
+	Stop(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error
 	Status() ([]ServiceStatus, error)
 	IsSudo(cfg OperationConfig) bool
 	Watch() ([]ServiceWatch, error)

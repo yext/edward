@@ -26,6 +26,7 @@ import (
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/updates"
+	"github.com/yext/edward/worker"
 )
 
 var logger *log.Logger
@@ -540,12 +541,18 @@ func startAndTrack(c *cli.Context, sgs []services.ServiceOrGroup) error {
 	cfg := getOperationConfig()
 	t := tracker.NewTask()
 	err := output.FollowTask(t, func() error {
+		p := worker.NewPool(1)
+		p.Start()
+		defer func() {
+			p.Stop()
+			_ = <-p.Complete()
+		}()
 		var err error
 		for _, s := range sgs {
 			if flags.skipBuild {
-				err = s.Launch(cfg, t)
+				err = s.Launch(cfg, t, p)
 			} else {
-				err = s.Start(cfg, t)
+				err = s.Start(cfg, t, p)
 			}
 			if err != nil {
 				return errors.New("Error launching " + s.GetName() + ": " + err.Error())
@@ -587,8 +594,14 @@ func stop(c *cli.Context) error {
 	cfg := getOperationConfig()
 	t := tracker.NewTask()
 	err = output.FollowTask(t, func() error {
+		p := worker.NewPool(3)
+		p.Start()
+		defer func() {
+			p.Stop()
+			_ = <-p.Complete()
+		}()
 		for _, s := range sgs {
-			_ = s.Stop(cfg, t)
+			_ = s.Stop(cfg, t, p)
 		}
 		return nil
 	})
@@ -649,15 +662,25 @@ func restartOneOrMoreServices(serviceNames []string) error {
 	t := tracker.NewTask()
 
 	err = output.FollowTask(t, func() error {
+		launchPool := worker.NewPool(1)
+		launchPool.Start()
+		stopPool := worker.NewPool(3)
+		stopPool.Start()
+		defer func() {
+			launchPool.Stop()
+			_ = <-launchPool.Complete()
+			stopPool.Stop()
+			_ = <-stopPool.Complete()
+		}()
 		for _, s := range sgs {
-			err = s.Stop(cfg, t)
+			err = s.Stop(cfg, t, stopPool)
 			if err != nil {
 				return errors.WithStack(err)
 			}
 			if flags.skipBuild {
-				err = s.Launch(cfg, t)
+				err = s.Launch(cfg, t, launchPool)
 			} else {
-				err = s.Start(cfg, t)
+				err = s.Start(cfg, t, launchPool)
 			}
 			if err != nil {
 				return errors.WithStack(err)

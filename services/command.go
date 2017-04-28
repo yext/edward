@@ -373,7 +373,7 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) erro
 	} else {
 		startTask.SetState(tracker.TaskStateFailed, log...)
 	}
-	stopErr := c.Service.Stop(cfg, task.Child("Cleanup"))
+	stopErr := c.Service.doStop(cfg, task.Child("Cleanup"))
 	if stopErr != nil {
 		return errors.WithStack(stopErr)
 	}

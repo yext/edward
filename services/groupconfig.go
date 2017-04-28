@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/tracker"
+	"github.com/yext/edward/worker"
 )
 
 var _ ServiceOrGroup = &ServiceGroupConfig{}
@@ -55,14 +56,14 @@ func (c *ServiceGroupConfig) Build(cfg OperationConfig, task tracker.Task) error
 }
 
 // Start will build and launch all services within this group
-func (c *ServiceGroupConfig) Start(cfg OperationConfig, task tracker.Task) error {
+func (c *ServiceGroupConfig) Start(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
 	groupTracker := task.Child(c.GetName())
 
 	for _, group := range c.Groups {
-		err := group.Start(cfg, groupTracker)
+		err := group.Start(cfg, groupTracker, pool)
 		if err != nil {
 			// Always fail if any services in a dependant group failed
 			return errors.WithStack(err)
@@ -70,7 +71,7 @@ func (c *ServiceGroupConfig) Start(cfg OperationConfig, task tracker.Task) error
 	}
 	var outErr error
 	for _, service := range c.Services {
-		err := service.Start(cfg, groupTracker)
+		err := service.Start(cfg, groupTracker, pool)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -79,14 +80,14 @@ func (c *ServiceGroupConfig) Start(cfg OperationConfig, task tracker.Task) error
 }
 
 // Launch will launch all services within this group
-func (c *ServiceGroupConfig) Launch(cfg OperationConfig, task tracker.Task) error {
+func (c *ServiceGroupConfig) Launch(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
 
 	groupTracker := task.Child(c.GetName())
 	for _, group := range c.Groups {
-		err := group.Launch(cfg, groupTracker)
+		err := group.Launch(cfg, groupTracker, pool)
 		if err != nil {
 			// Always fail if any services in a dependant group failed
 			return errors.WithStack(err)
@@ -94,7 +95,7 @@ func (c *ServiceGroupConfig) Launch(cfg OperationConfig, task tracker.Task) erro
 	}
 	var outErr error
 	for _, service := range c.Services {
-		err := service.Launch(cfg, groupTracker)
+		err := service.Launch(cfg, groupTracker, pool)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -103,7 +104,7 @@ func (c *ServiceGroupConfig) Launch(cfg OperationConfig, task tracker.Task) erro
 }
 
 // Stop stops all services within this group
-func (c *ServiceGroupConfig) Stop(cfg OperationConfig, task tracker.Task) error {
+func (c *ServiceGroupConfig) Stop(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
@@ -111,13 +112,13 @@ func (c *ServiceGroupConfig) Stop(cfg OperationConfig, task tracker.Task) error 
 
 	// TODO: Do this in reverse
 	for _, service := range c.Services {
-		err := service.Stop(cfg, groupTracker)
+		err := service.Stop(cfg, groupTracker, pool)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 	}
 	for _, group := range c.Groups {
-		err := group.Stop(cfg, groupTracker)
+		err := group.Stop(cfg, groupTracker, pool)
 		if err != nil {
 			return errors.WithStack(err)
 		}

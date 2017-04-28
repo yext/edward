@@ -19,6 +19,7 @@ import (
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/warmup"
+	"github.com/yext/edward/worker"
 )
 
 var _ ServiceOrGroup = &ServiceConfig{}
@@ -196,7 +197,7 @@ func (c *ServiceConfig) Build(cfg OperationConfig, task tracker.Task) error {
 }
 
 // Launch launches this service
-func (c *ServiceConfig) Launch(cfg OperationConfig, task tracker.Task) error {
+func (c *ServiceConfig) Launch(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
@@ -205,11 +206,16 @@ func (c *ServiceConfig) Launch(cfg OperationConfig, task tracker.Task) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	return errors.WithStack(command.StartAsync(cfg, task))
+
+	pool.Enqueue(func() error {
+		return errors.WithStack(command.StartAsync(cfg, task))
+	})
+
+	return nil
 }
 
 // Start builds then launches this service
-func (c *ServiceConfig) Start(cfg OperationConfig, task tracker.Task) error {
+func (c *ServiceConfig) Start(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
@@ -218,12 +224,19 @@ func (c *ServiceConfig) Start(cfg OperationConfig, task tracker.Task) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	err = c.Launch(cfg, task)
+	err = c.Launch(cfg, task, pool)
 	return errors.WithStack(err)
 }
 
 // Stop stops this service
-func (c *ServiceConfig) Stop(cfg OperationConfig, task tracker.Task) error {
+func (c *ServiceConfig) Stop(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error {
+	pool.Enqueue(func() error {
+		return errors.WithStack(c.doStop(cfg, task))
+	})
+	return nil
+}
+
+func (c *ServiceConfig) doStop(cfg OperationConfig, task tracker.Task) error {
 	if cfg.IsExcluded(c) || c.Commands.Launch == "" {
 		return nil
 	}
