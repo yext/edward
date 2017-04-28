@@ -207,11 +207,10 @@ func (c *ServiceConfig) Launch(cfg OperationConfig, task tracker.Task, pool *wor
 		return errors.WithStack(err)
 	}
 
-	pool.Enqueue(func() error {
+	err = pool.Enqueue(func() error {
 		return errors.WithStack(command.StartAsync(cfg, task))
 	})
-
-	return nil
+	return errors.WithStack(err)
 }
 
 // Start builds then launches this service
@@ -230,10 +229,10 @@ func (c *ServiceConfig) Start(cfg OperationConfig, task tracker.Task, pool *work
 
 // Stop stops this service
 func (c *ServiceConfig) Stop(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error {
-	pool.Enqueue(func() error {
+	err := pool.Enqueue(func() error {
 		return errors.WithStack(c.doStop(cfg, task))
 	})
-	return nil
+	return errors.WithStack(err)
 }
 
 func (c *ServiceConfig) doStop(cfg OperationConfig, task tracker.Task) error {

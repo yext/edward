@@ -8,7 +8,7 @@ func TestPool(t *testing.T) {
 	pool.Start()
 
 	var count int
-	pool.Enqueue(func() error {
+	_ = pool.Enqueue(func() error {
 		count++
 		return nil
 	})

@@ -1,11 +1,20 @@
 package worker
 
+import (
+	"sync"
+
+	"github.com/pkg/errors"
+)
+
 // Pool provides a set of workers for executing functions
 type Pool struct {
 	jobs       chan func() error
 	finished   chan struct{}
 	completion chan struct{}
 	workers    int
+
+	err error
+	mtx sync.Mutex
 }
 
 // NewPool creates a pool with the specified number of workers.
@@ -14,6 +23,19 @@ func NewPool(workers int) *Pool {
 	return &Pool{
 		workers: workers,
 	}
+}
+
+func (p *Pool) Err() error {
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
+
+	return p.err
+}
+
+func (p *Pool) setErr(err error) {
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
+	p.err = err
 }
 
 // Start initializes the Pool to begin accepting and running jobs.
@@ -37,6 +59,10 @@ func (p *Pool) Start() {
 
 // Enqueue adds a job to the pool.
 func (p *Pool) Enqueue(job func() error) error {
+	if p.Err() != nil {
+		return errors.WithStack(p.Err())
+	}
+
 	p.jobs <- job
 	return nil
 }
@@ -53,7 +79,10 @@ func (p *Pool) Complete() <-chan struct{} {
 
 func (p *Pool) worker(index int) {
 	for j := range p.jobs {
-		j()
+		err := j()
+		if err != nil {
+			p.setErr(err)
+		}
 	}
 	p.finished <- struct{}{}
 }
