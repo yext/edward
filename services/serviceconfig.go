@@ -224,7 +224,7 @@ func (c *ServiceConfig) Start(cfg OperationConfig, task tracker.Task) error {
 
 // Stop stops this service
 func (c *ServiceConfig) Stop(cfg OperationConfig, task tracker.Task) error {
-	if cfg.IsExcluded(c) {
+	if cfg.IsExcluded(c) || c.Commands.Launch == "" {
 		return nil
 	}
 
