@@ -7,48 +7,53 @@ import (
 	"github.com/gosuri/uilive"
 	"github.com/pkg/errors"
 	"github.com/yext/edward/tracker"
-	"github.com/yext/edward/warmup"
 )
 
-func FollowTask(task tracker.Task, f func() error) error {
+func FollowTask(f func(task tracker.Task) error) error {
 	uilive.RefreshInterval = time.Hour
 
 	var updateWait sync.WaitGroup
 	updateWait.Add(1)
 
-	go func() {
-		writer := uilive.New()
-		writer.Start()
+	follower, rootTask := newFollowedTask()
+	defer follower.done()
+	return errors.WithStack(f(rootTask))
+}
 
-		inProgress := NewInProgressRenderer()
+type follower struct {
+	rootTask   tracker.Task
+	inProgress *InProgressRenderer
+	writer     *uilive.Writer
+}
 
-		for update := range task.Updates() {
-			updatedTask := update.Task()
-			state := updatedTask.State()
-			if state != tracker.TaskStatePending &&
-				state != tracker.TaskStateInProgress {
-				renderer := NewCompletionRenderer(updatedTask)
-				renderer.Render(writer, task)
-				writer.Stop()
+func newFollowedTask() (*follower, tracker.Task) {
+	writer := uilive.New()
+	writer.Start()
+	f := &follower{
+		inProgress: NewInProgressRenderer(),
+		writer:     writer,
+	}
+	task := tracker.NewTask(f.handle)
+	f.rootTask = task
+	return f, task
+}
 
-				writer = uilive.New()
-				writer.Start()
-			}
+func (f *follower) handle(update tracker.Task) {
+	state := update.State()
+	if state != tracker.TaskStatePending &&
+		state != tracker.TaskStateInProgress {
+		renderer := NewCompletionRenderer(update)
+		renderer.Render(f.writer, f.rootTask)
+		f.writer.Stop()
 
-			inProgress.Render(writer, task)
-			writer.Flush()
-			update.Ack()
-		}
+		f.writer = uilive.New()
+		f.writer.Start()
+	}
 
-		updateWait.Done()
-		writer.Stop()
-	}()
+	f.inProgress.Render(f.writer, f.rootTask)
+	f.writer.Flush()
+}
 
-	defer func() {
-		warmup.Wait()
-		task.Close()
-		updateWait.Wait()
-	}()
-
-	return errors.WithStack(f())
+func (f *follower) done() {
+	f.writer.Stop()
 }

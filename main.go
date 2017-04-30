@@ -539,8 +539,7 @@ func start(c *cli.Context) error {
 
 func startAndTrack(c *cli.Context, sgs []services.ServiceOrGroup) error {
 	cfg := getOperationConfig()
-	t := tracker.NewTask()
-	err := output.FollowTask(t, func() error {
+	err := output.FollowTask(func(t tracker.Task) error {
 		p := worker.NewPool(1)
 		p.Start()
 		defer func() {
@@ -592,8 +591,7 @@ func stop(c *cli.Context) error {
 	}
 
 	cfg := getOperationConfig()
-	t := tracker.NewTask()
-	err = output.FollowTask(t, func() error {
+	err = output.FollowTask(func(t tracker.Task) error {
 		p := worker.NewPool(3)
 		p.Start()
 		defer func() {
@@ -659,9 +657,7 @@ func restartOneOrMoreServices(serviceNames []string) error {
 	}
 
 	cfg := getOperationConfig()
-	t := tracker.NewTask()
-
-	err = output.FollowTask(t, func() error {
+	err = output.FollowTask(func(t tracker.Task) error {
 		launchPool := worker.NewPool(1)
 		launchPool.Start()
 		stopPool := worker.NewPool(3)

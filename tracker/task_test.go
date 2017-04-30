@@ -112,20 +112,13 @@ func TestTracker(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			task := NewTask()
+			task := NewTask(nil)
 			if task.Name() != "" {
 				t.Errorf("Task name was not as expected. Got '%v'", task.Name())
 			}
 			for _, state := range test.jobs {
 				child := task.Child(state.name)
-				expectUpdate(t, child, task)
-			}
-			for _, state := range test.jobs {
-				child := task.Child(state.name)
 				child.SetState(state.state, state.message...)
-				if state.state != TaskStatePending {
-					expectUpdate(t, child, task)
-				}
 			}
 			orderedChildren := task.Children()
 			for index, state := range test.jobs {
@@ -149,32 +142,43 @@ func TestTracker(t *testing.T) {
 			if err != nil {
 				t.Errorf(err.Error())
 			}
-			task.Close()
-			expectUpdate(t, nil, task)
 		})
 	}
 }
 
+func TestUpdateHandler(t *testing.T) {
+	var updates = make(chan Task, 2)
+	var updateHandler = func(task Task) {
+		updates <- task
+	}
+
+	tsk := NewTask(updateHandler)
+	testChild := tsk.Child("child")
+	select {
+	case u := <-updates:
+		if u != testChild {
+			t.Error("Unexpected update")
+		}
+	default:
+		t.Error("Expected an update")
+	}
+	testChild.SetState(TaskStateSuccess)
+	select {
+	case u := <-updates:
+		if u != testChild {
+			t.Error("Unexpected update")
+		}
+	default:
+		t.Error("Expected an update")
+	}
+}
+
 func TestTaskRetrieval(t *testing.T) {
-	tsk := NewTask()
+	tsk := NewTask(nil)
 	test1 := tsk.Child("child")
 	test2 := tsk.Child("child")
 
 	if test1 != test2 {
 		t.Error("Retrieving created child was not as expected")
-	}
-}
-
-func expectUpdate(t *testing.T, child Task, task Task) {
-	select {
-	case u := <-task.Updates():
-		if u == nil {
-			t.Fatal("Nil update")
-		}
-		if u.Task() != child {
-			t.Error("Wrong child returned")
-		}
-	default:
-		t.Error("Expected state update message")
 	}
 }

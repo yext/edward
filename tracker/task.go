@@ -13,19 +13,13 @@ type Task interface {
 
 	Duration() time.Duration
 
-	Updates() <-chan Update
-	Close()
-
 	Messages() []string
 
 	Child(name string) Task
 	Children() []Task
 }
 
-type Update interface {
-	Task() Task
-	Ack()
-}
+type UpdateHandler func(updatedTask Task)
 
 type TaskState int
 
@@ -38,10 +32,9 @@ const (
 )
 
 type task struct {
-	name        string
-	messages    []string
-	updateCount int
-	state       TaskState
+	name     string
+	messages []string
+	state    TaskState
 
 	childNames []string
 	children   map[string]*task
@@ -49,19 +42,20 @@ type task struct {
 	startTime time.Time
 	endTime   time.Time
 
-	updates   chan Update
+	updateHandler UpdateHandler
+
 	readMtx   *sync.Mutex
 	updateMtx *sync.Mutex
 }
 
-func NewTask() Task {
+func NewTask(updateHandler UpdateHandler) Task {
 	return &task{
-		name:      "",
-		children:  make(map[string]*task),
-		updates:   make(chan Update, 2),
-		startTime: time.Now(),
-		readMtx:   &sync.Mutex{},
-		updateMtx: &sync.Mutex{},
+		name:          "",
+		children:      make(map[string]*task),
+		startTime:     time.Now(),
+		readMtx:       &sync.Mutex{},
+		updateMtx:     &sync.Mutex{},
+		updateHandler: updateHandler,
 	}
 }
 
@@ -117,14 +111,9 @@ func (t *task) Duration() time.Duration {
 	return t.endTime.Sub(t.startTime)
 }
 
-func (t *task) Updates() <-chan Update {
-	return t.updates
-}
-
 func (t *task) Close() {
-	t.readMtx.Lock()
-	defer t.readMtx.Unlock()
-	close(t.updates)
+	t.updateMtx.Lock()
+	defer t.updateMtx.Unlock()
 }
 
 func (t *task) SetState(state TaskState, messages ...string) {
@@ -141,16 +130,15 @@ func (t *task) SetState(state TaskState, messages ...string) {
 	if state != TaskStateInProgress && state != TaskStatePending {
 		t.endTime = time.Now()
 	}
-
-	t.updateCount++
-	t.sendUpdateAndWait(t)
+	if t.updateHandler != nil {
+		t.updateHandler(t)
+	}
 }
 
 func (t *task) Messages() []string {
 	t.readMtx.Lock()
 	defer t.readMtx.Unlock()
-
-	return t.messages // append(t.messages, fmt.Sprintf("Updates: %v", t.updateCount))
+	return t.messages
 }
 
 func (t *task) Child(name string) Task {
@@ -166,14 +154,16 @@ func (t *task) Child(name string) Task {
 
 	t.childNames = append(t.childNames, name)
 	t.children[name] = &task{
-		name:      name,
-		children:  make(map[string]*task),
-		updates:   t.updates,
-		startTime: time.Now(),
-		readMtx:   t.readMtx,
-		updateMtx: t.updateMtx,
+		name:          name,
+		children:      make(map[string]*task),
+		updateHandler: t.updateHandler,
+		startTime:     time.Now(),
+		readMtx:       t.readMtx,
+		updateMtx:     t.updateMtx,
 	}
-	t.sendUpdateAndWait(t.children[name])
+	if t.updateHandler != nil {
+		t.updateHandler(t.children[name])
+	}
 	return t.children[name]
 }
 
@@ -186,26 +176,4 @@ func (t *task) Children() []Task {
 		children = append(children, t.children[c])
 	}
 	return children
-}
-
-func (t *task) sendUpdateAndWait(updated *task) {
-	update := &update{
-		task: updated,
-		ack:  make(chan struct{}),
-	}
-	t.updates <- update
-	_ = <-update.ack
-}
-
-type update struct {
-	task Task
-	ack  chan struct{}
-}
-
-func (u *update) Task() Task {
-	return u.task
-}
-
-func (u *update) Ack() {
-	close(u.ack)
 }
