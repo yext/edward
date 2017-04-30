@@ -120,6 +120,10 @@ func (t *task) Close() {
 }
 
 func (t *task) SetState(state TaskState, messages ...string) {
+	if state == t.State() {
+		return
+	}
+
 	t.mtx.Lock()
 	defer func() {
 		t.mtx.Unlock()

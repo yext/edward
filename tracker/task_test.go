@@ -118,15 +118,20 @@ func TestTracker(t *testing.T) {
 			}
 			for _, state := range test.jobs {
 				child := task.Child(state.name)
-				expectUpdate(t, task)
+				expectUpdate(t, child, task)
+			}
+			for _, state := range test.jobs {
+				child := task.Child(state.name)
 				child.SetState(state.state, state.message...)
-				expectUpdate(t, task)
+				if state.state != TaskStatePending {
+					expectUpdate(t, child, task)
+				}
 			}
 			orderedChildren := task.Children()
 			for index, state := range test.jobs {
 				child := task.Child(state.name)
 				if orderedChildren[index] != child {
-					t.Errorf("Child as index %v was not the expected child", index)
+					t.Errorf("Child at index %v was not the expected child. Expected %v, got %v.", index, state.name, orderedChildren[index].Name())
 				}
 				if child.State() != state.state {
 					t.Errorf("Child state for '%v' was '%v', expected '%v'.", state.name, child.State(), state.state)
@@ -145,14 +150,27 @@ func TestTracker(t *testing.T) {
 				t.Errorf(err.Error())
 			}
 			task.Close()
-			expectUpdate(t, task)
+			expectUpdate(t, nil, task)
 		})
 	}
 }
 
-func expectUpdate(t *testing.T, task Task) {
+func TestTaskRetrieval(t *testing.T) {
+	tsk := NewTask()
+	test1 := tsk.Child("child")
+	test2 := tsk.Child("child")
+
+	if test1 != test2 {
+		t.Error("Retrieving created child was not as expected")
+	}
+}
+
+func expectUpdate(t *testing.T, child Task, task Task) {
 	select {
-	case <-task.Updates():
+	case u := <-task.Updates():
+		if u != child {
+			t.Error("Wrong child returned")
+		}
 	default:
 		t.Error("Expected state update message")
 	}
