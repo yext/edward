@@ -44,8 +44,7 @@ type task struct {
 
 	updateHandler UpdateHandler
 
-	readMtx   *sync.Mutex
-	updateMtx *sync.Mutex
+	mtx *sync.Mutex
 }
 
 func NewTask(updateHandler UpdateHandler) Task {
@@ -53,8 +52,7 @@ func NewTask(updateHandler UpdateHandler) Task {
 		name:          "",
 		children:      make(map[string]*task),
 		startTime:     time.Now(),
-		readMtx:       &sync.Mutex{},
-		updateMtx:     &sync.Mutex{},
+		mtx:           &sync.Mutex{},
 		updateHandler: updateHandler,
 	}
 }
@@ -64,8 +62,8 @@ func (t *task) Name() string {
 }
 
 func (t *task) State() TaskState {
-	t.readMtx.Lock()
-	defer t.readMtx.Unlock()
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
 	return t.getState()
 }
 
@@ -103,54 +101,44 @@ func (t *task) getState() TaskState {
 }
 
 func (t *task) Duration() time.Duration {
-	t.readMtx.Lock()
-	defer t.readMtx.Unlock()
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
 	if t.state == TaskStateInProgress || t.state == TaskStatePending {
 		return time.Since(t.startTime)
 	}
 	return t.endTime.Sub(t.startTime)
 }
 
-func (t *task) Close() {
-	t.updateMtx.Lock()
-	defer t.updateMtx.Unlock()
+func (t *task) SetState(state TaskState, messages ...string) {
+	t.applyState(state, messages...)
+	if t.updateHandler != nil {
+		t.updateHandler(t)
+	}
 }
 
-func (t *task) SetState(state TaskState, messages ...string) {
-	t.updateMtx.Lock()
-	defer t.updateMtx.Unlock()
-
-	if state == t.getState() {
-		return
-	}
-
+func (t *task) applyState(state TaskState, messages ...string) {
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
 	t.state = state
 	t.messages = messages
 
 	if state != TaskStateInProgress && state != TaskStatePending {
 		t.endTime = time.Now()
 	}
-	if t.updateHandler != nil {
-		t.updateHandler(t)
-	}
 }
 
 func (t *task) Messages() []string {
-	t.readMtx.Lock()
-	defer t.readMtx.Unlock()
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
 	return t.messages
 }
 
 func (t *task) Child(name string) Task {
-	t.readMtx.Lock()
+	t.mtx.Lock()
 	if c, ok := t.children[name]; ok {
-		t.readMtx.Unlock()
+		t.mtx.Unlock()
 		return c
 	}
-	t.readMtx.Unlock()
-
-	t.updateMtx.Lock()
-	defer t.updateMtx.Unlock()
 
 	t.childNames = append(t.childNames, name)
 	t.children[name] = &task{
@@ -158,9 +146,9 @@ func (t *task) Child(name string) Task {
 		children:      make(map[string]*task),
 		updateHandler: t.updateHandler,
 		startTime:     time.Now(),
-		readMtx:       t.readMtx,
-		updateMtx:     t.updateMtx,
+		mtx:           t.mtx,
 	}
+	t.mtx.Unlock()
 	if t.updateHandler != nil {
 		t.updateHandler(t.children[name])
 	}
@@ -168,8 +156,8 @@ func (t *task) Child(name string) Task {
 }
 
 func (t *task) Children() []Task {
-	t.readMtx.Lock()
-	defer t.readMtx.Unlock()
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
 
 	var children []Task
 	for _, c := range t.childNames {
