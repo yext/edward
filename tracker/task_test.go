@@ -168,7 +168,10 @@ func TestTaskRetrieval(t *testing.T) {
 func expectUpdate(t *testing.T, child Task, task Task) {
 	select {
 	case u := <-task.Updates():
-		if u != child {
+		if u == nil {
+			t.Fatal("Nil update")
+		}
+		if u.Task() != child {
 			t.Error("Wrong child returned")
 		}
 	default:

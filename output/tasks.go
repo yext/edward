@@ -22,7 +22,8 @@ func FollowTask(task tracker.Task, f func() error) error {
 
 		inProgress := NewInProgressRenderer()
 
-		for updatedTask := range task.Updates() {
+		for update := range task.Updates() {
+			updatedTask := update.Task()
 			state := updatedTask.State()
 			if state != tracker.TaskStatePending &&
 				state != tracker.TaskStateInProgress {
@@ -36,6 +37,7 @@ func FollowTask(task tracker.Task, f func() error) error {
 
 			inProgress.Render(writer, task)
 			writer.Flush()
+			update.Ack()
 		}
 
 		updateWait.Done()

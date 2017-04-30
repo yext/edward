@@ -13,13 +13,18 @@ type Task interface {
 
 	Duration() time.Duration
 
-	Updates() <-chan Task
+	Updates() <-chan Update
 	Close()
 
 	Messages() []string
 
 	Child(name string) Task
 	Children() []Task
+}
+
+type Update interface {
+	Task() Task
+	Ack()
 }
 
 type TaskState int
@@ -33,39 +38,44 @@ const (
 )
 
 type task struct {
-	name     string
-	messages []string
-	state    TaskState
+	name        string
+	messages    []string
+	updateCount int
+	state       TaskState
 
 	childNames []string
-	children   map[string]Task
+	children   map[string]*task
 
 	startTime time.Time
 	endTime   time.Time
 
-	updates chan Task
-	mtx     sync.Mutex
+	updates   chan Update
+	readMtx   *sync.Mutex
+	updateMtx *sync.Mutex
 }
 
 func NewTask() Task {
 	return &task{
 		name:      "",
-		children:  make(map[string]Task),
-		updates:   make(chan Task, 2),
+		children:  make(map[string]*task),
+		updates:   make(chan Update, 2),
 		startTime: time.Now(),
+		readMtx:   &sync.Mutex{},
+		updateMtx: &sync.Mutex{},
 	}
 }
 
 func (t *task) Name() string {
-	t.mtx.Lock()
-	defer t.mtx.Unlock()
 	return t.name
 }
 
 func (t *task) State() TaskState {
-	t.mtx.Lock()
-	defer t.mtx.Unlock()
+	t.readMtx.Lock()
+	defer t.readMtx.Unlock()
+	return t.getState()
+}
 
+func (t *task) getState() TaskState {
 	if len(t.children) == 0 {
 		return t.state
 	}
@@ -74,7 +84,7 @@ func (t *task) State() TaskState {
 
 	for _, n := range t.childNames {
 		child := t.children[n]
-		states[child.State()]++
+		states[child.getState()]++
 	}
 
 	if count, ok := states[TaskStateFailed]; ok && count > 0 {
@@ -99,36 +109,31 @@ func (t *task) State() TaskState {
 }
 
 func (t *task) Duration() time.Duration {
-	t.mtx.Lock()
-	defer t.mtx.Unlock()
+	t.readMtx.Lock()
+	defer t.readMtx.Unlock()
 	if t.state == TaskStateInProgress || t.state == TaskStatePending {
 		return time.Since(t.startTime)
 	}
 	return t.endTime.Sub(t.startTime)
 }
 
-func (t *task) Updates() <-chan Task {
-	t.mtx.Lock()
-	defer t.mtx.Unlock()
+func (t *task) Updates() <-chan Update {
 	return t.updates
 }
 
 func (t *task) Close() {
-	t.mtx.Lock()
-	defer t.mtx.Unlock()
+	t.readMtx.Lock()
+	defer t.readMtx.Unlock()
 	close(t.updates)
 }
 
 func (t *task) SetState(state TaskState, messages ...string) {
-	if state == t.State() {
+	t.updateMtx.Lock()
+	defer t.updateMtx.Unlock()
+
+	if state == t.getState() {
 		return
 	}
-
-	t.mtx.Lock()
-	defer func() {
-		t.mtx.Unlock()
-		t.updates <- t
-	}()
 
 	t.state = state
 	t.messages = messages
@@ -136,47 +141,71 @@ func (t *task) SetState(state TaskState, messages ...string) {
 	if state != TaskStateInProgress && state != TaskStatePending {
 		t.endTime = time.Now()
 	}
+
+	t.updateCount++
+	t.sendUpdateAndWait(t)
 }
 
 func (t *task) Messages() []string {
-	t.mtx.Lock()
-	defer t.mtx.Unlock()
+	t.readMtx.Lock()
+	defer t.readMtx.Unlock()
 
-	return t.messages
+	return t.messages // append(t.messages, fmt.Sprintf("Updates: %v", t.updateCount))
 }
 
 func (t *task) Child(name string) Task {
-	var added Task
-	t.mtx.Lock()
-	defer func() {
-		t.mtx.Unlock()
-		if added != nil {
-			t.updates <- added
-		}
-	}()
-
+	t.readMtx.Lock()
 	if c, ok := t.children[name]; ok {
+		t.readMtx.Unlock()
 		return c
 	}
+	t.readMtx.Unlock()
+
+	t.updateMtx.Lock()
+	defer t.updateMtx.Unlock()
 
 	t.childNames = append(t.childNames, name)
 	t.children[name] = &task{
 		name:      name,
-		children:  make(map[string]Task),
+		children:  make(map[string]*task),
 		updates:   t.updates,
 		startTime: time.Now(),
+		readMtx:   t.readMtx,
+		updateMtx: t.updateMtx,
 	}
-	added = t.children[name]
+	t.sendUpdateAndWait(t.children[name])
 	return t.children[name]
 }
 
 func (t *task) Children() []Task {
-	t.mtx.Lock()
-	defer t.mtx.Unlock()
+	t.readMtx.Lock()
+	defer t.readMtx.Unlock()
 
 	var children []Task
 	for _, c := range t.childNames {
 		children = append(children, t.children[c])
 	}
 	return children
+}
+
+func (t *task) sendUpdateAndWait(updated *task) {
+	update := &update{
+		task: updated,
+		ack:  make(chan struct{}),
+	}
+	t.updates <- update
+	_ = <-update.ack
+}
+
+type update struct {
+	task Task
+	ack  chan struct{}
+}
+
+func (u *update) Task() Task {
+	return u.task
+}
+
+func (u *update) Ack() {
+	close(u.ack)
 }
