@@ -660,13 +660,13 @@ func restartOneOrMoreServices(serviceNames []string) error {
 	err = output.FollowTask(func(t tracker.Task) error {
 		launchPool := worker.NewPool(1)
 		launchPool.Start()
-		stopPool := worker.NewPool(3)
-		stopPool.Start()
 		defer func() {
 			launchPool.Stop()
 			_ = <-launchPool.Complete()
 		}()
 		for _, s := range sgs {
+			stopPool := worker.NewPool(3)
+			stopPool.Start()
 			err = s.Stop(cfg, t, stopPool)
 			if err != nil {
 				return errors.WithStack(err)
