@@ -7,9 +7,9 @@ build:
 	./build.sh
 
 test:
-	go test ./generators
-	go test ./config
-	go test ./tracker
+	go test -race -cover ./generators
+	go test -race -cover ./config
+	go test -race -cover ./tracker
 
 checkdocs:
 	./check_docs.sh
