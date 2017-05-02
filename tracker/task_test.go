@@ -3,6 +3,7 @@ package tracker
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestTracker(t *testing.T) {
@@ -164,6 +165,23 @@ func TestUpdateHandler(t *testing.T) {
 		}
 	default:
 		t.Error("Expected an update")
+	}
+}
+
+func TestDuration(t *testing.T) {
+	tsk := NewTask(nil)
+	lastDuration := tsk.Duration()
+	for i := 0; i < 5; i++ {
+		currentDuration := tsk.Duration()
+		if currentDuration < lastDuration {
+			t.Fatal("Duration went down rather than up while running")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	tsk.SetState(TaskStateSuccess)
+	currentDuration := tsk.Duration()
+	if currentDuration < lastDuration {
+		t.Fatal("Duration went down rather than up after completion")
 	}
 }
 
