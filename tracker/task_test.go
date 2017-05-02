@@ -1,7 +1,6 @@
 package tracker
 
 import (
-	"os"
 	"reflect"
 	"testing"
 )
@@ -136,11 +135,6 @@ func TestTracker(t *testing.T) {
 			}
 			if !reflect.DeepEqual(task.Messages(), test.expectedMessage) {
 				t.Errorf("Messages were not as expected")
-			}
-			renderer := &ANSIRenderer{}
-			err := renderer.Render(os.Stdout, task)
-			if err != nil {
-				t.Errorf(err.Error())
 			}
 		})
 	}
