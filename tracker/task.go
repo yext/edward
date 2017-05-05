@@ -44,7 +44,8 @@ type task struct {
 
 	updateHandler UpdateHandler
 
-	mtx *sync.Mutex
+	mtx       *sync.Mutex // Mutex for state
+	updateMtx *sync.Mutex // Mutex for handling updates
 }
 
 func NewTask(updateHandler UpdateHandler) Task {
@@ -53,6 +54,7 @@ func NewTask(updateHandler UpdateHandler) Task {
 		children:      make(map[string]*task),
 		startTime:     time.Now(),
 		mtx:           &sync.Mutex{},
+		updateMtx:     &sync.Mutex{},
 		updateHandler: updateHandler,
 	}
 }
@@ -111,9 +113,7 @@ func (t *task) Duration() time.Duration {
 
 func (t *task) SetState(state TaskState, messages ...string) {
 	t.applyState(state, messages...)
-	if t.updateHandler != nil {
-		t.updateHandler(t)
-	}
+	t.handleUpdate(t)
 }
 
 func (t *task) applyState(state TaskState, messages ...string) {
@@ -147,11 +147,11 @@ func (t *task) Child(name string) Task {
 		updateHandler: t.updateHandler,
 		startTime:     time.Now(),
 		mtx:           t.mtx,
+		updateMtx:     t.updateMtx,
 	}
 	t.mtx.Unlock()
-	if t.updateHandler != nil {
-		t.updateHandler(t.children[name])
-	}
+
+	t.handleUpdate(t.children[name])
 	return t.children[name]
 }
 
@@ -164,4 +164,12 @@ func (t *task) Children() []Task {
 		children = append(children, t.children[c])
 	}
 	return children
+}
+
+func (t *task) handleUpdate(updated Task) {
+	t.updateMtx.Lock()
+	defer t.updateMtx.Unlock()
+	if t.updateHandler != nil {
+		t.updateHandler(updated)
+	}
 }
