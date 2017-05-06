@@ -2,7 +2,10 @@ package services
 
 import (
 	"bufio"
+	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -480,7 +483,7 @@ func (c *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 	}
 
 	// Retrieve the PID if available
-	pidFile := command.getPidPath()
+	pidFile := command.Service.getPidPath()
 	c.printf("Checking pidfile for %v: %v\n", c.Name, pidFile)
 	if _, err := os.Stat(pidFile); err == nil {
 		dat, err := ioutil.ReadFile(pidFile)
@@ -520,4 +523,19 @@ func (c *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 	}
 
 	return command, nil
+}
+
+func (c *ServiceConfig) getPidPath() string {
+	dir := home.EdwardConfig.PidDir
+	name := c.Name
+	hasher := sha1.New()
+	hasher.Write([]byte(c.ConfigFile))
+	sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+	return path.Join(dir, fmt.Sprintf("%v.%v.pid", sha, name))
+}
+
+func (c *ServiceConfig) getPidPathLegacy() string {
+	dir := home.EdwardConfig.PidDir
+	name := c.Name
+	return path.Join(dir, fmt.Sprintf("%v.pid", name))
 }

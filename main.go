@@ -69,6 +69,10 @@ func main() {
 			config.InitEmptyConfig()
 		}
 
+		if command != "stop" {
+			// TODO: Check for legacy pidfiles and error out if any are found
+		}
+
 		if command != "run" {
 			checkUpdateChan = make(chan interface{})
 			go checkUpdateAvailable(checkUpdateChan)
