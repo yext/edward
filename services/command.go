@@ -414,6 +414,7 @@ func (c *ServiceCommand) RunStopScript() ([]byte, error) {
 
 func (c *ServiceCommand) clearPid() {
 	c.Pid = 0
+	os.Remove(c.Service.GetPidPathLegacy())
 	os.Remove(c.Service.getPidPath())
 }
 

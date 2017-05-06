@@ -70,7 +70,12 @@ func main() {
 		}
 
 		if command != "stop" {
-			// TODO: Check for legacy pidfiles and error out if any are found
+			// Check for legacy pidfiles and error out if any are found
+			for _, service := range config.GetServiceMap() {
+				if _, err := os.Stat(service.GetPidPathLegacy()); !os.IsNotExist(err) {
+					return errors.New("one or more services were started with an older version of Edward. Please run `edward stop` to stop these instances.")
+				}
+			}
 		}
 
 		if command != "run" {

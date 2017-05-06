@@ -483,46 +483,58 @@ func (c *ServiceConfig) GetCommand() (*ServiceCommand, error) {
 	}
 
 	// Retrieve the PID if available
-	pidFile := command.Service.getPidPath()
-	c.printf("Checking pidfile for %v: %v\n", c.Name, pidFile)
-	if _, err := os.Stat(pidFile); err == nil {
-		dat, err := ioutil.ReadFile(pidFile)
+	pidFile := c.getPidPath()
+	legacyPidFile := c.GetPidPathLegacy()
+	c.printf("Checking pidfile for %v", c.Name)
+	if _, err := os.Stat(legacyPidFile); err == nil {
+		command.Pid, err = c.getPid(command, legacyPidFile)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-		pid, err := strconv.Atoi(string(dat))
+	} else if _, err := os.Stat(pidFile); err == nil {
+		command.Pid, err = c.getPid(command, pidFile)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-		command.Pid = pid
-
-		exists, err := process.PidExists(int32(command.Pid))
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-		if !exists {
-			c.printf("Process for %v was not found, resetting.\n", c.Name)
-			command.clearState()
-		}
-
-		proc, err := process.NewProcess(int32(command.Pid))
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-		cmdline, err := proc.Cmdline()
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-		if !strings.Contains(cmdline, c.Name) {
-			c.printf("Process for %v was not as expected (found %v), resetting.\n", c.Name, cmdline)
-			command.clearState()
-		}
-
 	} else {
 		c.printf("No pidfile for %v", c.Name)
 	}
 
 	return command, nil
+}
+
+func (c *ServiceConfig) getPid(command *ServiceCommand, pidFile string) (int, error) {
+	dat, err := ioutil.ReadFile(pidFile)
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+	pid, err := strconv.Atoi(string(dat))
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	exists, err := process.PidExists(int32(pid))
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+	if !exists {
+		c.printf("Process for %v was not found, resetting.\n", c.Name)
+		command.clearState()
+	}
+
+	proc, err := process.NewProcess(int32(pid))
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+	cmdline, err := proc.Cmdline()
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+	if !strings.Contains(cmdline, c.Name) {
+		c.printf("Process for %v was not as expected (found %v), resetting.\n", c.Name, cmdline)
+		command.clearState()
+	}
+	return pid, nil
 }
 
 func (c *ServiceConfig) getPidPath() string {
@@ -534,7 +546,7 @@ func (c *ServiceConfig) getPidPath() string {
 	return path.Join(dir, fmt.Sprintf("%v.%v.pid", sha, name))
 }
 
-func (c *ServiceConfig) getPidPathLegacy() string {
+func (c *ServiceConfig) GetPidPathLegacy() string {
 	dir := home.EdwardConfig.PidDir
 	name := c.Name
 	return path.Join(dir, fmt.Sprintf("%v.pid", name))
