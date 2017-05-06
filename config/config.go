@@ -313,6 +313,9 @@ func (c *Config) initMaps() error {
 			}
 		}
 
+		if _, exists := svcs[g.Name]; exists {
+			return errors.New("A service already exists with the name: " + g.Name)
+		}
 		if _, exists := groups[g.Name]; exists {
 			return errors.New("Group name already exists: " + g.Name)
 		}

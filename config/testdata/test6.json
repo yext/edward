@@ -1,0 +1,36 @@
+{
+	"services": [
+		{
+			"name": "service1",
+			"path": ".",
+			"requiresSudo": true,
+			"commands": {
+				"build": "buildCmd",
+				"launch": "launchCmd",
+				"stop": "stopCmd"
+			},
+			"log_properties": {
+				"started": "startedProperty"
+			}
+		},
+		{
+			"name": "group",
+			"path": ".",
+			"requiresSudo": true,
+			"commands": {
+				"build": "buildCmd",
+				"launch": "launchCmd",
+				"stop": "stopCmd"
+			},
+			"log_properties": {
+				"started": "startedProperty"
+			}
+		}
+	],
+	"groups": [
+		{
+			"name": "group",
+			"children": ["service1"]
+		}
+	]
+}
