@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -28,7 +29,8 @@ type Config struct {
 	ServiceMap map[string]*services.ServiceConfig      `json:"-"`
 	GroupMap   map[string]*services.ServiceGroupConfig `json:"-"`
 
-	Logger common.Logger `json:"-"`
+	Logger   common.Logger `json:"-"`
+	FilePath string        `json:"-"`
 }
 
 // GroupDef defines a group based on a list of children specified by name
@@ -37,15 +39,11 @@ type GroupDef struct {
 	Children []string `json:"children"`
 }
 
-// LoadConfig loads configuration from json provided in an io.Reader
-func LoadConfig(reader io.Reader, edwardVersion string, logger common.Logger) (Config, error) {
-	outCfg, err := LoadConfigWithDir(reader, "", edwardVersion, logger)
-	return outCfg, errors.WithStack(err)
-}
-
 // LoadConfigWithDir loads configuration from an io.Reader with the working directory explicitly specified
-func LoadConfigWithDir(reader io.Reader, workingDir string, edwardVersion string, logger common.Logger) (Config, error) {
+func LoadConfigWithPath(reader io.Reader, filePath string, edwardVersion string, logger common.Logger) (Config, error) {
+	workingDir := path.Dir(filePath)
 	config, err := loadConfigContents(reader, workingDir, logger)
+	config.FilePath = filePath
 	if err != nil {
 		return Config{}, errors.WithStack(err)
 	}
@@ -286,6 +284,7 @@ func (c *Config) initMaps() error {
 		sc := s
 		sc.Logger = c.Logger
 		sc.Env = append(sc.Env, c.Env...)
+		sc.ConfigFile = c.FilePath
 		if sc.MatchesPlatform() {
 			if _, exists := svcs[sc.Name]; exists {
 				return errors.New("Service name already exists: " + sc.Name)

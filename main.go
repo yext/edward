@@ -326,7 +326,7 @@ func generate(c *cli.Context) error {
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		cfg, err = config.LoadConfigWithDir(r, filepath.Dir(configPath), edwardVersion, logger)
+		cfg, err = config.LoadConfigWithPath(r, configPath, edwardVersion, logger)
 		if err != nil {
 			return errors.WithMessage(err, configPath)
 		}

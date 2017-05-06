@@ -2,6 +2,8 @@ package services
 
 import (
 	"bufio"
+	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -426,7 +428,18 @@ func (c *ServiceCommand) clearState() {
 
 func (c *ServiceCommand) getPidPath() string {
 	dir := home.EdwardConfig.PidDir
-	return path.Join(dir, c.Service.Name+".pid")
+	name := c.Service.Name
+	hasher := sha1.New()
+	hasher.Write([]byte(c.Service.ConfigFile))
+	sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+	return path.Join(dir, fmt.Sprintf("%v.%v.pid", sha, name))
+}
+
+func (c *ServiceCommand) getPidPathLegacy() string {
+	dir := home.EdwardConfig.PidDir
+	name := c.Service.Name
+
+	return path.Join(dir, fmt.Sprintf("%v.pid", name))
 }
 
 // InterruptGroup sends an interrupt signal to a process group.

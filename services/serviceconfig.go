@@ -44,13 +44,18 @@ type ServiceConfig struct {
 
 	Platform string `json:"platform,omitempty"`
 
-	Logger common.Logger `json:"-"`
-
 	// Path to watch for updates, relative to config file. If specified, will enable hot reloading.
 	WatchJSON json.RawMessage `json:"watch,omitempty"`
 
 	// Action for warming up this service
 	Warmup *warmup.Warmup `json:"warmup,omitempty"`
+
+	// Path to config file from which this service was loaded
+	// This may be the file that imported the config containing the service definition.
+	ConfigFile string `json:"-"`
+
+	// Logger for actions on this service
+	Logger common.Logger `json:"-"`
 }
 
 // UnmarshalJSON provides additional handling when unmarshaling a service from config.

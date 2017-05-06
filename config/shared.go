@@ -33,7 +33,7 @@ func LoadSharedConfig(configPath string, edwardVersion string, logger *log.Logge
 			return errors.WithStack(err)
 		}
 		basePath = filepath.Dir(configPath)
-		cfg, err := LoadConfigWithDir(r, basePath, edwardVersion, logger)
+		cfg, err := LoadConfigWithPath(r, configPath, edwardVersion, logger)
 		if err != nil {
 			workingDir, _ := os.Getwd()
 			configRel, _ := filepath.Rel(workingDir, configPath)
