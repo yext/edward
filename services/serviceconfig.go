@@ -197,7 +197,7 @@ func (c *ServiceConfig) Build(cfg OperationConfig, overrides ContextOverride, ta
 		return nil
 	}
 
-	command, err := c.GetCommand()
+	command, err := c.GetCommand(overrides)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -210,13 +210,13 @@ func (c *ServiceConfig) Launch(cfg OperationConfig, overrides ContextOverride, t
 		return nil
 	}
 
-	command, err := c.GetCommand()
+	command, err := c.GetCommand(overrides)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
 	err = pool.Enqueue(func() error {
-		return errors.WithStack(command.StartAsync(cfg, task))
+		return errors.WithStack(command.StartAsync(cfg, overrides, task))
 	})
 	return errors.WithStack(err)
 }
@@ -238,12 +238,12 @@ func (c *ServiceConfig) Start(cfg OperationConfig, overrides ContextOverride, ta
 // Stop stops this service
 func (c *ServiceConfig) Stop(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
 	err := pool.Enqueue(func() error {
-		return errors.WithStack(c.doStop(cfg, task))
+		return errors.WithStack(c.doStop(cfg, overrides, task))
 	})
 	return errors.WithStack(err)
 }
 
-func (c *ServiceConfig) doStop(cfg OperationConfig, task tracker.Task) error {
+func (c *ServiceConfig) doStop(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error {
 	if cfg.IsExcluded(c) || c.Commands.Launch == "" {
 		return nil
 	}
@@ -251,7 +251,7 @@ func (c *ServiceConfig) doStop(cfg OperationConfig, task tracker.Task) error {
 	job := task.Child(c.GetName()).Child("Stop")
 	job.SetState(tracker.TaskStateInProgress)
 
-	command, err := c.GetCommand()
+	command, err := c.GetCommand(overrides)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -343,7 +343,7 @@ func waitForTerm(command *ServiceCommand, timeout time.Duration) (bool, error) {
 
 // Status returns the status for this service
 func (c *ServiceConfig) Status() ([]ServiceStatus, error) {
-	command, err := c.GetCommand()
+	command, err := c.GetCommand(ContextOverride{})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -479,9 +479,9 @@ func (c *ServiceConfig) GetRunLog() string {
 }
 
 // GetCommand returns the ServiceCommand for this service
-func (c *ServiceConfig) GetCommand() (*ServiceCommand, error) {
+func (c *ServiceConfig) GetCommand(overrides ContextOverride) (*ServiceCommand, error) {
 	c.printf("Building control command for: %v\n", c.Name)
-	command, err := LoadServiceCommand(c)
+	command, err := LoadServiceCommand(c, overrides)
 	return command, errors.WithStack(err)
 }
 

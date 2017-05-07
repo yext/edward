@@ -722,7 +722,7 @@ func (s serviceConfigByPID) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 func (s serviceConfigByPID) Less(i, j int) bool {
-	cmd1, _ := s[i].GetCommand()
-	cmd2, _ := s[j].GetCommand()
+	cmd1, _ := s[i].GetCommand(services.ContextOverride{})
+	cmd2, _ := s[j].GetCommand(services.ContextOverride{})
 	return cmd1.Pid < cmd2.Pid
 }

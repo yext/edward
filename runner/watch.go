@@ -89,7 +89,7 @@ func startWatch(watches *services.ServiceWatch, restart func() error, logger Log
 }
 
 func rebuildService(service *services.ServiceConfig, restart func() error, logger Logger) error {
-	command, err := service.GetCommand()
+	command, err := service.GetCommand(services.ContextOverride{})
 	if err != nil {
 		return errors.WithStack(err)
 	}

@@ -46,7 +46,7 @@ type ServiceCommand struct {
 }
 
 // LoadServiceCommand loads the command to control the specified service
-func LoadServiceCommand(service *ServiceConfig) (*ServiceCommand, error) {
+func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (*ServiceCommand, error) {
 	command := &ServiceCommand{
 		Service:    service,
 		ConfigFile: service.ConfigFile,
@@ -361,7 +361,7 @@ func (c *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 // StartAsync starts the service in the background
 // Will block until the service is known to have started successfully.
 // If the service fails to launch, an error will be returned.
-func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) error {
+func (c *ServiceCommand) StartAsync(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error {
 	if c.Service.Commands.Launch == "" {
 		return nil
 	}
@@ -425,7 +425,7 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) erro
 	} else {
 		startTask.SetState(tracker.TaskStateFailed, log...)
 	}
-	stopErr := c.Service.doStop(cfg, task.Child("Cleanup"))
+	stopErr := c.Service.doStop(cfg, overrides, task.Child("Cleanup"))
 	if stopErr != nil {
 		return errors.WithStack(stopErr)
 	}

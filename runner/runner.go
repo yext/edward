@@ -177,7 +177,7 @@ func (r *Runner) restartService() error {
 }
 
 func (r *Runner) stopService() error {
-	command, err := r.service.GetCommand()
+	command, err := r.service.GetCommand(services.ContextOverride{})
 	if err != nil {
 		r.messageLog.Printf("Could not get service command: %v\n", err)
 	}
