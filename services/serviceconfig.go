@@ -475,32 +475,9 @@ func (c *ServiceConfig) GetRunLog() string {
 
 // GetCommand returns the ServiceCommand for this service
 func (c *ServiceConfig) GetCommand() (*ServiceCommand, error) {
-
 	c.printf("Building control command for: %v\n", c.Name)
-	command := &ServiceCommand{
-		Service: c,
-		Logger:  c.Logger,
-	}
-
-	// Retrieve the PID if available
-	pidFile := c.getPidPath()
-	legacyPidFile := c.GetPidPathLegacy()
-	c.printf("Checking pidfile for %v", c.Name)
-	if _, err := os.Stat(legacyPidFile); err == nil {
-		command.Pid, err = c.getPid(command, legacyPidFile)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-	} else if _, err := os.Stat(pidFile); err == nil {
-		command.Pid, err = c.getPid(command, pidFile)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-	} else {
-		c.printf("No pidfile for %v", c.Name)
-	}
-
-	return command, nil
+	command, err := LoadServiceCommand(c)
+	return command, errors.WithStack(err)
 }
 
 func (c *ServiceConfig) getPid(command *ServiceCommand, pidFile string) (int, error) {
@@ -537,13 +514,13 @@ func (c *ServiceConfig) getPid(command *ServiceCommand, pidFile string) (int, er
 	return pid, nil
 }
 
-func (c *ServiceConfig) getPidPath() string {
-	dir := home.EdwardConfig.PidDir
+func (c *ServiceConfig) getStatePath() string {
+	dir := home.EdwardConfig.StateDir
 	name := c.Name
 	hasher := sha1.New()
 	hasher.Write([]byte(c.ConfigFile))
 	sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
-	return path.Join(dir, fmt.Sprintf("%v.%v.pid", sha, name))
+	return path.Join(dir, fmt.Sprintf("%v.%v.state", sha, name))
 }
 
 func (c *ServiceConfig) GetPidPathLegacy() string {

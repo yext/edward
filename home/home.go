@@ -14,6 +14,7 @@ type EdwardConfiguration struct {
 	EdwardLogDir string
 	LogDir       string
 	PidDir       string
+	StateDir     string
 	ScriptDir    string
 }
 
@@ -40,6 +41,8 @@ func (e *EdwardConfiguration) Initialize() error {
 	createDirIfNeeded(e.LogDir)
 	e.PidDir = path.Join(e.Dir, "pidFiles")
 	createDirIfNeeded(e.PidDir)
+	e.StateDir = path.Join(e.Dir, "stateFiles")
+	createDirIfNeeded(e.StateDir)
 	e.ScriptDir = path.Join(e.Dir, "scriptFiles")
 	createDirIfNeeded(e.ScriptDir)
 	return nil

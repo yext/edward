@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -30,9 +30,59 @@ var StartupTimeoutSeconds = 30
 // ServiceCommand provides state and functions for managing a service
 type ServiceCommand struct {
 	// Parent service config
-	Service *ServiceConfig
-	Pid     int
-	Logger  common.Logger
+	Service *ServiceConfig `json:"service"`
+	// Pid of currently running instance
+	Pid int `json:"pid"`
+	// Config file from which this instance was launched
+	ConfigFile string `json:"configFile"`
+	// The edward version under which this instance was launched
+	EdwardVersion string `json:"edwardVersion"`
+
+	Logger common.Logger `json:"-"`
+}
+
+// LoadServiceCommand loads the command to control the specified service
+func LoadServiceCommand(service *ServiceConfig) (*ServiceCommand, error) {
+	command := &ServiceCommand{
+		Service:    service,
+		ConfigFile: service.ConfigFile,
+	}
+	defer func() {
+		command.Service = service
+		command.Logger = service.Logger
+		command.EdwardVersion = common.EdwardVersion
+	}()
+
+	legacyPidFile := service.GetPidPathLegacy()
+	service.printf("Checking pidfile for %v", service.Name)
+	if _, err := os.Stat(legacyPidFile); err == nil {
+		command.Pid, err = service.getPid(command, legacyPidFile)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		return command, nil
+	}
+
+	stateFile := service.getStatePath()
+	if _, err := os.Stat(stateFile); err == nil {
+		raw, err := ioutil.ReadFile(stateFile)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		json.Unmarshal(raw, command)
+	}
+
+	return command, nil
+}
+
+// save will store the current state of this command to a state file
+func (c *ServiceCommand) save() error {
+	commandJSON, _ := json.Marshal(c)
+	err := ioutil.WriteFile(c.Service.getStatePath(), commandJSON, 0644)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
 }
 
 func (c *ServiceCommand) printf(format string, v ...interface{}) {
@@ -348,17 +398,15 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) erro
 		return errors.WithStack(err)
 	}
 
-	pid := cmd.Process.Pid
+	c.Pid = cmd.Process.Pid
 
-	c.printf("%v has PID: %d.\n", c.Service.Name, pid)
+	c.printf("%v has PID: %d.\n", c.Service.Name, c.Pid)
 
-	pidStr := strconv.Itoa(pid)
-	f, err := os.Create(c.Service.getPidPath())
+	err = c.save()
 	if err != nil {
+		startTask.SetState(tracker.TaskStateFailed)
 		return errors.WithStack(err)
 	}
-	f.WriteString(pidStr)
-	f.Close()
 
 	err = c.waitUntilLive(cmd)
 	if err == nil {
@@ -415,7 +463,7 @@ func (c *ServiceCommand) RunStopScript() ([]byte, error) {
 func (c *ServiceCommand) clearPid() {
 	c.Pid = 0
 	os.Remove(c.Service.GetPidPathLegacy())
-	os.Remove(c.Service.getPidPath())
+	os.Remove(c.Service.getStatePath())
 }
 
 func (c *ServiceCommand) clearState() {

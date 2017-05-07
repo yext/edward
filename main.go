@@ -18,6 +18,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
+	"github.com/yext/edward/common"
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/generators"
 	"github.com/yext/edward/home"
@@ -30,8 +31,6 @@ import (
 )
 
 var logger *log.Logger
-
-const edwardVersion = "1.7.3"
 
 func main() {
 
@@ -51,13 +50,13 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "Edward"
 	app.Usage = "Manage local microservices"
-	app.Version = edwardVersion
+	app.Version = common.EdwardVersion
 	app.EnableBashCompletion = true
 	app.Before = func(c *cli.Context) error {
 		command := c.Args().First()
 
 		if command != "generate" {
-			err := config.LoadSharedConfig(getConfigPath(), edwardVersion, logger)
+			err := config.LoadSharedConfig(getConfigPath(), common.EdwardVersion, logger)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -238,7 +237,7 @@ func hasBashCompletion(c *cli.Context) bool {
 
 func checkUpdateAvailable(checkUpdateChan chan interface{}) {
 	defer close(checkUpdateChan)
-	updateAvailable, latestVersion, err := updates.UpdateAvailable("github.com/yext/edward", edwardVersion, filepath.Join(home.EdwardConfig.Dir, ".updatecache"), logger)
+	updateAvailable, latestVersion, err := updates.UpdateAvailable("github.com/yext/edward", common.EdwardVersion, filepath.Join(home.EdwardConfig.Dir, ".updatecache"), logger)
 	if err != nil {
 		logger.Println("Error checking for updates:", err)
 		return
@@ -335,7 +334,7 @@ func generate(c *cli.Context) error {
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		cfg, err = config.LoadConfigWithPath(r, configPath, edwardVersion, logger)
+		cfg, err = config.LoadConfigWithPath(r, configPath, common.EdwardVersion, logger)
 		if err != nil {
 			return errors.WithMessage(err, configPath)
 		}

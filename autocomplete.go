@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/urfave/cli"
+	"github.com/yext/edward/common"
 	"github.com/yext/edward/config"
 )
 
@@ -12,7 +13,7 @@ var didAutoComplete bool
 
 func autocompleteServicesAndGroups(c *cli.Context) {
 	didAutoComplete = true
-	config.LoadSharedConfig(getConfigPath(), edwardVersion, logger)
+	config.LoadSharedConfig(getConfigPath(), common.EdwardVersion, logger)
 	names := append(config.GetAllGroupNames(), config.GetAllServiceNames()...)
 	for _, name := range names {
 		fmt.Println(name)
