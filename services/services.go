@@ -46,13 +46,27 @@ func (o *OperationConfig) IsExcluded(sg ServiceOrGroup) bool {
 // ServiceOrGroup provides a common interface to services and groups
 type ServiceOrGroup interface {
 	GetName() string
-	Build(cfg OperationConfig, task tracker.Task) error                     // Build this service/group from source
-	Start(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error  // Build and Launch this service/group
-	Launch(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error // Launch this service/group without building
-	Stop(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error
+	Build(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error                     // Build this service/group from source
+	Start(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error  // Build and Launch this service/group
+	Launch(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error // Launch this service/group without building
+	Stop(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error
 	Status() ([]ServiceStatus, error)
 	IsSudo(cfg OperationConfig) bool
 	Watch() ([]ServiceWatch, error)
+}
+
+// ContextOverrides defines overrides for service configuration caused by commandline
+// flags or group configuration.
+type ContextOverride struct {
+	// Overrides to environment variables
+	Env []string
+}
+
+func (c ContextOverride) Merge(m ContextOverride) ContextOverride {
+	// TODO: Ensure that environment vars from c take precedence over m
+	return ContextOverride{
+		Env: append(c.Env, m.Env...),
+	}
 }
 
 // CountServices returns the total number of services in the slice of services and groups.

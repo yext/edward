@@ -37,6 +37,7 @@ type Config struct {
 type GroupDef struct {
 	Name     string   `json:"name"`
 	Children []string `json:"children"`
+	Env      []string `json:"env,omitempty"`
 }
 
 // LoadConfigWithDir loads configuration from an io.Reader with the working directory explicitly specified

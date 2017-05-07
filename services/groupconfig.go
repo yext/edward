@@ -18,6 +18,9 @@ type ServiceGroupConfig struct {
 	// Groups on which this group depends
 	Groups []*ServiceGroupConfig
 
+	// Environment variables to be passed to all child services
+	Env []string
+
 	Logger common.Logger
 }
 
@@ -34,20 +37,20 @@ func (c *ServiceGroupConfig) GetName() string {
 }
 
 // Build builds all services within this group
-func (c *ServiceGroupConfig) Build(cfg OperationConfig, task tracker.Task) error {
+func (c *ServiceGroupConfig) Build(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
 	groupTracker := task.Child(c.GetName())
 
 	for _, group := range c.Groups {
-		err := group.Build(cfg, groupTracker)
+		err := group.Build(cfg, overrides, groupTracker)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 	}
 	for _, service := range c.Services {
-		err := service.Build(cfg, groupTracker)
+		err := service.Build(cfg, overrides, groupTracker)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -56,14 +59,14 @@ func (c *ServiceGroupConfig) Build(cfg OperationConfig, task tracker.Task) error
 }
 
 // Start will build and launch all services within this group
-func (c *ServiceGroupConfig) Start(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error {
+func (c *ServiceGroupConfig) Start(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
 	groupTracker := task.Child(c.GetName())
 
 	for _, group := range c.Groups {
-		err := group.Start(cfg, groupTracker, pool)
+		err := group.Start(cfg, overrides, groupTracker, pool)
 		if err != nil {
 			// Always fail if any services in a dependant group failed
 			return errors.WithStack(err)
@@ -71,7 +74,7 @@ func (c *ServiceGroupConfig) Start(cfg OperationConfig, task tracker.Task, pool 
 	}
 	var outErr error
 	for _, service := range c.Services {
-		err := service.Start(cfg, groupTracker, pool)
+		err := service.Start(cfg, overrides, groupTracker, pool)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -80,14 +83,14 @@ func (c *ServiceGroupConfig) Start(cfg OperationConfig, task tracker.Task, pool 
 }
 
 // Launch will launch all services within this group
-func (c *ServiceGroupConfig) Launch(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error {
+func (c *ServiceGroupConfig) Launch(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
 
 	groupTracker := task.Child(c.GetName())
 	for _, group := range c.Groups {
-		err := group.Launch(cfg, groupTracker, pool)
+		err := group.Launch(cfg, overrides, groupTracker, pool)
 		if err != nil {
 			// Always fail if any services in a dependant group failed
 			return errors.WithStack(err)
@@ -95,7 +98,7 @@ func (c *ServiceGroupConfig) Launch(cfg OperationConfig, task tracker.Task, pool
 	}
 	var outErr error
 	for _, service := range c.Services {
-		err := service.Launch(cfg, groupTracker, pool)
+		err := service.Launch(cfg, overrides, groupTracker, pool)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -104,7 +107,7 @@ func (c *ServiceGroupConfig) Launch(cfg OperationConfig, task tracker.Task, pool
 }
 
 // Stop stops all services within this group
-func (c *ServiceGroupConfig) Stop(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error {
+func (c *ServiceGroupConfig) Stop(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
@@ -112,13 +115,13 @@ func (c *ServiceGroupConfig) Stop(cfg OperationConfig, task tracker.Task, pool *
 
 	// TODO: Do this in reverse
 	for _, service := range c.Services {
-		err := service.Stop(cfg, groupTracker, pool)
+		err := service.Stop(cfg, overrides, groupTracker, pool)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 	}
 	for _, group := range c.Groups {
-		err := group.Stop(cfg, groupTracker, pool)
+		err := group.Stop(cfg, overrides, groupTracker, pool)
 		if err != nil {
 			return errors.WithStack(err)
 		}

@@ -38,6 +38,10 @@ type ServiceCommand struct {
 	// The edward version under which this instance was launched
 	EdwardVersion string `json:"edwardVersion"`
 
+	// Env holds additional environment variables that were added to this service
+	// from its parent group or at the command line
+	Env []string `json:"env,omitempty"`
+
 	Logger common.Logger `json:"-"`
 }
 

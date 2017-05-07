@@ -557,9 +557,9 @@ func startAndTrack(c *cli.Context, sgs []services.ServiceOrGroup) error {
 		var err error
 		for _, s := range sgs {
 			if flags.skipBuild {
-				err = s.Launch(cfg, t, p)
+				err = s.Launch(cfg, services.ContextOverride{}, t, p)
 			} else {
-				err = s.Start(cfg, t, p)
+				err = s.Start(cfg, services.ContextOverride{}, t, p)
 			}
 			if err != nil {
 				return errors.New("Error launching " + s.GetName() + ": " + err.Error())
@@ -607,7 +607,7 @@ func stop(c *cli.Context) error {
 			_ = <-p.Complete()
 		}()
 		for _, s := range sgs {
-			_ = s.Stop(cfg, t, p)
+			_ = s.Stop(cfg, services.ContextOverride{}, t, p)
 		}
 		return nil
 	})
@@ -675,7 +675,7 @@ func restartOneOrMoreServices(serviceNames []string) error {
 		for _, s := range sgs {
 			stopPool := worker.NewPool(3)
 			stopPool.Start()
-			err = s.Stop(cfg, t, stopPool)
+			err = s.Stop(cfg, services.ContextOverride{}, t, stopPool)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -683,9 +683,9 @@ func restartOneOrMoreServices(serviceNames []string) error {
 			_ = <-stopPool.Complete()
 
 			if flags.skipBuild {
-				err = s.Launch(cfg, t, launchPool)
+				err = s.Launch(cfg, services.ContextOverride{}, t, launchPool)
 			} else {
-				err = s.Start(cfg, t, launchPool)
+				err = s.Start(cfg, services.ContextOverride{}, t, launchPool)
 			}
 			if err != nil {
 				return errors.WithStack(err)

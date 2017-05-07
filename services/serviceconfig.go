@@ -192,7 +192,7 @@ func (c *ServiceConfig) GetName() string {
 }
 
 // Build builds this service
-func (c *ServiceConfig) Build(cfg OperationConfig, task tracker.Task) error {
+func (c *ServiceConfig) Build(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
@@ -205,7 +205,7 @@ func (c *ServiceConfig) Build(cfg OperationConfig, task tracker.Task) error {
 }
 
 // Launch launches this service
-func (c *ServiceConfig) Launch(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error {
+func (c *ServiceConfig) Launch(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
@@ -222,21 +222,21 @@ func (c *ServiceConfig) Launch(cfg OperationConfig, task tracker.Task, pool *wor
 }
 
 // Start builds then launches this service
-func (c *ServiceConfig) Start(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error {
+func (c *ServiceConfig) Start(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
 	if cfg.IsExcluded(c) {
 		return nil
 	}
 
-	err := c.Build(cfg, task)
+	err := c.Build(cfg, overrides, task)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	err = c.Launch(cfg, task, pool)
+	err = c.Launch(cfg, overrides, task, pool)
 	return errors.WithStack(err)
 }
 
 // Stop stops this service
-func (c *ServiceConfig) Stop(cfg OperationConfig, task tracker.Task, pool *worker.Pool) error {
+func (c *ServiceConfig) Stop(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
 	err := pool.Enqueue(func() error {
 		return errors.WithStack(c.doStop(cfg, task))
 	})
@@ -354,16 +354,21 @@ func (c *ServiceConfig) Status() ([]ServiceStatus, error) {
 	}
 
 	if command.Pid != 0 {
-		status.Status = StatusRunning
-		status.Pid = command.Pid
 		proc, err := process.NewProcess(int32(command.Pid))
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
 		epochStart, err := proc.CreateTime()
 		if err != nil {
+			if strings.HasPrefix(err.Error(), "exit status") {
+				return []ServiceStatus{
+					status,
+				}, nil
+			}
 			return nil, errors.WithStack(err)
 		}
+		status.Status = StatusRunning
+		status.Pid = command.Pid
 		status.StartTime = time.Unix(epochStart/1000, 0)
 		status.Ports, err = c.getPorts(proc)
 		status.StdoutCount, status.StderrCount = c.getLogCounts()
