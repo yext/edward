@@ -494,28 +494,6 @@ func (c *ServiceConfig) getPid(command *ServiceCommand, pidFile string) (int, er
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
-
-	exists, err := process.PidExists(int32(pid))
-	if err != nil {
-		return 0, errors.WithStack(err)
-	}
-	if !exists {
-		c.printf("Process for %v was not found, resetting.\n", c.Name)
-		command.clearState()
-	}
-
-	proc, err := process.NewProcess(int32(pid))
-	if err != nil {
-		return 0, errors.WithStack(err)
-	}
-	cmdline, err := proc.Cmdline()
-	if err != nil {
-		return 0, errors.WithStack(err)
-	}
-	if !strings.Contains(cmdline, c.Name) {
-		c.printf("Process for %v was not as expected (found %v), resetting.\n", c.Name, cmdline)
-		command.clearState()
-	}
 	return pid, nil
 }
 

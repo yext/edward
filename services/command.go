@@ -46,8 +46,8 @@ type ServiceCommand struct {
 }
 
 // LoadServiceCommand loads the command to control the specified service
-func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (*ServiceCommand, error) {
-	command := &ServiceCommand{
+func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (command *ServiceCommand, err error) {
+	command = &ServiceCommand{
 		Service:    service,
 		ConfigFile: service.ConfigFile,
 	}
@@ -55,6 +55,7 @@ func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (*Ser
 		command.Service = service
 		command.Logger = service.Logger
 		command.EdwardVersion = common.EdwardVersion
+		err = command.checkPid()
 	}()
 
 	legacyPidFile := service.GetPidPathLegacy()
@@ -77,6 +78,34 @@ func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (*Ser
 	}
 
 	return command, nil
+}
+
+func (c *ServiceCommand) checkPid() error {
+	if c == nil || c.Pid == 0 {
+		return nil
+	}
+	exists, err := process.PidExists(int32(c.Pid))
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	if !exists {
+		c.printf("Process for %v was not found, resetting.\n", c.Service.Name)
+		c.clearState()
+	}
+
+	proc, err := process.NewProcess(int32(c.Pid))
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	cmdline, err := proc.Cmdline()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	if !strings.Contains(cmdline, c.Service.Name) {
+		c.printf("Process for %v was not as expected (found %v), resetting.\n", c.Service.Name, cmdline)
+		c.clearState()
+	}
+	return nil
 }
 
 // save will store the current state of this command to a state file
