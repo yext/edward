@@ -215,6 +215,7 @@ func (c *Config) AddGroups(groups []services.ServiceGroupConfig) error {
 		grp := GroupDef{
 			Name:     group.Name,
 			Children: []string{},
+			Env:      group.Env,
 		}
 		for _, cg := range group.Groups {
 			if cg != nil {
@@ -324,6 +325,7 @@ func (c *Config) initMaps() error {
 			Name:     g.Name,
 			Services: childServices,
 			Groups:   []*services.ServiceGroupConfig{},
+			Env:      g.Env,
 			Logger:   c.Logger,
 		}
 	}

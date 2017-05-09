@@ -1,0 +1,32 @@
+{
+    "groups": [
+      {
+        "name": "groupwithenv",
+        "children": ["noenv"],
+        "env": [
+          "MUST_SET=set"
+        ]
+      }
+    ],
+    "services": [
+        {
+            "name": "noenv",
+            "path": "envcheck",
+            "commands": {
+                "build": "go install",
+                "launch": "envcheck"
+            }
+        },
+        {
+            "name": "withenv",
+            "path": "envcheck",
+            "commands": {
+                "build": "go install",
+                "launch": "envcheck"
+            },
+            "env": [
+              "MUST_SET=set"
+            ]
+        }
+    ]
+}

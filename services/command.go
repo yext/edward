@@ -423,7 +423,7 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, overrides ContextOverri
 		startTask.SetState(tracker.TaskStateFailed, err.Error())
 		return errors.WithStack(err)
 	}
-	cmd.Env = os.Environ()
+	cmd.Env = append(os.Environ(), overrides.Env...)
 	cmd.Env = append(cmd.Env, c.Service.Env...)
 	err = cmd.Start()
 	if err != nil {

@@ -65,7 +65,7 @@ type ContextOverride struct {
 func (c ContextOverride) Merge(m ContextOverride) ContextOverride {
 	// TODO: Ensure that environment vars from c take precedence over m
 	return ContextOverride{
-		Env: append(c.Env, m.Env...),
+		Env: append(m.Env, c.Env...),
 	}
 }
 

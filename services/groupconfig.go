@@ -58,6 +58,13 @@ func (c *ServiceGroupConfig) Build(cfg OperationConfig, overrides ContextOverrid
 	return nil
 }
 
+func (c *ServiceGroupConfig) getOverrides(o ContextOverride) ContextOverride {
+	override := ContextOverride{
+		Env: c.Env,
+	}
+	return override.Merge(o)
+}
+
 // Start will build and launch all services within this group
 func (c *ServiceGroupConfig) Start(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
 	if cfg.IsExcluded(c) {
@@ -66,7 +73,7 @@ func (c *ServiceGroupConfig) Start(cfg OperationConfig, overrides ContextOverrid
 	groupTracker := task.Child(c.GetName())
 
 	for _, group := range c.Groups {
-		err := group.Start(cfg, overrides, groupTracker, pool)
+		err := group.Start(cfg, c.getOverrides(overrides), groupTracker, pool)
 		if err != nil {
 			// Always fail if any services in a dependant group failed
 			return errors.WithStack(err)
@@ -74,7 +81,7 @@ func (c *ServiceGroupConfig) Start(cfg OperationConfig, overrides ContextOverrid
 	}
 	var outErr error
 	for _, service := range c.Services {
-		err := service.Start(cfg, overrides, groupTracker, pool)
+		err := service.Start(cfg, c.getOverrides(overrides), groupTracker, pool)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -90,7 +97,7 @@ func (c *ServiceGroupConfig) Launch(cfg OperationConfig, overrides ContextOverri
 
 	groupTracker := task.Child(c.GetName())
 	for _, group := range c.Groups {
-		err := group.Launch(cfg, overrides, groupTracker, pool)
+		err := group.Launch(cfg, c.getOverrides(overrides), groupTracker, pool)
 		if err != nil {
 			// Always fail if any services in a dependant group failed
 			return errors.WithStack(err)
@@ -98,7 +105,7 @@ func (c *ServiceGroupConfig) Launch(cfg OperationConfig, overrides ContextOverri
 	}
 	var outErr error
 	for _, service := range c.Services {
-		err := service.Launch(cfg, overrides, groupTracker, pool)
+		err := service.Launch(cfg, c.getOverrides(overrides), groupTracker, pool)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -115,13 +122,13 @@ func (c *ServiceGroupConfig) Stop(cfg OperationConfig, overrides ContextOverride
 
 	// TODO: Do this in reverse
 	for _, service := range c.Services {
-		err := service.Stop(cfg, overrides, groupTracker, pool)
+		err := service.Stop(cfg, c.getOverrides(overrides), groupTracker, pool)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 	}
 	for _, group := range c.Groups {
-		err := group.Stop(cfg, overrides, groupTracker, pool)
+		err := group.Stop(cfg, c.getOverrides(overrides), groupTracker, pool)
 		if err != nil {
 			return errors.WithStack(err)
 		}
