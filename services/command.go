@@ -424,8 +424,7 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) erro
 	}
 	cmd.Env = append(os.Environ(), c.Overrides.Env...)
 	cmd.Env = append(cmd.Env, c.Service.Env...)
-	c.printf("Overrides: %v\n", c.Overrides)
-	c.printf("Env for start: %v\n", cmd.Env)
+
 	err = cmd.Start()
 	if err != nil {
 		startTask.SetState(tracker.TaskStateFailed)
