@@ -29,6 +29,7 @@ type ServiceStatus struct {
 type OperationConfig struct {
 	Exclusions []string // Names of services/groups to be excluded from this operation
 	NoWatch    bool
+	SkipBuild  bool
 }
 
 // IsExcluded returns true if the given service/group is excluded by this OperationConfig.
@@ -50,6 +51,7 @@ type ServiceOrGroup interface {
 	Start(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error  // Build and Launch this service/group
 	Launch(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error // Launch this service/group without building
 	Stop(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error
+	Restart(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error
 	Status() ([]ServiceStatus, error)
 	IsSudo(cfg OperationConfig) bool
 	Watch() ([]ServiceWatch, error)

@@ -243,6 +243,35 @@ func (c *ServiceConfig) Stop(cfg OperationConfig, overrides ContextOverride, tas
 	return errors.WithStack(err)
 }
 
+func (c *ServiceConfig) Restart(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
+	var err error
+
+	command, err := c.GetCommand(overrides)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	overrides = command.Overrides.Merge(overrides)
+
+	err = c.doStop(cfg, overrides, task)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if !cfg.SkipBuild {
+		err = c.Build(cfg, overrides, task)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	err = c.Launch(cfg, overrides, task, pool)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
+
 func (c *ServiceConfig) doStop(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error {
 	if cfg.IsExcluded(c) || c.Commands.Launch == "" {
 		return nil

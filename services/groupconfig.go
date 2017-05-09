@@ -136,6 +136,28 @@ func (c *ServiceGroupConfig) Stop(cfg OperationConfig, overrides ContextOverride
 	return nil
 }
 
+func (c *ServiceGroupConfig) Restart(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
+	if cfg.IsExcluded(c) {
+		return nil
+	}
+	groupTracker := task.Child(c.GetName())
+
+	// TODO: Do this in reverse
+	for _, service := range c.Services {
+		err := service.Restart(cfg, c.getOverrides(overrides), groupTracker, pool)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
+	for _, group := range c.Groups {
+		err := group.Restart(cfg, c.getOverrides(overrides), groupTracker, pool)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
+	return nil
+}
+
 // Status returns the status for all services within this group
 func (c *ServiceGroupConfig) Status() ([]ServiceStatus, error) {
 	var outStatus []ServiceStatus

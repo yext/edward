@@ -673,20 +673,7 @@ func restartOneOrMoreServices(serviceNames []string) error {
 			_ = <-launchPool.Complete()
 		}()
 		for _, s := range sgs {
-			stopPool := worker.NewPool(3)
-			stopPool.Start()
-			err = s.Stop(cfg, services.ContextOverride{}, t, stopPool)
-			if err != nil {
-				return errors.WithStack(err)
-			}
-			stopPool.Stop()
-			_ = <-stopPool.Complete()
-
-			if flags.skipBuild {
-				err = s.Launch(cfg, services.ContextOverride{}, t, launchPool)
-			} else {
-				err = s.Start(cfg, services.ContextOverride{}, t, launchPool)
-			}
+			err := s.Restart(cfg, services.ContextOverride{}, t, launchPool)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -710,6 +697,7 @@ func getOperationConfig() services.OperationConfig {
 	return services.OperationConfig{
 		Exclusions: []string(flags.exclude),
 		NoWatch:    flags.noWatch,
+		SkipBuild:  flags.skipBuild,
 	}
 }
 
