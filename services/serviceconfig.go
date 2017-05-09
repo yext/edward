@@ -216,7 +216,7 @@ func (c *ServiceConfig) Launch(cfg OperationConfig, overrides ContextOverride, t
 	}
 
 	err = pool.Enqueue(func() error {
-		return errors.WithStack(command.StartAsync(cfg, overrides, task))
+		return errors.WithStack(command.StartAsync(cfg, task))
 	})
 	return errors.WithStack(err)
 }

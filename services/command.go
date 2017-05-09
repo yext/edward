@@ -37,10 +37,8 @@ type ServiceCommand struct {
 	ConfigFile string `json:"configFile"`
 	// The edward version under which this instance was launched
 	EdwardVersion string `json:"edwardVersion"`
-
-	// Env holds additional environment variables that were added to this service
-	// from its parent group or at the command line
-	Env []string `json:"env,omitempty"`
+	// Overrides applied by the group under which this service was started
+	Overrides ContextOverride `json:"overrides,omitempty"`
 
 	Logger common.Logger `json:"-"`
 }
@@ -55,6 +53,7 @@ func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (comm
 		command.Service = service
 		command.Logger = service.Logger
 		command.EdwardVersion = common.EdwardVersion
+		command.Overrides = command.Overrides.Merge(overrides)
 		err = command.checkPid()
 	}()
 
@@ -390,7 +389,7 @@ func (c *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 // StartAsync starts the service in the background
 // Will block until the service is known to have started successfully.
 // If the service fails to launch, an error will be returned.
-func (c *ServiceCommand) StartAsync(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error {
+func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) error {
 	if c.Service.Commands.Launch == "" {
 		return nil
 	}
@@ -423,8 +422,10 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, overrides ContextOverri
 		startTask.SetState(tracker.TaskStateFailed, err.Error())
 		return errors.WithStack(err)
 	}
-	cmd.Env = append(os.Environ(), overrides.Env...)
+	cmd.Env = append(os.Environ(), c.Overrides.Env...)
 	cmd.Env = append(cmd.Env, c.Service.Env...)
+	c.printf("Overrides: %v\n", c.Overrides)
+	c.printf("Env for start: %v\n", cmd.Env)
 	err = cmd.Start()
 	if err != nil {
 		startTask.SetState(tracker.TaskStateFailed)
@@ -454,7 +455,7 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, overrides ContextOverri
 	} else {
 		startTask.SetState(tracker.TaskStateFailed, log...)
 	}
-	stopErr := c.Service.doStop(cfg, overrides, task.Child("Cleanup"))
+	stopErr := c.Service.doStop(cfg, c.Overrides, task.Child("Cleanup"))
 	if stopErr != nil {
 		return errors.WithStack(stopErr)
 	}
