@@ -264,7 +264,11 @@ func (c *ServiceConfig) Restart(cfg OperationConfig, overrides ContextOverride, 
 		}
 	}
 
-	err = c.Launch(cfg, overrides, task, pool)
+	startCmd, err := c.GetCommand(overrides)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	err = startCmd.StartAsync(cfg, task)
 	if err != nil {
 		return errors.WithStack(err)
 	}
