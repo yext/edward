@@ -234,6 +234,18 @@ A group's children can be either services, or other groups.
 
 The above example specifies a group called *mygroup* with two children, *childgroup* and *childservice*.
 
+You may also provide environment variables to be shared by the whole group, in the same format as for individual services:
+
+```json
+{
+  "name": "mygroup",
+  "children": ["childgroup", "childservice"],
+  "env": [
+    "ENV_VAR=value"
+  ]
+}
+```
+
 ## Imports
 
 The *imports* array is a list of other config files to be imported into this one:

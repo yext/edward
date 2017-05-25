@@ -594,6 +594,17 @@ A group&rsquo;s children can be either services, or other groups.</p>
 
 <p>The above example specifies a group called <em>mygroup</em> with two children, <em>childgroup</em> and <em>childservice</em>.</p>
 
+<p>You may also provide environment variables to be shared by the whole group, in the same format as for individual services:</p>
+
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;mygroup&quot;,
+  &quot;children&quot;: [&quot;childgroup&quot;, &quot;childservice&quot;],
+  &quot;env&quot;: [
+    &quot;ENV_VAR=value&quot;
+  ]
+}
+</code></pre>
+
 <h2 id="imports">Imports</h2>
 
 <p>The <em>imports</em> array is a list of other config files to be imported into this one:</p>
