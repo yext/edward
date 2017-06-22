@@ -39,7 +39,7 @@ type ServiceConfig struct {
 	Commands ServiceConfigCommands `json:"commands"`
 
 	// Checks to perform to ensure that a service has started correctly
-	LaunchChecks *LaunchChecks `json:"launch_checks"`
+	LaunchChecks *LaunchChecks `json:"launch_checks,omitempty"`
 
 	// Env holds environment variables for a service, for example: GOPATH=~/gocode/
 	// These will be added to the vars in the environment under which the Edward command was run

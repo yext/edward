@@ -68,10 +68,9 @@ func TestEdwardGenerator(t *testing.T) {
 			},
 			outServices: []*services.ServiceConfig{
 				{
-					Name:      "goproject",
-					Path:      common.StringToStringPointer("goproject"),
-					Env:       []string{},
-					WatchJSON: []byte("{\"include\":[\"goproject\"]}"),
+					Name: "goproject",
+					Path: common.StringToStringPointer("goproject"),
+					Env:  []string{},
 					Commands: services.ServiceConfigCommands{
 						Build:  "go install",
 						Launch: "goproject",
@@ -118,10 +117,9 @@ func TestGoGenerator(t *testing.T) {
 			path: "testdata/go/simple/",
 			outServices: []*services.ServiceConfig{
 				{
-					Name:      "simple",
-					Path:      common.StringToStringPointer("gocode/src/yext/simple"),
-					Env:       []string{},
-					WatchJSON: []byte("{\"include\":[\"gocode/src/yext/simple\"]}"),
+					Name: "simple",
+					Path: common.StringToStringPointer("gocode/src/yext/simple"),
+					Env:  []string{},
 					Commands: services.ServiceConfigCommands{
 						Build:  "go install",
 						Launch: "simple",
@@ -135,20 +133,18 @@ func TestGoGenerator(t *testing.T) {
 			path: "testdata/go/multiple/",
 			outServices: []*services.ServiceConfig{
 				{
-					Name:      "service1",
-					Path:      common.StringToStringPointer("service1"),
-					Env:       []string{},
-					WatchJSON: []byte("{\"include\":[\"service1\"]}"),
+					Name: "service1",
+					Path: common.StringToStringPointer("service1"),
+					Env:  []string{},
 					Commands: services.ServiceConfigCommands{
 						Build:  "go install",
 						Launch: "service1",
 					},
 				},
 				{
-					Name:      "service2",
-					Path:      common.StringToStringPointer("service2"),
-					Env:       []string{},
-					WatchJSON: []byte("{\"include\":[\"service2\"]}"),
+					Name: "service2",
+					Path: common.StringToStringPointer("service2"),
+					Env:  []string{},
 					Commands: services.ServiceConfigCommands{
 						Build:  "go install",
 						Launch: "service2",
@@ -163,10 +159,9 @@ func TestGoGenerator(t *testing.T) {
 			targets: []string{"service1"},
 			outServices: []*services.ServiceConfig{
 				{
-					Name:      "service1",
-					Path:      common.StringToStringPointer("service1"),
-					Env:       []string{},
-					WatchJSON: []byte("{\"include\":[\"service1\"]}"),
+					Name: "service1",
+					Path: common.StringToStringPointer("service1"),
+					Env:  []string{},
 					Commands: services.ServiceConfigCommands{
 						Build:  "go install",
 						Launch: "service1",

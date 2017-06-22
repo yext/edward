@@ -90,12 +90,6 @@ func (v *GoGenerator) goService(name, packagePath string) (*services.ServiceConf
 		},
 	}
 
-	watch, err := v.createWatch(service)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	service.SetWatch(watch)
-
 	return service, nil
 }
 

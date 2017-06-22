@@ -22,6 +22,9 @@ func (v *EdwardGenerator) Name() string {
 // VisitDir searches a directory for edward.json files, and will store an import
 // for any found. Returns true in the first return value if an import was found.
 func (v *EdwardGenerator) VisitDir(path string) (bool, error) {
+	if path == v.basePath {
+		return false, nil
+	}
 	files, _ := ioutil.ReadDir(path)
 	for _, f := range files {
 		if f.Name() == "edward.json" {
