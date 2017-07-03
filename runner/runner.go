@@ -111,6 +111,26 @@ func (r *Runner) run(c *cli.Context) error {
 		return errors.New("service not found")
 	}
 
+	err := r.configureLogs()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	defer r.messageLog.Printf("Service stopped\n")
+
+	r.commandWait.Add(1)
+	err = r.startService()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	r.configureWatch()
+	r.configureSignals()
+
+	r.commandWait.Wait()
+	return nil
+}
+
+func (r *Runner) configureLogs() error {
 	logLocation := r.service.GetRunLog()
 	os.Remove(logLocation)
 
@@ -125,24 +145,10 @@ func (r *Runner) run(c *cli.Context) error {
 		name:   r.service.Name,
 		stream: "messages",
 	}
-	defer r.messageLog.Printf("Service stopped\n")
+	return nil
+}
 
-	r.commandWait.Add(1)
-	err = r.startService()
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	if !r.noWatch {
-		closeWatchers, err := BeginWatch(r.service, r.restartService, r.messageLog)
-		if err != nil {
-			r.messageLog.Printf("Could not enable auto-restart: %v\n", err)
-		} else if closeWatchers != nil {
-			r.messageLog.Printf("Auto-restart enabled. This service will restart when files in its watch directories are edited.\nThis can be disabled using the --no-watch flag.\n")
-			defer closeWatchers()
-		}
-	}
-
+func (r *Runner) configureSignals() {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
 	go func() {
@@ -154,9 +160,18 @@ func (r *Runner) run(c *cli.Context) error {
 			}
 		}
 	}()
+}
 
-	r.commandWait.Wait()
-	return nil
+func (r *Runner) configureWatch() {
+	if !r.noWatch {
+		closeWatchers, err := BeginWatch(r.service, r.restartService, r.messageLog)
+		if err != nil {
+			r.messageLog.Printf("Could not enable auto-restart: %v\n", err)
+		} else if closeWatchers != nil {
+			r.messageLog.Printf("Auto-restart enabled. This service will restart when files in its watch directories are edited.\nThis can be disabled using the --no-watch flag.\n")
+			defer closeWatchers()
+		}
+	}
 }
 
 func (r *Runner) restartService() error {
