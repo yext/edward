@@ -162,7 +162,9 @@ func (c *ServiceCommand) BuildWithTracker(force bool, task tracker.Task) error {
 	if c.Service.Commands.Build == "" {
 		return nil
 	}
-
+	if task == nil {
+		return errors.New("task is nil")
+	}
 	job := task.Child("Build")
 	job.SetState(tracker.TaskStateInProgress)
 

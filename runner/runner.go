@@ -120,7 +120,10 @@ func (r *Runner) run(c *cli.Context) error {
 		return errors.WithStack(err)
 	}
 
-	r.configureWatch()
+	closeWatchers := r.configureWatch()
+	if closeWatchers != nil {
+		defer closeWatchers()
+	}
 	r.configureSignals()
 
 	r.commandWait.Wait()
@@ -159,16 +162,17 @@ func (r *Runner) configureSignals() {
 	}()
 }
 
-func (r *Runner) configureWatch() {
+func (r *Runner) configureWatch() func() {
 	if !r.noWatch {
 		closeWatchers, err := BeginWatch(r.service, r.restartService, r.messageLog)
 		if err != nil {
 			r.messageLog.Printf("Could not enable auto-restart: %v\n", err)
-		} else if closeWatchers != nil {
-			r.messageLog.Printf("Auto-restart enabled. This service will restart when files in its watch directories are edited.\nThis can be disabled using the --no-watch flag.\n")
-			defer closeWatchers()
+			return nil
 		}
+		r.messageLog.Printf("Auto-restart enabled. This service will restart when files in its watch directories are edited.\nThis can be disabled using the --no-watch flag.\n")
+		return closeWatchers
 	}
+	return nil
 }
 
 func (r *Runner) restartService() error {

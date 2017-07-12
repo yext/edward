@@ -2,11 +2,11 @@ package runner
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/yext/edward/services"
+	"github.com/yext/edward/tracker"
 	fsnotify "gopkg.in/fsnotify.v1"
 )
 
@@ -31,6 +31,7 @@ func BeginWatch(service services.ServiceOrGroup, restart func() error, logger Lo
 	}
 
 	closeAll := func() {
+		logger.Printf("Closing watchers")
 		for _, watch := range watchers {
 			watch.Close()
 		}
@@ -38,49 +39,42 @@ func BeginWatch(service services.ServiceOrGroup, restart func() error, logger Lo
 	return closeAll, nil
 }
 
-func startWatch(watches *services.ServiceWatch, restart func() error, logger Logger) (*fsnotify.Watcher, error) {
+func startWatch(watch *services.ServiceWatch, restart func() error, logger Logger) (*fsnotify.Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
 	go func() {
-		for {
-			select {
-			case event := <-watcher.Events:
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					logger.Printf("File edited: %v\n", event.Name)
-
-					var wasExcluded bool
-					for _, excluded := range watches.ExcludedPaths {
-						if strings.HasPrefix(event.Name, excluded) {
-							logger.Printf("File is under excluded path: %v\n", excluded)
-							wasExcluded = true
-							break
-						}
-					}
-
-					if wasExcluded {
-						continue
-					}
-					fmt.Printf("Rebuilding %v\n", watches.Service.GetName())
-					err = rebuildService(watches.Service, restart, logger)
-					if err != nil {
-						logger.Printf("Could not rebuild %v: %v\n", watches.Service.GetName(), err)
+		for event := range watcher.Events {
+			if event.Op == fsnotify.Write {
+				var wasExcluded bool
+				for _, excluded := range watch.ExcludedPaths {
+					if strings.HasPrefix(event.Name, excluded) {
+						logger.Printf("File is under excluded path: %v\n", excluded)
+						wasExcluded = true
+						break
 					}
 				}
 
-			case err = <-watcher.Errors:
+				if wasExcluded {
+					continue
+				}
+				fmt.Printf("Rebuilding %v\n", watch.Service.GetName())
+				err = rebuildService(watch.Service, restart, logger)
 				if err != nil {
-					log.Println("error:", err)
+					logger.Printf("Could not rebuild %v: %v\n", watch.Service.GetName(), err)
 				}
 			}
 		}
+		logger.Printf("No more events in watcher")
 	}()
 
-	for _, dir := range watches.IncludedPaths {
+	for _, dir := range watch.IncludedPaths {
+		logger.Printf("Adding: %s\n", dir)
 		err = watcher.Add(dir)
 		if err != nil {
+			logger.Printf("%v\n", err)
 			watcher.Close()
 			return nil, errors.WithStack(err)
 		}
@@ -94,9 +88,9 @@ func rebuildService(service *services.ServiceConfig, restart func() error, logge
 		return errors.WithStack(err)
 	}
 	logger.Printf("Build starting\n")
-	err = command.BuildWithTracker(true, nil)
+	err = command.BuildWithTracker(true, tracker.NewTask(func(updatedTask tracker.Task) {}))
 	if err != nil {
-		return errors.New("build failed")
+		return fmt.Errorf("build failed: %v", err)
 	}
 	logger.Printf("Build suceeded\n")
 	err = restart()
