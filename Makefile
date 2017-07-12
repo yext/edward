@@ -1,5 +1,7 @@
 all: build test checkdocs
 
+PKGS=`go list ./... | grep -v /vendor/`
+
 install:
 	go install
 
@@ -7,9 +9,7 @@ build:
 	./build.sh
 
 test:
-	go test -race -cover ./generators
-	go test -race -cover ./config
-	go test -race -cover ./tracker
+	go test -race -cover $(PKGS)
 
 checkdocs:
 	./check_docs.sh
