@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path"
 	"runtime"
@@ -59,6 +60,8 @@ type ServiceConfig struct {
 
 	// Logger for actions on this service
 	Logger common.Logger `json:"-"`
+
+	lockToken string
 }
 
 // UnmarshalJSON provides additional handling when unmarshaling a service from config.
@@ -193,6 +196,10 @@ func (c *ServiceConfig) GetName() string {
 
 // Build builds this service
 func (c *ServiceConfig) Build(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error {
+	if err := c.checkLock(); err != nil {
+		return errors.WithStack(err)
+	}
+
 	if cfg.IsExcluded(c) {
 		return nil
 	}
@@ -206,6 +213,10 @@ func (c *ServiceConfig) Build(cfg OperationConfig, overrides ContextOverride, ta
 
 // Launch launches this service
 func (c *ServiceConfig) Launch(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
+	if err := c.checkLock(); err != nil {
+		return errors.WithStack(err)
+	}
+
 	if cfg.IsExcluded(c) {
 		return nil
 	}
@@ -223,6 +234,10 @@ func (c *ServiceConfig) Launch(cfg OperationConfig, overrides ContextOverride, t
 
 // Start builds then launches this service
 func (c *ServiceConfig) Start(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
+	if err := c.checkLock(); err != nil {
+		return errors.WithStack(err)
+	}
+
 	if cfg.IsExcluded(c) {
 		return nil
 	}
@@ -244,8 +259,11 @@ func (c *ServiceConfig) Stop(cfg OperationConfig, overrides ContextOverride, tas
 }
 
 func (c *ServiceConfig) Restart(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
-	var err error
+	if err := c.checkLock(); err != nil {
+		return errors.WithStack(err)
+	}
 
+	var err error
 	command, err := c.GetCommand(overrides)
 	if err != nil {
 		return errors.WithStack(err)
@@ -277,7 +295,15 @@ func (c *ServiceConfig) Restart(cfg OperationConfig, overrides ContextOverride, 
 }
 
 func (c *ServiceConfig) doStop(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error {
-	if cfg.IsExcluded(c) || c.Commands.Launch == "" {
+	if cfg.IsExcluded(c) {
+		return nil
+	}
+
+	if err := c.checkLock(); err != nil {
+		return errors.WithStack(err)
+	}
+
+	if c.Commands.Launch == "" {
 		return nil
 	}
 
@@ -513,6 +539,9 @@ func (c *ServiceConfig) GetRunLog() string {
 
 // GetCommand returns the ServiceCommand for this service
 func (c *ServiceConfig) GetCommand(overrides ContextOverride) (*ServiceCommand, error) {
+	if err := c.checkLock(); err != nil {
+		return nil, errors.WithStack(err)
+	}
 	c.printf("Building control command for: %v\n", c.Name)
 	command, err := LoadServiceCommand(c, overrides)
 	return command, errors.WithStack(err)
@@ -530,17 +559,96 @@ func (c *ServiceConfig) getPid(command *ServiceCommand, pidFile string) (int, er
 	return pid, nil
 }
 
-func (c *ServiceConfig) getStatePath() string {
+func (c *ServiceConfig) getStateBase() string {
 	dir := home.EdwardConfig.StateDir
 	name := c.Name
 	hasher := sha1.New()
 	hasher.Write([]byte(c.ConfigFile))
 	sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
-	return path.Join(dir, fmt.Sprintf("%v.%v.state", sha, name))
+	return path.Join(dir, fmt.Sprintf("%v.%v", sha, name))
+}
+
+func (c *ServiceConfig) getStatePath() string {
+	return fmt.Sprintf("%v.state", c.getStateBase())
 }
 
 func (c *ServiceConfig) GetPidPathLegacy() string {
 	dir := home.EdwardConfig.PidDir
 	name := c.Name
 	return path.Join(dir, fmt.Sprintf("%v.pid", name))
+}
+
+func (c *ServiceConfig) getLockPath() string {
+	return fmt.Sprintf("%v.lock", c.getStateBase())
+}
+
+func (c *ServiceConfig) checkLock() error {
+	path := c.getLockPath()
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil
+	}
+
+	dat, err := ioutil.ReadFile(path)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	var ls LockState
+	err = json.Unmarshal(dat, &ls)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	if ls.Token != c.lockToken {
+		return fmt.Errorf("service locked: %v", ls.Reason)
+	}
+	return nil
+}
+
+type LockState struct {
+	Reason string
+	Token  string
+}
+
+func (c *ServiceConfig) createLock(reason string, token string) error {
+	ls := LockState{
+		Reason: reason,
+		Token:  token,
+	}
+	dat, err := json.Marshal(ls)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	path := c.getLockPath()
+	err = ioutil.WriteFile(path, dat, os.ModePerm)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
+}
+
+// ObtainLock will lock this service from performing other operations,
+// It will return an unlocked instance of this service for performing an operation, and
+// a function to unlock it.
+func (c *ServiceConfig) ObtainLock(reason string) (*ServiceConfig, func() error, error) {
+	if err := c.checkLock(); err != nil {
+		return nil, nil, errors.WithStack(err)
+	}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	token := fmt.Sprint(r.Float64())
+	err := c.createLock(reason, token)
+	if err != nil {
+		return nil, nil, errors.WithStack(err)
+	}
+	nc := *c
+	nc.lockToken = token
+	unlock := func() error {
+		return errors.WithStack(nc.deleteLock())
+	}
+	return &nc, unlock, nil
+}
+
+func (c *ServiceConfig) deleteLock() error {
+	if err := c.checkLock(); err != nil {
+		return errors.WithStack(err)
+	}
+	return errors.WithStack(os.Remove(c.getLockPath()))
 }
