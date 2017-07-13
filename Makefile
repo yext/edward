@@ -1,6 +1,6 @@
 all: build test checkdocs
 
-PKGS=`go list ./... | grep -v /vendor/`
+PKGS=`go list ./... | grep -v /vendor/ | grep -v /examples/`
 
 install:
 	go install
