@@ -169,7 +169,9 @@ func (r *Runner) configureWatch() func() {
 			r.messageLog.Printf("Could not enable auto-restart: %v\n", err)
 			return nil
 		}
-		r.messageLog.Printf("Auto-restart enabled. This service will restart when files in its watch directories are edited.\nThis can be disabled using the --no-watch flag.\n")
+		if closeWatchers != nil {
+			r.messageLog.Printf("Auto-restart enabled. This service will restart when files in its watch directories are edited.\nThis can be disabled using the --no-watch flag.\n")
+		}
 		return closeWatchers
 	}
 	return nil
