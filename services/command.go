@@ -205,7 +205,12 @@ func (c *ServiceCommand) waitForLogText(line string, cancel <-chan struct{}) err
 	// Read output until we get the success
 	var t *tail.Tail
 	var err error
-	t, err = tail.TailFile(c.Service.GetRunLog(), tail.Config{Follow: true, Logger: tail.DiscardingLogger})
+	t, err = tail.TailFile(c.Service.GetRunLog(), tail.Config{
+		Follow: true,
+		ReOpen: true,
+		Poll:   true,
+		Logger: tail.DiscardingLogger,
+	})
 	if err != nil {
 		return errors.WithStack(err)
 	}
