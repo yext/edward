@@ -58,20 +58,15 @@ import (
 	"strings"
 )
 
+////////////////////////////////////////////////////////////
+
 // An IgnoreParser is an interface which exposes two methods:
 //   MatchesPath() - Returns true if the path is targeted by the patterns compiled in the GitIgnore structure
 type IgnoreParser interface {
-	IncludesPath(f string) bool
-	IgnoresPath(f string) bool
 	MatchesPath(f string) bool
 }
 
-// GitIgnore is a struct which contains a slice of regexp.Regexp
-// patterns
-type GitIgnore struct {
-	patterns []*regexp.Regexp // List of regexp patterns which this ignore file applies
-	negate   []bool           // List of booleans which determine if the pattern is negated
-}
+////////////////////////////////////////////////////////////
 
 // This function pretty much attempts to mimic the parsing rules
 // listed above at the start of this file
@@ -151,6 +146,15 @@ func getPatternFromLine(line string) (*regexp.Regexp, bool) {
 	return pattern, negatePattern
 }
 
+////////////////////////////////////////////////////////////
+
+// GitIgnore is a struct which contains a slice of regexp.Regexp
+// patterns
+type GitIgnore struct {
+	patterns []*regexp.Regexp // List of regexp patterns which this ignore file applies
+	negate   []bool           // List of booleans which determine if the pattern is negated
+}
+
 // Accepts a variadic set of strings, and returns a GitIgnore object which
 // converts and appends the lines in the input to regexp.Regexp patterns
 // held within the GitIgnore objects "patterns" field
@@ -177,6 +181,19 @@ func CompileIgnoreFile(fpath string) (*GitIgnore, error) {
 	return nil, error
 }
 
+// Accepts a ignore file as the input, parses the lines out of the file
+// and invokes the CompileIgnoreLines method with additional lines
+func CompileIgnoreFileAndLines(fpath string, lines ...string) (*GitIgnore, error) {
+	buffer, error := ioutil.ReadFile(fpath)
+	if error == nil {
+		s := strings.Split(string(buffer), "\n")
+		return CompileIgnoreLines(append(s, lines...)...)
+	}
+	return nil, error
+}
+
+////////////////////////////////////////////////////////////
+
 // MatchesPath is an interface function for the IgnoreParser interface.
 // It returns true if the given GitIgnore structure would target a given
 // path string "f"
@@ -198,3 +215,5 @@ func (g GitIgnore) MatchesPath(f string) bool {
 	}
 	return matchesPath
 }
+
+////////////////////////////////////////////////////////////

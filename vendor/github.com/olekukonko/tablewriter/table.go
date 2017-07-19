@@ -9,6 +9,7 @@
 package tablewriter
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"regexp"
@@ -20,10 +21,11 @@ const (
 )
 
 const (
-	CENTER = "+"
-	ROW    = "-"
-	COLUMN = "|"
-	SPACE  = " "
+	CENTER  = "+"
+	ROW     = "-"
+	COLUMN  = "|"
+	SPACE   = " "
+	NEWLINE = "\n"
 )
 
 const (
@@ -46,28 +48,30 @@ type Border struct {
 }
 
 type Table struct {
-	out      io.Writer
-	rows     [][]string
-	lines    [][][]string
-	cs       map[int]int
-	rs       map[int]int
-	headers  []string
-	footers  []string
-	autoFmt  bool
-	autoWrap bool
-	mW       int
-	pCenter  string
-	pRow     string
-	pColumn  string
-	tColumn  int
-	tRow     int
-	hAlign   int
-	fAlign   int
-	align    int
-	rowLine  bool
-	hdrLine  bool
-	borders  Border
-	colSize  int
+	out            io.Writer
+	rows           [][]string
+	lines          [][][]string
+	cs             map[int]int
+	rs             map[int]int
+	headers        []string
+	footers        []string
+	autoFmt        bool
+	autoWrap       bool
+	mW             int
+	pCenter        string
+	pRow           string
+	pColumn        string
+	tColumn        int
+	tRow           int
+	hAlign         int
+	fAlign         int
+	align          int
+	newLine        string
+	rowLine        bool
+	autoMergeCells bool
+	hdrLine        bool
+	borders        Border
+	colSize        int
 }
 
 // Start New Table
@@ -92,6 +96,7 @@ func NewWriter(writer io.Writer) *Table {
 		hAlign:   ALIGN_DEFAULT,
 		fAlign:   ALIGN_DEFAULT,
 		align:    ALIGN_DEFAULT,
+		newLine:  NEWLINE,
 		rowLine:  false,
 		hdrLine:  true,
 		borders:  Border{Left: true, Right: true, Bottom: true, Top: true},
@@ -105,7 +110,11 @@ func (t Table) Render() {
 		t.printLine(true)
 	}
 	t.printHeading()
-	t.printRows()
+	if t.autoMergeCells {
+		t.printRowsMergeCells()
+	} else {
+		t.printRows()
+	}
 
 	if !t.rowLine && t.borders.Bottom {
 		t.printLine(true)
@@ -177,6 +186,11 @@ func (t *Table) SetAlignment(align int) {
 	t.align = align
 }
 
+// Set New Line
+func (t *Table) SetNewLine(nl string) {
+	t.newLine = nl
+}
+
 // Set Header Line
 // This would enable / disable a line after the header
 func (t *Table) SetHeaderLine(line bool) {
@@ -187,6 +201,12 @@ func (t *Table) SetHeaderLine(line bool) {
 // This would enable / disable a line on each row of the table
 func (t *Table) SetRowLine(line bool) {
 	t.rowLine = line
+}
+
+// Set Auto Merge Cells
+// This would enable / disable the merge of cells with identical values
+func (t *Table) SetAutoMergeCells(auto bool) {
+	t.autoMergeCells = auto
 }
 
 // Set Table Border
@@ -241,7 +261,31 @@ func (t Table) printLine(nl bool) {
 			t.pCenter)
 	}
 	if nl {
-		fmt.Fprintln(t.out)
+		fmt.Fprint(t.out, t.newLine)
+	}
+}
+
+// Print line based on row width with our without cell separator
+func (t Table) printLineOptionalCellSeparators(nl bool, displayCellSeparator []bool) {
+	fmt.Fprint(t.out, t.pCenter)
+	for i := 0; i < len(t.cs); i++ {
+		v := t.cs[i]
+		if i > len(displayCellSeparator) || displayCellSeparator[i] {
+			// Display the cell separator
+			fmt.Fprintf(t.out, "%s%s%s%s",
+				t.pRow,
+				strings.Repeat(string(t.pRow), v),
+				t.pRow,
+				t.pCenter)
+		} else {
+			// Don't display the cell separator for this cell
+			fmt.Fprintf(t.out, "%s%s",
+				strings.Repeat(" ", v+2),
+				t.pCenter)
+		}
+	}
+	if nl {
+		fmt.Fprint(t.out, t.newLine)
 	}
 }
 
@@ -288,7 +332,7 @@ func (t Table) printHeading() {
 			pad)
 	}
 	// Next line
-	fmt.Fprintln(t.out)
+	fmt.Fprint(t.out, t.newLine)
 	if t.hdrLine {
 		t.printLine(true)
 	}
@@ -332,7 +376,7 @@ func (t Table) printFooter() {
 			pad)
 	}
 	// Next line
-	fmt.Fprintln(t.out)
+	fmt.Fprint(t.out, t.newLine)
 	//t.printLine(true)
 
 	hasPrinted := false
@@ -383,7 +427,7 @@ func (t Table) printFooter() {
 
 	}
 
-	fmt.Fprintln(t.out)
+	fmt.Fprint(t.out, t.newLine)
 
 }
 
@@ -461,13 +505,110 @@ func (t Table) printRow(columns [][]string, colKey int) {
 		// Check if border is set
 		// Replace with space if not set
 		fmt.Fprint(t.out, ConditionString(t.borders.Left, t.pColumn, SPACE))
-		fmt.Fprintln(t.out)
+		fmt.Fprint(t.out, t.newLine)
 	}
 
 	if t.rowLine {
 		t.printLine(true)
 	}
+}
 
+// Print the rows of the table and merge the cells that are identical
+func (t Table) printRowsMergeCells() {
+	var previousLine []string
+	var displayCellBorder []bool
+	var tmpWriter bytes.Buffer
+	for i, lines := range t.lines {
+		// We store the display of the current line in a tmp writer, as we need to know which border needs to be print above
+		previousLine, displayCellBorder = t.printRowMergeCells(&tmpWriter, lines, i, previousLine)
+		if i > 0 { //We don't need to print borders above first line
+			if t.rowLine {
+				t.printLineOptionalCellSeparators(true, displayCellBorder)
+			}
+		}
+		tmpWriter.WriteTo(t.out)
+	}
+	//Print the end of the table
+	if t.rowLine {
+		t.printLine(true)
+	}
+}
+
+// Print Row Information to a writer and merge identical cells.
+// Adjust column alignment based on type
+
+func (t Table) printRowMergeCells(writer io.Writer, columns [][]string, colKey int, previousLine []string) ([]string, []bool) {
+	// Get Maximum Height
+	max := t.rs[colKey]
+	total := len(columns)
+
+	// Pad Each Height
+	pads := []int{}
+
+	for i, line := range columns {
+		length := len(line)
+		pad := max - length
+		pads = append(pads, pad)
+		for n := 0; n < pad; n++ {
+			columns[i] = append(columns[i], "  ")
+		}
+	}
+
+	var displayCellBorder []bool
+	for x := 0; x < max; x++ {
+		for y := 0; y < total; y++ {
+
+			// Check if border is set
+			fmt.Fprint(writer, ConditionString((!t.borders.Left && y == 0), SPACE, t.pColumn))
+
+			fmt.Fprintf(writer, SPACE)
+
+			str := columns[y][x]
+
+			if t.autoMergeCells {
+				//Store the full line to merge mutli-lines cells
+				fullLine := strings.Join(columns[y], " ")
+				if len(previousLine) > y && fullLine == previousLine[y] && fullLine != "" {
+					// If this cell is identical to the one above but not empty, we don't display the border and keep the cell empty.
+					displayCellBorder = append(displayCellBorder, false)
+					str = ""
+				} else {
+					// First line or different content, keep the content and print the cell border
+					displayCellBorder = append(displayCellBorder, true)
+				}
+			}
+
+			// This would print alignment
+			// Default alignment  would use multiple configuration
+			switch t.align {
+			case ALIGN_CENTER: //
+				fmt.Fprintf(writer, "%s", Pad(str, SPACE, t.cs[y]))
+			case ALIGN_RIGHT:
+				fmt.Fprintf(writer, "%s", PadLeft(str, SPACE, t.cs[y]))
+			case ALIGN_LEFT:
+				fmt.Fprintf(writer, "%s", PadRight(str, SPACE, t.cs[y]))
+			default:
+				if decimal.MatchString(strings.TrimSpace(str)) || percent.MatchString(strings.TrimSpace(str)) {
+					fmt.Fprintf(writer, "%s", PadLeft(str, SPACE, t.cs[y]))
+				} else {
+					fmt.Fprintf(writer, "%s", PadRight(str, SPACE, t.cs[y]))
+				}
+			}
+			fmt.Fprintf(writer, SPACE)
+		}
+		// Check if border is set
+		// Replace with space if not set
+		fmt.Fprint(writer, ConditionString(t.borders.Left, t.pColumn, SPACE))
+		fmt.Fprint(writer, t.newLine)
+	}
+
+	//The new previous line is the current one
+	previousLine = make([]string, total)
+	for y := 0; y < total; y++ {
+		previousLine[y] = strings.Join(columns[y], " ") //Store the full line for multi-lines cells
+	}
+	//Returns the newly added line and wether or not a border should be displayed above.
+	return previousLine, displayCellBorder
 }
 
 func (t *Table) parseDimension(str string, colKey, rowKey int) []string {

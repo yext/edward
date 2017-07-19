@@ -1,3 +1,4 @@
+// Copyright (c) 2015 HPE Software Inc. All rights reserved.
 // Copyright (c) 2013 ActiveState Software Inc. All rights reserved.
 
 package watch
@@ -56,8 +57,6 @@ func (fw *PollingFileWatcher) ChangeEvents(t *tomb.Tomb, pos int64) (*FileChange
 	fw.Size = pos
 
 	go func() {
-		defer changes.Close()
-
 		prevSize := fw.Size
 		for {
 			select {

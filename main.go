@@ -60,7 +60,7 @@ func main() {
 		if command != "generate" {
 			err := config.LoadSharedConfig(getConfigPath(), common.EdwardVersion, logger)
 			if err != nil {
-				return errors.WithStack(err)
+				return cli.NewExitError(err.Error(), 2)
 			}
 			err = os.Chdir(config.GetBasePath())
 			if err != nil {
@@ -74,7 +74,7 @@ func main() {
 			// Check for legacy pidfiles and error out if any are found
 			for _, service := range config.GetServiceMap() {
 				if _, err := os.Stat(service.GetPidPathLegacy()); !os.IsNotExist(err) {
-					return errors.New("one or more services were started with an older version of Edward. Please run `edward stop` to stop these instances.")
+					return cli.NewExitError("One or more services were started with an older version of Edward. Please run `edward stop` to stop these instances.", 3)
 				}
 			}
 		}
