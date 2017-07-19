@@ -4,6 +4,7 @@ before_script:
   - wget https://github.com/spf13/hugo/releases/download/v0.21/hugo_0.21_Linux-64bit.tar.gz -O /tmp/hugo.tar.gz
   - tar -xvf /tmp/hugo.tar.gz
   - export PATH=$PATH:$PWD/hugo_0.21_Linux-64bit/
+  - echo $PATH
 
 before_install:
   - go get github.com/mitchellh/gox
