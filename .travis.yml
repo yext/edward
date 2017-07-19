@@ -5,7 +5,7 @@ before_script:
   - mkdir /tmp/hugo
   - tar -xvf /tmp/hugo.tar.gz -C /tmp/hugo
   - export PATH=$PATH:/tmp/hugo/hugo_0.21_Linux-64bit/
-  - echo $PATH
+  - ls /tmp/hugo/hugo_0.21_Linux-64bit/
 
 before_install:
   - go get github.com/mitchellh/gox
