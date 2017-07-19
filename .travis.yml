@@ -4,8 +4,8 @@ before_script:
   - wget https://github.com/spf13/hugo/releases/download/v0.21/hugo_0.21_Linux-64bit.tar.gz -O /tmp/hugo.tar.gz
   - mkdir /tmp/hugo
   - tar -xvf /tmp/hugo.tar.gz -C /tmp/hugo
-  - export PATH=$PATH:/tmp/hugo/hugo_0.21_Linux-64bit/
-  - ls /tmp/hugo/hugo_0.21_Linux-64bit/
+  - export PATH=$PATH:/tmp/hugo/
+  - ls /tmp/hugo/
 
 before_install:
   - go get github.com/mitchellh/gox
