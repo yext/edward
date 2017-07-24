@@ -28,6 +28,11 @@ var Command = cli.Command{
 			Usage:       "Disable autorestart",
 			Destination: &(runnerInstance.noWatch),
 		},
+		cli.StringFlag{
+			Name:        "d, directory",
+			Usage:       "Working directory",
+			Destination: &(runnerInstance.workingDir),
+		},
 	},
 }
 
@@ -40,6 +45,7 @@ type Runner struct {
 
 	commandWait sync.WaitGroup
 	noWatch     bool
+	workingDir  string
 }
 
 // NewRunningCommand creates a RunningCommand for a given service and exec.Cmd
@@ -97,6 +103,13 @@ type Logger interface {
 }
 
 func (r *Runner) run(c *cli.Context) error {
+	if r.workingDir != "" {
+		err := os.Chdir(r.workingDir)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
 	args := c.Args()
 	if len(args) < 1 {
 		return errors.New("a service name is required")

@@ -32,11 +32,21 @@ type Client struct {
 	NoPrompt bool
 
 	ServiceChecks func([]services.ServiceOrGroup) error
+
+	EdwardExecutable string
+
+	Follower TaskFollower
+}
+
+type TaskFollower interface {
+	Handle(update tracker.Task)
+	Done()
 }
 
 func NewClient() *Client {
 	return &Client{
-		Output: os.Stdout,
+		Output:   os.Stdout,
+		Follower: output.NewFollower(),
 	}
 }
 
@@ -60,7 +70,7 @@ func (c *Client) Start(names []string, skipBuild bool, tail bool, noWatch bool, 
 		}
 	}
 
-	err = startAndTrack(sgs, skipBuild, tail, noWatch, exclude)
+	err = c.startAndTrack(sgs, skipBuild, tail, noWatch, exclude, c.EdwardExecutable)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -122,26 +132,28 @@ func (c *Client) restartOneOrMoreServices(serviceNames []string, skipBuild bool,
 	}
 
 	cfg := services.OperationConfig{
-		Exclusions: exclude,
-		SkipBuild:  skipBuild,
-		NoWatch:    noWatch,
+		EdwardExecutable: c.EdwardExecutable,
+		Exclusions:       exclude,
+		SkipBuild:        skipBuild,
+		NoWatch:          noWatch,
 	}
-	err = output.FollowTask(func(t tracker.Task) error {
-		launchPool := worker.NewPool(1)
-		launchPool.Start()
-		defer func() {
-			launchPool.Stop()
-			_ = <-launchPool.Complete()
-		}()
-		for _, s := range sgs {
-			err = s.Restart(cfg, services.ContextOverride{}, t, launchPool)
-			if err != nil {
-				return errors.WithStack(err)
-			}
+
+	task := tracker.NewTask(c.Follower.Handle)
+	defer c.Follower.Done()
+
+	launchPool := worker.NewPool(1)
+	launchPool.Start()
+	defer func() {
+		launchPool.Stop()
+		_ = <-launchPool.Complete()
+	}()
+	for _, s := range sgs {
+		err = s.Restart(cfg, services.ContextOverride{}, task, launchPool)
+		if err != nil {
+			return errors.WithStack(err)
 		}
-		return nil
-	})
-	return errors.WithStack(err)
+	}
+	return nil
 }
 
 func (c *Client) Stop(names []string, exclude []string) error {
@@ -176,22 +188,23 @@ func (c *Client) Stop(names []string, exclude []string) error {
 	}
 
 	cfg := services.OperationConfig{
-		Exclusions: exclude,
+		EdwardExecutable: c.EdwardExecutable,
+		Exclusions:       exclude,
 	}
-	err = output.FollowTask(func(t tracker.Task) error {
-		p := worker.NewPool(3)
-		p.Start()
-		defer func() {
-			p.Stop()
-			_ = <-p.Complete()
-		}()
-		for _, s := range sgs {
-			_ = s.Stop(cfg, services.ContextOverride{}, t, p)
-		}
-		return nil
-	})
 
-	return errors.WithStack(err)
+	task := tracker.NewTask(c.Follower.Handle)
+	defer c.Follower.Done()
+
+	p := worker.NewPool(3)
+	p.Start()
+	defer func() {
+		p.Stop()
+		_ = <-p.Complete()
+	}()
+	for _, s := range sgs {
+		_ = s.Stop(cfg, services.ContextOverride{}, task, p)
+	}
+	return nil
 }
 
 func (c *Client) Status(names []string) error {
@@ -425,33 +438,35 @@ func (c *Client) Generate(names []string, noPrompt bool) error {
 	return nil
 }
 
-func startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, tail bool, noWatch bool, exclude []string) error {
+func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, tail bool, noWatch bool, exclude []string, edwardExecutable string) error {
 	cfg := services.OperationConfig{
-		Exclusions: exclude,
-		SkipBuild:  skipBuild,
-		NoWatch:    noWatch,
+		EdwardExecutable: edwardExecutable,
+		Exclusions:       exclude,
+		SkipBuild:        skipBuild,
+		NoWatch:          noWatch,
 	}
-	err := output.FollowTask(func(t tracker.Task) error {
-		p := worker.NewPool(1)
-		p.Start()
-		defer func() {
-			p.Stop()
-			_ = <-p.Complete()
-		}()
-		var err error
-		for _, s := range sgs {
-			if skipBuild {
-				err = s.Launch(cfg, services.ContextOverride{}, t, p)
-			} else {
-				err = s.Start(cfg, services.ContextOverride{}, t, p)
-			}
-			if err != nil {
-				return errors.New("Error launching " + s.GetName() + ": " + err.Error())
-			}
+
+	task := tracker.NewTask(c.Follower.Handle)
+	defer c.Follower.Done()
+
+	p := worker.NewPool(1)
+	p.Start()
+	defer func() {
+		p.Stop()
+		_ = <-p.Complete()
+	}()
+	var err error
+	for _, s := range sgs {
+		if skipBuild {
+			err = s.Launch(cfg, services.ContextOverride{}, task, p)
+		} else {
+			err = s.Start(cfg, services.ContextOverride{}, task, p)
 		}
-		return nil
-	})
-	return errors.WithStack(err)
+		if err != nil {
+			return errors.New("Error launching " + s.GetName() + ": " + err.Error())
+		}
+	}
+	return nil
 }
 
 func (c *Client) tailFromFlag(names []string) error {

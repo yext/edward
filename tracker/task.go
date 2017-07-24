@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// Task provides methods to represent the state of a runnable work item.
 type Task interface {
 	Name() string
 
@@ -17,19 +18,47 @@ type Task interface {
 
 	Child(name string) Task
 	Children() []Task
+
+	Lineage() []Task
 }
 
+// UpdateHandler receives updates from a Task
 type UpdateHandler func(updatedTask Task)
 
+// TaskState represents the current state of a task
 type TaskState int
 
 const (
+	// TaskStatePending indicates that a task has not yet started.
 	TaskStatePending TaskState = iota
+	// TaskStateInProgress indicates that a task is currently running.
 	TaskStateInProgress
+	// TaskStateSuccess indicates that a task has completed successfully.
 	TaskStateSuccess
+	// TaskStateWarning indicates that a task has completed with a non-fatal error condition.
 	TaskStateWarning
+	// TaskStateFailed indicates that a task has completed with a fatal error condition.
 	TaskStateFailed
 )
+
+func (t TaskState) String() string {
+	switch t {
+	case TaskStatePending:
+		return "Pending"
+	case TaskStateInProgress:
+		return "In Progress"
+	case TaskStateSuccess:
+		return "Success"
+	case TaskStateWarning:
+		return "Warning"
+	case TaskStateFailed:
+		return "Failed"
+	default:
+		return "Unknown State"
+	}
+}
+
+var _ Task = &task{}
 
 type task struct {
 	name     string
@@ -43,6 +72,8 @@ type task struct {
 	endTime   time.Time
 
 	updateHandler UpdateHandler
+
+	parent *task
 
 	mtx       *sync.Mutex // Mutex for state
 	updateMtx *sync.Mutex // Mutex for handling updates
@@ -143,6 +174,7 @@ func (t *task) Child(name string) Task {
 	t.childNames = append(t.childNames, name)
 	t.children[name] = &task{
 		name:          name,
+		parent:        t,
 		children:      make(map[string]*task),
 		updateHandler: t.updateHandler,
 		startTime:     time.Now(),
@@ -164,6 +196,13 @@ func (t *task) Children() []Task {
 		children = append(children, t.children[c])
 	}
 	return children
+}
+
+func (t *task) Lineage() []Task {
+	if t.parent == nil {
+		return []Task{t}
+	}
+	return append(t.parent.Lineage(), t)
 }
 
 func (t *task) handleUpdate(updated Task) {

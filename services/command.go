@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -468,15 +469,32 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) erro
 	return errors.WithStack(err)
 }
 
+func readAvailableLines(r io.ReadCloser) ([]string, error) {
+	var out []string
+	reader := bufio.NewReader(r)
+	for reader.Buffered() > 0 {
+		line, _, err := reader.ReadLine()
+		if err != nil {
+			return out, errors.WithStack(err)
+		}
+		out = append(out, string(line))
+	}
+	return nil, nil
+}
+
 func (c *ServiceCommand) getLaunchCommand(cfg OperationConfig) (*exec.Cmd, error) {
-	command := os.Args[0]
+	command := cfg.EdwardExecutable
 	cmdArgs := []string{
 		"run",
 	}
 	if cfg.NoWatch {
 		cmdArgs = append(cmdArgs, "--no-watch")
 	}
-	cmdArgs = append(cmdArgs, c.Service.Name)
+	workingDir, err := os.Getwd()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	cmdArgs = append(cmdArgs, "--directory", workingDir, c.Service.Name)
 
 	cmd := exec.Command(command, cmdArgs...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

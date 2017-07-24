@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 )
@@ -16,5 +17,5 @@ func main() {
 	http.HandleFunc("/", handler)
 	fmt.Println("Starting to listen on port", os.Args[1])
 
-	http.ListenAndServe(":"+os.Args[1], nil)
+	log.Fatal(http.ListenAndServe(":"+os.Args[1], nil))
 }

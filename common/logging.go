@@ -8,6 +8,8 @@ type Logger interface {
 // NullLogger implements the Logger interface with no-op functions
 type NullLogger struct{}
 
+var _ Logger = NullLogger{}
+
 // Printf is a no-op print function
 func (n NullLogger) Printf(_ string, _ ...interface{}) {}
 

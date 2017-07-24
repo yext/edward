@@ -27,9 +27,10 @@ type ServiceStatus struct {
 // OperationConfig provides additional configuration for an operation
 // on a service or group
 type OperationConfig struct {
-	Exclusions []string // Names of services/groups to be excluded from this operation
-	NoWatch    bool
-	SkipBuild  bool
+	EdwardExecutable string   // Path to the edward executable for launching runners
+	Exclusions       []string // Names of services/groups to be excluded from this operation
+	NoWatch          bool
+	SkipBuild        bool
 }
 
 // IsExcluded returns true if the given service/group is excluded by this OperationConfig.

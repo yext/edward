@@ -1,12 +1,12 @@
 package config
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
 
 	"github.com/pkg/errors"
+	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
 )
 
@@ -25,7 +25,7 @@ func GetServiceMap() map[string]*services.ServiceConfig {
 }
 
 // LoadSharedConfig loads an Edward project config into the shared maps
-func LoadSharedConfig(configPath string, edwardVersion string, logger *log.Logger) error {
+func LoadSharedConfig(configPath string, edwardVersion string, logger common.Logger) error {
 	InitEmptyConfig()
 	if configPath != "" {
 		basePath = filepath.Dir(configPath)

@@ -22,6 +22,7 @@ func NewInProgressRenderer() *InProgressRenderer {
 }
 
 func (r *InProgressRenderer) Render(w io.Writer, task tracker.Task) error {
+	task = task.Lineage()[0]
 	return errors.WithStack(r.doRenderWithPrefix("", 0, w, task))
 }
 

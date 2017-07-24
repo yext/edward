@@ -46,6 +46,8 @@ func main() {
 		return errors.WithStack(sudoIfNeeded(sgs))
 	}
 	edwardClient.Logger = logger
+	// Populate the Edward executable with this binary
+	edwardClient.EdwardExecutable = os.Args[0]
 
 	var checkUpdateChan chan interface{}
 
