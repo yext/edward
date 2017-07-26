@@ -404,7 +404,9 @@ func TestLoadConfigWithImports(t *testing.T) {
 }
 
 func validateTestResults(cfg Config, err error, expectedServices map[string]*services.ServiceConfig, expectedGroups map[string]*services.ServiceGroupConfig, expectedErr error, name string, t *testing.T) {
-
+	for _, s := range cfg.ServiceMap {
+		s.ConfigFile = ""
+	}
 	must.BeEqual(t, expectedServices, cfg.ServiceMap, name+": services did not match.")
 	must.BeEqual(t, expectedGroups, cfg.GroupMap, name+": groups did not match.")
 

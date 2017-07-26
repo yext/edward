@@ -280,13 +280,17 @@ func (c *Config) combinePath(path string) *string {
 }
 
 func (c *Config) initMaps() error {
+	var err error
 	var svcs = make(map[string]*services.ServiceConfig)
 	var servicesSkipped = make(map[string]struct{})
 	for _, s := range append(c.Services, c.ImportedServices...) {
 		sc := s
 		sc.Logger = c.Logger
 		sc.Env = append(sc.Env, c.Env...)
-		sc.ConfigFile = c.FilePath
+		sc.ConfigFile, err = filepath.Abs(c.FilePath)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 		if sc.MatchesPlatform() {
 			if _, exists := svcs[sc.Name]; exists {
 				return errors.New("Service name already exists: " + sc.Name)
