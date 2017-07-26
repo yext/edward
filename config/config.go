@@ -41,7 +41,11 @@ type GroupDef struct {
 }
 
 // LoadConfigWithDir loads configuration from an io.Reader with the working directory explicitly specified
-func LoadConfigWithPath(reader io.Reader, filePath string, edwardVersion string, logger common.Logger) (Config, error) {
+func LoadConfig(filePath string, edwardVersion string, logger common.Logger) (Config, error) {
+	reader, err := os.Open(filePath)
+	if err != nil {
+		return Config{}, errors.WithStack(err)
+	}
 	workingDir := path.Dir(filePath)
 	config, err := loadConfigContents(reader, workingDir, logger)
 	config.FilePath = filePath

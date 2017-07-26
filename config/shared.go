@@ -28,12 +28,8 @@ func GetServiceMap() map[string]*services.ServiceConfig {
 func LoadSharedConfig(configPath string, edwardVersion string, logger *log.Logger) error {
 	InitEmptyConfig()
 	if configPath != "" {
-		r, err := os.Open(configPath)
-		if err != nil {
-			return errors.WithStack(err)
-		}
 		basePath = filepath.Dir(configPath)
-		cfg, err := LoadConfigWithPath(r, configPath, edwardVersion, logger)
+		cfg, err := LoadConfig(configPath, edwardVersion, logger)
 		if err != nil {
 			workingDir, _ := os.Getwd()
 			configRel, _ := filepath.Rel(workingDir, configPath)

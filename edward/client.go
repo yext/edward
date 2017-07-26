@@ -332,11 +332,7 @@ func (c *Client) Generate(names []string, noPrompt bool) error {
 	}
 
 	if _, err := os.Stat(configPath); err == nil {
-		r, err := os.Open(configPath)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		cfg, err = config.LoadConfigWithPath(r, configPath, common.EdwardVersion, c.Logger)
+		cfg, err = config.LoadConfig(configPath, common.EdwardVersion, c.Logger)
 		if err != nil {
 			return errors.WithMessage(err, configPath)
 		}
