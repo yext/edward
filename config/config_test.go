@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 
 	must "github.com/theothertomelliott/go-must"
@@ -140,13 +141,13 @@ func TestLoadConfigWithImports(t *testing.T) {
 	}
 	for _, test := range fileBasedTests {
 		cfg, err := LoadConfig(test.inFile, "", nil)
-		validateTestResults(cfg, err, test.outServiceMap, test.outGroupMap, test.outErr, test.name, t)
+		validateTestResults(cfg, err, test.inFile, test.outServiceMap, test.outGroupMap, test.outErr, test.name, t)
 	}
 }
 
-func validateTestResults(cfg Config, err error, expectedServices map[string]*services.ServiceConfig, expectedGroups map[string]*services.ServiceGroupConfig, expectedErr error, name string, t *testing.T) {
-	for _, s := range cfg.ServiceMap {
-		s.ConfigFile = ""
+func validateTestResults(cfg Config, err error, file string, expectedServices map[string]*services.ServiceConfig, expectedGroups map[string]*services.ServiceGroupConfig, expectedErr error, name string, t *testing.T) {
+	for _, s := range expectedServices {
+		s.ConfigFile, _ = filepath.Abs(file)
 	}
 	must.BeEqual(t, expectedServices, cfg.ServiceMap, name+": services did not match.")
 	must.BeEqual(t, expectedGroups, cfg.GroupMap, name+": groups did not match.")
