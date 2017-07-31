@@ -3,7 +3,7 @@ package edward_test
 import (
 	"testing"
 
-	"github.com/theothertomelliott/must"
+	"github.com/theothertomelliott/go-must"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/edward"
