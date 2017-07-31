@@ -8,18 +8,29 @@ import (
 	"testing"
 )
 
-// createWorkingDir creates a directory to work in and changes into that directory
-func createWorkingDir(t *testing.T, testName, testPath string) string {
+// createWorkingDir creates a directory to work in and changes into that directory.
+// Returns a cleanup function.
+func createWorkingDir(t *testing.T, testName, testPath string) func() {
 	workingDir, err := ioutil.TempDir("", testName)
 	if err != nil {
 		t.Fatal(err)
 	}
 	copy_folder(testPath, workingDir)
+	oldDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
 	err = os.Chdir(workingDir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return workingDir
+	return func() {
+		err = os.Chdir(oldDir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		os.RemoveAll(workingDir)
+	}
 }
 
 func copy_folder(source string, dest string) (err error) {

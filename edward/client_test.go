@@ -1,13 +1,12 @@
 package edward_test
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/shirou/gopsutil/process"
+	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/tracker"
 )
 
@@ -31,10 +30,30 @@ func (f *testFollower) Handle(update tracker.Task) {
 
 	fullName := strings.Join(names, " > ")
 	f.states[fullName] = update.State().String()
-
-	fmt.Printf("%v - %v\n", fullName, update.State())
 }
 func (f *testFollower) Done() {}
+
+// getRunnerAndServiceProcesses returns all processes and children spawned by this test
+func getRunnerAndServiceProcesses(t *testing.T) []*process.Process {
+	var processes []*process.Process
+	testProcess, err := process.NewProcess(int32(os.Getpid()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	runners, err := testProcess.Children()
+	if err != nil {
+		t.Fatalf("No processes found")
+	}
+	processes = append(processes, runners...)
+	for _, runner := range runners {
+		services, err := runner.Children()
+		if err != nil {
+			t.Fatalf("No processes found")
+		}
+		processes = append(processes, services...)
+	}
+	return processes
+}
 
 // verifyAndStopRunners expects that there will be the specified number of runners in progress,
 // and that the runners are behaving as expected (exactly one child service, etc).
@@ -46,11 +65,13 @@ func verifyAndStopRunners(t *testing.T, serviceCount int) {
 	}
 	children, err := testProcess.Children()
 	if err != nil {
-		t.Fatal(err)
+		if serviceCount != 0 {
+			t.Fatalf("No processes found, expected %d", serviceCount)
+		}
 	}
 	if len(children) != serviceCount {
 		// We can't know which test or operation this would be for, so don't try to stop anything
-		t.Fatalf("Expected 1 child, got %d", len(children))
+		t.Fatalf("Expected %d children, got %d", serviceCount, len(children))
 	}
 	for _, child := range children {
 		err = verifyAndStopRunner(t, child)

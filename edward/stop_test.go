@@ -1,6 +1,8 @@
 package edward_test
 
 import (
+	"os"
+	"syscall"
 	"testing"
 
 	"github.com/theothertomelliott/must"
@@ -10,7 +12,7 @@ import (
 	"github.com/yext/edward/home"
 )
 
-func TestStart(t *testing.T) {
+func TestStopAll(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
@@ -29,14 +31,13 @@ func TestStart(t *testing.T) {
 		err              error
 	}{
 		{
-			name:     "successful start",
+			name:     "single service",
 			path:     "testdata/start1",
 			config:   "edward.json",
 			services: []string{"service"},
 			expectedStates: map[string]string{
-				"service":         "Pending", // This isn't technically right
-				"service > Build": "Success",
-				"service > Start": "Success",
+				"service":        "Pending", // This isn't technically right
+				"service > Stop": "Success",
 			},
 			expectedServices: 1,
 		},
@@ -60,6 +61,7 @@ func TestStart(t *testing.T) {
 			}
 
 			client := edward.NewClient()
+
 			client.Config = test.config
 			tf := newTestFollower()
 			client.Follower = tf
@@ -68,11 +70,31 @@ func TestStart(t *testing.T) {
 			client.EdwardExecutable = "edward"
 
 			err = client.Start(test.services, test.skipBuild, false, test.noWatch, test.exclude)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			childProcesses := getRunnerAndServiceProcesses(t)
+
+			// Reset the follower
+			tf = newTestFollower()
+			client.Follower = tf
+
+			err = client.Stop(test.services, test.exclude)
 			must.BeEqualErrors(t, test.err, err)
 			must.BeEqual(t, test.expectedStates, tf.states)
 
-			// Verify that the process actually started
-			verifyAndStopRunners(t, test.expectedServices)
+			for _, p := range childProcesses {
+				process, err := os.FindProcess(int(p.Pid))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err == nil {
+					if process.Signal(syscall.Signal(0)) == nil {
+						t.Errorf("process should not still be running: %v", p.Pid)
+					}
+				}
+			}
 		})
 	}
 }
