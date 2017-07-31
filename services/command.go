@@ -57,6 +57,7 @@ func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (comm
 		command.Overrides = command.Overrides.Merge(overrides)
 		err = command.checkPid()
 	}()
+	defer service.printf("Got command: %v\n", command)
 
 	legacyPidFile := service.GetPidPathLegacy()
 	service.printf("Checking pidfile for %v", service.Name)

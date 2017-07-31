@@ -15,23 +15,23 @@ import (
 	"github.com/yext/edward/services"
 )
 
-var runnerInstance = &Runner{}
+var Instance = &Runner{}
 
 // Command defines the CLI config for the 'run' command
 var Command = cli.Command{
 	Name:   "run",
 	Hidden: true,
-	Action: runnerInstance.run,
+	Action: Instance.run,
 	Flags: []cli.Flag{
 		cli.BoolFlag{
 			Name:        "no-watch",
 			Usage:       "Disable autorestart",
-			Destination: &(runnerInstance.noWatch),
+			Destination: &(Instance.noWatch),
 		},
 		cli.StringFlag{
 			Name:        "d, directory",
 			Usage:       "Working directory",
-			Destination: &(runnerInstance.workingDir),
+			Destination: &(Instance.workingDir),
 		},
 	},
 }
@@ -46,6 +46,13 @@ type Runner struct {
 	commandWait sync.WaitGroup
 	noWatch     bool
 	workingDir  string
+
+	Logger Logger
+}
+
+func (r *Runner) Messagef(format string, a ...interface{}) {
+	r.messageLog.Printf(format, a...)
+	r.Logger.Printf(format, a...)
 }
 
 // NewRunningCommand creates a RunningCommand for a given service and exec.Cmd
@@ -125,7 +132,7 @@ func (r *Runner) run(c *cli.Context) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	defer r.messageLog.Printf("Service stopped\n")
+	defer r.Messagef("Service stopped\n")
 
 	r.commandWait.Add(1)
 	err = r.startService()
@@ -162,14 +169,15 @@ func (r *Runner) configureLogs() error {
 }
 
 func (r *Runner) configureSignals() {
+	r.Messagef("Configuring signals")
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
 	go func() {
 		for range signalChan {
-			r.messageLog.Printf("Received interrupt\n")
+			r.Messagef("Received interrupt\n")
 			err := r.stopService()
 			if err != nil {
-				r.messageLog.Printf("Could not stop service: %v", err)
+				r.Messagef("Could not stop service: %v", err)
 			}
 		}
 	}()
@@ -179,11 +187,11 @@ func (r *Runner) configureWatch() func() {
 	if !r.noWatch {
 		closeWatchers, err := BeginWatch(r.service, r.restartService, r.messageLog)
 		if err != nil {
-			r.messageLog.Printf("Could not enable auto-restart: %v\n", err)
+			r.Messagef("Could not enable auto-restart: %v\n", err)
 			return nil
 		}
 		if closeWatchers != nil {
-			r.messageLog.Printf("Auto-restart enabled. This service will restart when files in its watch directories are edited.\nThis can be disabled using the --no-watch flag.\n")
+			r.Messagef("Auto-restart enabled. This service will restart when files in its watch directories are edited.\nThis can be disabled using the --no-watch flag.\n")
 		}
 		return closeWatchers
 	}
@@ -191,7 +199,7 @@ func (r *Runner) configureWatch() func() {
 }
 
 func (r *Runner) restartService() error {
-	r.messageLog.Printf("Restarting service\n")
+	r.Messagef("Restarting service\n")
 
 	// Increment the counter to prevent exiting unexpectedly
 	r.commandWait.Add(1)
@@ -220,22 +228,22 @@ func (r *Runner) restartService() error {
 func (r *Runner) stopService() error {
 	command, err := r.service.GetCommand(services.ContextOverride{})
 	if err != nil {
-		r.messageLog.Printf("Could not get service command: %v\n", err)
+		r.Messagef("Could not get service command: %v\n", err)
 	}
 
 	var scriptErr error
 	var scriptOutput []byte
 	if r.service.Commands.Stop != "" {
-		r.messageLog.Printf("Running stop script for %v.\n", r.service.Name)
+		r.Messagef("Running stop script for %v.\n", r.service.Name)
 		scriptOutput, scriptErr = command.RunStopScript()
 		if scriptErr != nil {
-			r.messageLog.Printf("%v\n", string(scriptOutput))
-			r.messageLog.Printf("Stop script failed: %v\n", scriptErr)
+			r.Messagef("%v\n", string(scriptOutput))
+			r.Messagef("Stop script failed: %v\n", scriptErr)
 		}
 		if r.waitForCompletionWithTimeout(1 * time.Second) {
 			return nil
 		}
-		r.messageLog.Printf("Stop script did not effectively stop service, sending interrupt\n")
+		r.Messagef("Stop script did not effectively stop service, sending interrupt\n")
 	}
 
 	err = r.command.Interrupt()
@@ -246,7 +254,7 @@ func (r *Runner) stopService() error {
 	if r.waitForCompletionWithTimeout(2 * time.Second) {
 		return nil
 	}
-	r.messageLog.Printf("Interrupt did not effectively stop service, sending kill\n")
+	r.Messagef("Interrupt did not effectively stop service, sending kill\n")
 
 	err = r.command.Kill()
 	if err != nil {
@@ -279,7 +287,7 @@ func (r *Runner) waitForCompletionWithTimeout(timeout time.Duration) bool {
 }
 
 func (r *Runner) startService() error {
-	r.messageLog.Printf("Service starting\n")
+	r.Messagef("Service starting\n")
 
 	standardLog := &Log{
 		file:   r.logFile,

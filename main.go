@@ -36,7 +36,10 @@ func main() {
 		MaxSize:    50, // megabytes
 		MaxBackups: 30,
 		MaxAge:     1, //days
-	}, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+	}, fmt.Sprintf("%v >", os.Args), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+
+	// Add a logger to the runner instance
+	runner.Instance.Logger = logger
 
 	edwardClient := edward.NewClient()
 	// Set the default config path

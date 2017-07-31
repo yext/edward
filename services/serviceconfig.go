@@ -320,11 +320,13 @@ func (c *ServiceConfig) doStop(cfg OperationConfig, overrides ContextOverride, t
 		return nil
 	}
 
+	c.printf("Interrupting process for %v\n", c.Name)
 	stopped, err := c.interruptProcess(cfg, command)
 	if err != nil {
 		job.SetState(tracker.TaskStateFailed, err.Error())
 		return nil
 	}
+	c.printf("Interrupt succeeded, was process stopped? %v\n", stopped)
 
 	if !stopped {
 		c.printf("SIGINT failed to stop service, waiting for 5s before sending SIGKILL\n")
@@ -348,6 +350,7 @@ func (c *ServiceConfig) doStop(cfg OperationConfig, overrides ContextOverride, t
 		}
 	}
 
+	c.printf("Cleaning up state after shutdown")
 	// Remove leftover files
 	command.clearState()
 	job.SetState(tracker.TaskStateSuccess)
