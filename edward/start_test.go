@@ -1,6 +1,7 @@
 package edward_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/theothertomelliott/go-must"
@@ -29,8 +30,8 @@ func TestStart(t *testing.T) {
 		err              error
 	}{
 		{
-			name:     "successful start",
-			path:     "testdata/start1",
+			name:     "single service",
+			path:     "testdata/single",
 			config:   "edward.json",
 			services: []string{"service"},
 			expectedStates: map[string]string{
@@ -39,6 +40,13 @@ func TestStart(t *testing.T) {
 				"service > Start": "Success",
 			},
 			expectedServices: 1,
+		},
+		{
+			name:     "service not found",
+			path:     "testdata/single",
+			config:   "edward.json",
+			services: []string{"missing"},
+			err:      errors.New("Service or group not found"),
 		},
 	}
 	for _, test := range tests {
