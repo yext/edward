@@ -1,7 +1,11 @@
 package edward_test
 
 import (
+	"io/ioutil"
+	"log"
 	"os"
+	"os/exec"
+	"path"
 	"strings"
 	"testing"
 
@@ -9,6 +13,29 @@ import (
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/tracker"
 )
+
+// Path to the Edward executable as built
+var edwardExecutable string
+
+func TestMain(m *testing.M) {
+	buildDir, err := ioutil.TempDir("", "edwardTest")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.RemoveAll(buildDir)
+
+	edwardExecutable = path.Join(buildDir, "edward")
+
+	cmd := exec.Command("go", "build", "-o", edwardExecutable, "github.com/yext/edward")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	os.Exit(m.Run())
+}
 
 type testFollower struct {
 	states map[string]string

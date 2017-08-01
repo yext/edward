@@ -66,8 +66,7 @@ func TestStopAll(t *testing.T) {
 			tf := newTestFollower()
 			client.Follower = tf
 
-			// TODO: Build the executable as needed
-			client.EdwardExecutable = "edward"
+			client.EdwardExecutable = edwardExecutable
 
 			err = client.Start(test.services, test.skipBuild, false, test.noWatch, test.exclude)
 			if err != nil {
