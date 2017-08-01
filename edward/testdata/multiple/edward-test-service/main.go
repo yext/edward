@@ -17,9 +17,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", handler)
-	fmt.Println("Starting to listen on port 51936")
+
+	port := os.Args[1]
+	fmt.Printf("Starting to listen on %v\n", port)
 	go func() {
-		log.Fatal(http.ListenAndServe(":51936", nil))
+		log.Fatal(http.ListenAndServe(":"+port, nil))
 	}()
 
 	timer := time.NewTimer(5 * time.Second)

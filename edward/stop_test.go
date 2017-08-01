@@ -32,7 +32,7 @@ func TestStopAll(t *testing.T) {
 	}{
 		{
 			name:     "single service",
-			path:     "testdata/start1",
+			path:     "testdata/single",
 			config:   "edward.json",
 			services: []string{"service"},
 			expectedStates: map[string]string{
