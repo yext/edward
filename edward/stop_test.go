@@ -41,6 +41,17 @@ func TestStopAll(t *testing.T) {
 			},
 			expectedServices: 1,
 		},
+		{
+			name:     "graceless shutdown",
+			path:     "testdata/graceless_shutdown",
+			config:   "edward.json",
+			services: []string{"graceless"},
+			expectedStates: map[string]string{
+				"graceless":        "Pending", // This isn't technically right
+				"graceless > Stop": "Success",
+			},
+			expectedServices: 1,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
