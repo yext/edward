@@ -107,6 +107,18 @@ func TestStart(t *testing.T) {
 			},
 			expectedServices: 1,
 		},
+		{
+			name:     "environment variables in commands",
+			path:     "testdata/features",
+			config:   "edward.json",
+			services: []string{"env"},
+			expectedStates: map[string]string{
+				"env":         "Pending", // This isn't technically right
+				"env > Build": "Success",
+				"env > Start": "Success",
+			},
+			expectedServices: 1,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

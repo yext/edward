@@ -10,6 +10,19 @@
             "warmup": {
                 "url": "http://127.0.0.1:51936"
             }
+        },
+        {
+            "name": "env",
+            "path": "edward-test-expectenv",
+            "commands": {
+                "build": "go ${BUILD}",
+                "launch": "./edward-test-expectenv ${PORT}"
+            },
+            "env": [
+                "BUILD=build",
+                "PORT=51937",
+                "APPLIED=YES"
+            ]
         }
     ]
 }

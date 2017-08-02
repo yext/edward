@@ -81,6 +81,27 @@ func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (comm
 	return command, nil
 }
 
+// Env provides the combined environment variables for this service command
+func (c *ServiceCommand) Env() []string {
+	return append(c.Service.Env, c.Overrides.Env...)
+}
+
+// Getenv returns the environment variable value for the provided key, if present.
+// Env overrides are consulted first, followed by service env settings, then the os Env.
+func (c *ServiceCommand) Getenv(key string) string {
+	for _, env := range c.Overrides.Env {
+		if strings.HasPrefix(env, key+"=") {
+			return strings.Replace(env, key+"=", "", 1)
+		}
+	}
+	for _, env := range c.Service.Env {
+		if strings.HasPrefix(env, key+"=") {
+			return strings.Replace(env, key+"=", "", 1)
+		}
+	}
+	return os.Getenv(key)
+}
+
 func (c *ServiceCommand) checkPid() error {
 	if c == nil || c.Pid == 0 {
 		return nil
@@ -192,13 +213,13 @@ func (c *ServiceCommand) BuildWithTracker(force bool, task tracker.Task) error {
 }
 
 func (c *ServiceCommand) constructCommand(command string) (*exec.Cmd, error) {
-	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(command))
+	command, cmdArgs, err := commandline.ParseCommand(os.Expand(command, c.Getenv))
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 	cmd := exec.Command(command, cmdArgs...)
 	if c.Service.Path != nil {
-		cmd.Dir = os.ExpandEnv(*c.Service.Path)
+		cmd.Dir = os.Expand(*c.Service.Path, c.Getenv)
 	}
 	return cmd, nil
 }
