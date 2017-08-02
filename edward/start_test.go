@@ -94,6 +94,19 @@ func TestStart(t *testing.T) {
 			services: []string{"missing"},
 			err:      errors.New("Service or group not found"),
 		},
+		{
+			name:     "warmup",
+			path:     "testdata/features",
+			config:   "edward.json",
+			services: []string{"warmup"},
+			expectedStates: map[string]string{
+				"warmup":          "Pending", // This isn't technically right
+				"warmup > Build":  "Success",
+				"warmup > Start":  "Success",
+				"warmup > Warmup": "Success",
+			},
+			expectedServices: 1,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

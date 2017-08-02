@@ -6,41 +6,6 @@ import (
 	"github.com/yext/edward/tracker"
 )
 
-var jobs chan *job
-var finished chan struct{}
-
-const workers = 3
-
-func init() {
-	jobs = make(chan *job)
-	finished = make(chan struct{})
-
-	for w := 1; w <= workers; w++ {
-		go worker(w, jobs, finished)
-	}
-}
-
-func worker(id int, jobs <-chan *job, finished chan<- struct{}) {
-	for j := range jobs {
-		if j.task != nil && j.task.URL != "" {
-			tr := j.tracker.Child("Warmup")
-			tr.SetState(tracker.TaskStateInProgress)
-			_, err := http.Get(j.task.URL)
-			if err != nil {
-				tr.SetState(tracker.TaskStateWarning, err.Error())
-				continue
-			}
-			tr.SetState(tracker.TaskStateSuccess)
-		}
-	}
-	finished <- struct{}{}
-}
-
-type job struct {
-	task    *Warmup
-	tracker tracker.Task
-}
-
 // Warmup defines an action to take to "warm up" a service after launch
 type Warmup struct {
 	// A URL that can be used to warm up this service, will result in a GET request
@@ -48,21 +13,16 @@ type Warmup struct {
 }
 
 // Run executes a warmup operation for a service
-func Run(service string, w *Warmup, tracker tracker.Task) {
+func Run(service string, w *Warmup, tr tracker.Task) {
 	if w == nil {
 		return
 	}
-	t := tracker.Child(service)
-	jobs <- &job{
-		task:    w,
-		tracker: t,
+	t := tr.Child(service)
+	t = t.Child("Warmup")
+	t.SetState(tracker.TaskStateInProgress)
+	_, err := http.Get(w.URL)
+	if err != nil {
+		t.SetState(tracker.TaskStateWarning, err.Error())
 	}
-}
-
-// Wait blocks until all Warmup operations are complete
-func Wait() {
-	close(jobs)
-	for a := 1; a <= workers; a++ {
-		<-finished
-	}
+	t.SetState(tracker.TaskStateSuccess)
 }

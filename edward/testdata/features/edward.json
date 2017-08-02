@@ -1,0 +1,15 @@
+{
+    "services": [
+        {
+            "name": "warmup",
+            "path": "edward-test-service",
+            "commands": {
+                "build": "go build",
+                "launch": "./edward-test-service 51936"
+            },
+            "warmup": {
+                "url": "http://127.0.0.1:51936"
+            }
+        }
+    ]
+}
