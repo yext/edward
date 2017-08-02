@@ -1,4 +1,17 @@
 {
+    "groups": [
+        {
+            "name": "env-group",
+            "children": [
+                "env-for-group"
+            ],
+            "env": [
+                "BUILD=build",
+                "PORT=51937",
+                "APPLIED=YES"
+            ]
+        }
+    ],
     "services": [
         {
             "name": "warmup",
@@ -22,6 +35,17 @@
                 "BUILD=build",
                 "PORT=51937",
                 "APPLIED=YES"
+            ]
+        },
+        {
+            "name": "env-for-group",
+            "path": "edward-test-expectenv",
+            "commands": {
+                "build": "go ${BUILD}",
+                "launch": "./edward-test-expectenv ${PORT}"
+            },
+            "env": [
+                "APPLIED=NO"
             ]
         }
     ]

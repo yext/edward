@@ -108,7 +108,7 @@ func TestStart(t *testing.T) {
 			expectedServices: 1,
 		},
 		{
-			name:     "environment variables in commands",
+			name:     "environment variables in services",
 			path:     "testdata/features",
 			config:   "edward.json",
 			services: []string{"env"},
@@ -116,6 +116,19 @@ func TestStart(t *testing.T) {
 				"env":         "Pending", // This isn't technically right
 				"env > Build": "Success",
 				"env > Start": "Success",
+			},
+			expectedServices: 1,
+		},
+		{
+			name:     "environment variables in groups",
+			path:     "testdata/features",
+			config:   "edward.json",
+			services: []string{"env-group"},
+			expectedStates: map[string]string{
+				"env-group":                         "Pending",
+				"env-group > env-for-group":         "Pending",
+				"env-group > env-for-group > Build": "Success",
+				"env-group > env-for-group > Start": "Success",
 			},
 			expectedServices: 1,
 		},
