@@ -181,10 +181,11 @@ func (t *task) Child(name string) Task {
 		mtx:           t.mtx,
 		updateMtx:     t.updateMtx,
 	}
+	child := t.children[name]
 	t.mtx.Unlock()
 
-	t.handleUpdate(t.children[name])
-	return t.children[name]
+	t.handleUpdate(child)
+	return child
 }
 
 func (t *task) Children() []Task {

@@ -21,7 +21,8 @@ func TestStopAll(t *testing.T) {
 		name             string
 		path             string
 		config           string
-		services         []string
+		servicesStart    []string
+		servicesStop     []string
 		skipBuild        bool
 		tail             bool
 		noWatch          bool
@@ -31,10 +32,11 @@ func TestStopAll(t *testing.T) {
 		err              error
 	}{
 		{
-			name:     "single service",
-			path:     "testdata/single",
-			config:   "edward.json",
-			services: []string{"service"},
+			name:          "single service",
+			path:          "testdata/single",
+			config:        "edward.json",
+			servicesStart: []string{"service"},
+			servicesStop:  []string{"service"},
 			expectedStates: map[string]string{
 				"service":        "Pending", // This isn't technically right
 				"service > Stop": "Success",
@@ -42,10 +44,26 @@ func TestStopAll(t *testing.T) {
 			expectedServices: 1,
 		},
 		{
-			name:     "graceless shutdown",
-			path:     "testdata/graceless_shutdown",
-			config:   "edward.json",
-			services: []string{"graceless"},
+			name:          "group, stop all",
+			path:          "testdata/group",
+			config:        "edward.json",
+			servicesStart: []string{"group"},
+			expectedStates: map[string]string{
+				"service1":        "Pending",
+				"service1 > Stop": "Success",
+				"service2":        "Pending",
+				"service2 > Stop": "Success",
+				"service3":        "Pending",
+				"service3 > Stop": "Success",
+			},
+			expectedServices: 3,
+		},
+		{
+			name:          "graceless shutdown",
+			path:          "testdata/graceless_shutdown",
+			config:        "edward.json",
+			servicesStart: []string{"graceless"},
+			servicesStop:  []string{"graceless"},
 			expectedStates: map[string]string{
 				"graceless":        "Pending", // This isn't technically right
 				"graceless > Stop": "Success",
@@ -79,7 +97,7 @@ func TestStopAll(t *testing.T) {
 
 			client.EdwardExecutable = edwardExecutable
 
-			err = client.Start(test.services, test.skipBuild, false, test.noWatch, test.exclude)
+			err = client.Start(test.servicesStart, test.skipBuild, false, test.noWatch, test.exclude)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -90,7 +108,7 @@ func TestStopAll(t *testing.T) {
 			tf = newTestFollower()
 			client.Follower = tf
 
-			err = client.Stop(test.services, test.exclude)
+			err = client.Stop(test.servicesStop, test.exclude)
 			must.BeEqualErrors(t, test.err, err)
 			must.BeEqual(t, test.expectedStates, tf.states)
 
