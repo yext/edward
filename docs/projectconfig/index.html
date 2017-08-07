@@ -487,6 +487,24 @@ build and launch operations, we recommend consolidating multiple commands into a
 
 <p>And Edward will wait for all the listed ports to be open before considering the service started. When ports are specified, the process that opens them will not be taken into account.</p>
 
+<p>You can also configure Edward to wait for a given amount of time (in ms) before considering a service as successfully started:</p>
+
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;myservice&quot;,
+    ...
+    &quot;launch_checks&quot;: {
+      &quot;wait&quot;: 500
+    }
+}
+</code></pre>
+
+<p>If the service process exits before the end of this time, it will be considered to have failed.</p>
+
+<div class="admonition warning">
+<p class="admonition-title">Only one launch check may be used</p>
+<p>Note that only one of these checks may be configured for a single service.</p>
+</div>
+
 <h3 id="environment-variables">Environment Variables</h3>
 
 <p>To specify environment variables to be passed to a service, you can add the <em>env</em> attribute, which is an array of environment variables in the form <code>KEY=VALUE</code>:</p>

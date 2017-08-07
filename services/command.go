@@ -382,7 +382,7 @@ func (c *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 		}
 	} else if c.Service.LaunchChecks != nil && c.Service.LaunchChecks.Wait != 0 {
 		startCheck = func(cancel <-chan struct{}) error {
-			delay := time.NewTimer(c.Service.LaunchChecks.Wait)
+			delay := time.NewTimer(time.Duration(c.Service.LaunchChecks.Wait) * time.Millisecond)
 			defer delay.Stop()
 			select {
 			case <-cancel:

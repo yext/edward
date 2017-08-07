@@ -178,8 +178,8 @@ type LaunchChecks struct {
 	LogText string `json:"log_text,omitempty"`
 	// One or more specific ports that are expected to be opened when this service starts.
 	Ports []int `json:"ports,omitempty"`
-	// Wait for a specified amount of time before calling the service started if still running.
-	Wait time.Duration `json:"wait,omitempty"`
+	// Wait for a specified amount of time (in ms) before calling the service started if still running.
+	Wait int64 `json:"wait,omitempty"`
 }
 
 // ServiceConfigProperties provides a set of regexes to detect properties of a service
