@@ -51,7 +51,7 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/theothertomelliott/go-must"
+  name = "github.com/theothertomelliott/must"
 
 [[constraint]]
   name = "github.com/urfave/cli"

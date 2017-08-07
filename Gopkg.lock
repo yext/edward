@@ -86,16 +86,16 @@
   revision = "bb4de0191aa41b5507caa14b0650cdbddcd9280b"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/theothertomelliott/go-must"
-  packages = ["."]
-  revision = "883760f0acf9cfd668fcda985f5a041ae68859af"
-
-[[projects]]
   name = "github.com/theothertomelliott/gopsutil-nocgo"
   packages = ["cpu","host","internal/common","mem","net","process"]
   revision = "e1dd81b10a4c9d53c4a85518d8d0481618c1bd2b"
   version = "2.18"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/theothertomelliott/must"
+  packages = ["."]
+  revision = "883760f0acf9cfd668fcda985f5a041ae68859af"
 
 [[projects]]
   name = "github.com/urfave/cli"
@@ -130,6 +130,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9cff3d94b1869d969ae1ae1fdeebd89b27c9962f9ecfc5a135f94c65a8dd246e"
+  inputs-digest = "6b4a570def88b9959d5263b0ad21e3793104725236b64196dbcf9055715dfd23"
   solver-name = "gps-cdcl"
   solver-version = 1

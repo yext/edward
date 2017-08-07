@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	must "github.com/theothertomelliott/go-must"
+	must "github.com/theothertomelliott/must"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
 )
