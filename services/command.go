@@ -380,6 +380,17 @@ func (c *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 				c.waitForListeningPorts(c.Service.LaunchChecks.Ports, cancel, command),
 			)
 		}
+	} else if c.Service.LaunchChecks != nil && c.Service.LaunchChecks.Wait != 0 {
+		startCheck = func(cancel <-chan struct{}) error {
+			delay := time.NewTimer(c.Service.LaunchChecks.Wait)
+			defer delay.Stop()
+			select {
+			case <-cancel:
+				return nil
+			case <-delay.C:
+				return nil
+			}
+		}
 	} else {
 		startCheck = func(cancel <-chan struct{}) error {
 			return errors.WithStack(

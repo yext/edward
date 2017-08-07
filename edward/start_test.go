@@ -26,6 +26,7 @@ func TestStart(t *testing.T) {
 		noWatch          bool
 		exclude          []string
 		expectedStates   map[string]string
+		expectedMessages []string
 		expectedServices int
 		err              error
 	}{
@@ -132,6 +133,30 @@ func TestStart(t *testing.T) {
 			},
 			expectedServices: 1,
 		},
+		{
+			name:     "launch check wait",
+			path:     "testdata/features",
+			config:   "edward.json",
+			services: []string{"wait"},
+			expectedStates: map[string]string{
+				"wait":         "Pending", // This isn't technically right
+				"wait > Build": "Success",
+				"wait > Start": "Success",
+			},
+			expectedServices: 1,
+		},
+		{
+			name:     "launch check log",
+			path:     "testdata/features",
+			config:   "edward.json",
+			services: []string{"logLine"},
+			expectedStates: map[string]string{
+				"logLine":         "Pending", // This isn't technically right
+				"logLine > Build": "Success",
+				"logLine > Start": "Success",
+			},
+			expectedServices: 1,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -155,12 +180,12 @@ func TestStart(t *testing.T) {
 			client.Config = test.config
 			tf := newTestFollower()
 			client.Follower = tf
-
 			client.EdwardExecutable = edwardExecutable
 
 			err = client.Start(test.services, test.skipBuild, false, test.noWatch, test.exclude)
-			must.BeEqualErrors(t, test.err, err)
 			must.BeEqual(t, test.expectedStates, tf.states)
+			must.BeEqual(t, test.expectedMessages, tf.messages)
+			must.BeEqualErrors(t, test.err, err)
 
 			// Verify that the process actually started
 			verifyAndStopRunners(t, test.expectedServices)

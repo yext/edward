@@ -28,6 +28,7 @@ func TestStopAll(t *testing.T) {
 		noWatch          bool
 		exclude          []string
 		expectedStates   map[string]string
+		expectedMessages []string
 		expectedServices int
 		err              error
 	}{
@@ -111,6 +112,7 @@ func TestStopAll(t *testing.T) {
 			err = client.Stop(test.servicesStop, test.exclude)
 			must.BeEqualErrors(t, test.err, err)
 			must.BeEqual(t, test.expectedStates, tf.states)
+			must.BeEqual(t, test.expectedMessages, tf.messages)
 
 			for _, p := range childProcesses {
 				process, err := os.FindProcess(int(p.Pid))

@@ -29,6 +29,7 @@ func TestRestart(t *testing.T) {
 		noWatch          bool
 		exclude          []string
 		expectedStates   map[string]string
+		expectedMessages []string
 		expectedServices int
 		err              error
 	}{
@@ -117,6 +118,7 @@ func TestRestart(t *testing.T) {
 			err = client.Restart(test.servicesRestart, test.skipBuild, false, test.noWatch, test.exclude)
 			must.BeEqualErrors(t, test.err, err)
 			must.BeEqual(t, test.expectedStates, tf.states)
+			must.BeEqual(t, test.expectedMessages, tf.messages)
 
 			if err == nil {
 				for _, p := range childProcesses {

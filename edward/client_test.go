@@ -38,7 +38,8 @@ func TestMain(m *testing.M) {
 }
 
 type testFollower struct {
-	states map[string]string
+	states   map[string]string
+	messages []string
 }
 
 func newTestFollower() *testFollower {
@@ -57,6 +58,7 @@ func (f *testFollower) Handle(update tracker.Task) {
 
 	fullName := strings.Join(names, " > ")
 	f.states[fullName] = update.State().String()
+	f.messages = append(f.messages, update.Messages()...)
 }
 func (f *testFollower) Done() {}
 

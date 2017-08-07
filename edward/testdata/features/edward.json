@@ -47,6 +47,28 @@
             "env": [
                 "APPLIED=NO"
             ]
+        },
+        {
+            "name": "wait",
+            "path": "edward-test-noport",
+            "commands": {
+                "build": "go build",
+                "launch": "./edward-test-noport"
+            },
+            "launch_checks": {
+                "wait": 500
+            }
+        },
+        {
+            "name": "logLine",
+            "path": "edward-test-noport",
+            "commands": {
+                "build": "go build",
+                "launch": "./edward-test-noport"
+            },
+            "launch_checks": {
+                "log_text": "Started"
+            }
         }
     ]
 }
