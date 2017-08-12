@@ -117,7 +117,7 @@ func main() {
 		runner.Command,
 		{
 			Name:  "list",
-			Usage: "List available services",
+			Usage: "List available services and groups",
 			Action: func(c *cli.Context) error {
 				err := edwardClient.List()
 				return errors.WithStack(err)

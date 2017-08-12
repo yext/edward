@@ -13,6 +13,8 @@ var _ ServiceOrGroup = &ServiceGroupConfig{}
 type ServiceGroupConfig struct {
 	// A name for this group, used to identify it in commands
 	Name string
+	// A description
+	Description string
 	// Full services contained within this group
 	Services []*ServiceConfig
 	// Groups on which this group depends
@@ -34,6 +36,11 @@ func (c *ServiceGroupConfig) printf(format string, v ...interface{}) {
 // GetName returns the name for this group
 func (c *ServiceGroupConfig) GetName() string {
 	return c.Name
+}
+
+// GetDescription returns the description for this group
+func (c *ServiceGroupConfig) GetDescription() string {
+	return c.Description
 }
 
 // Build builds all services within this group
@@ -136,6 +143,7 @@ func (c *ServiceGroupConfig) Stop(cfg OperationConfig, overrides ContextOverride
 	return nil
 }
 
+// Restart restarts all services within this group
 func (c *ServiceGroupConfig) Restart(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
 	if cfg.IsExcluded(c) {
 		return nil

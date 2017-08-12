@@ -6,6 +6,7 @@
 	"services": [
 		{
 			"name": "service1",
+			"description": "My Service 1 is magic",
 			"path": ".",
 			"requiresSudo": true,
 			"commands": {
@@ -21,6 +22,7 @@
 	"groups": [
 		{
 			"name": "group1",
+			"description": "My wonderfull group 1",
 			"children": ["service1"]
 		}
 	]

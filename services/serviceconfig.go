@@ -32,6 +32,8 @@ var _ ServiceOrGroup = &ServiceConfig{}
 type ServiceConfig struct {
 	// Service name, used to identify in commands
 	Name string `json:"name"`
+	// Service description
+	Description string `json:"description"`
 	// Optional path to service. If nil, uses cwd
 	Path *string `json:"path,omitempty"`
 	// Does this service require sudo privileges?
@@ -207,6 +209,11 @@ func (c *ServiceConfig) GetName() string {
 	return c.Name
 }
 
+// GetDescription returns the description for this service
+func (c *ServiceConfig) GetDescription() string {
+	return c.Description
+}
+
 // Build builds this service
 func (c *ServiceConfig) Build(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error {
 	if err := c.checkLock(); err != nil {
@@ -271,6 +278,7 @@ func (c *ServiceConfig) Stop(cfg OperationConfig, overrides ContextOverride, tas
 	return errors.WithStack(err)
 }
 
+// Restart restarts this service
 func (c *ServiceConfig) Restart(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
 	if err := c.checkLock(); err != nil {
 		return errors.WithStack(err)

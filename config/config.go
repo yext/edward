@@ -35,9 +35,10 @@ type Config struct {
 
 // GroupDef defines a group based on a list of children specified by name
 type GroupDef struct {
-	Name     string   `json:"name"`
-	Children []string `json:"children"`
-	Env      []string `json:"env,omitempty"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Children    []string `json:"children"`
+	Env         []string `json:"env,omitempty"`
 }
 
 // LoadConfigWithDir loads configuration from an io.Reader with the working directory explicitly specified
@@ -217,9 +218,10 @@ func (c *Config) AddGroups(groups []services.ServiceGroupConfig) error {
 	c.printf("Adding %d groups.\n", len(groups))
 	for _, group := range groups {
 		grp := GroupDef{
-			Name:     group.Name,
-			Children: []string{},
-			Env:      group.Env,
+			Name:        group.Name,
+			Description: group.Description,
+			Children:    []string{},
+			Env:         group.Env,
 		}
 		for _, cg := range group.Groups {
 			if cg != nil {
@@ -330,11 +332,12 @@ func (c *Config) initMaps() error {
 		}
 
 		groups[g.Name] = &services.ServiceGroupConfig{
-			Name:     g.Name,
-			Services: childServices,
-			Groups:   []*services.ServiceGroupConfig{},
-			Env:      g.Env,
-			Logger:   c.Logger,
+			Name:        g.Name,
+			Description: g.Description,
+			Services:    childServices,
+			Groups:      []*services.ServiceGroupConfig{},
+			Env:         g.Env,
+			Logger:      c.Logger,
 		}
 	}
 

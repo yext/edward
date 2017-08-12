@@ -14,6 +14,7 @@ import (
 
 var service1 = services.ServiceConfig{
 	Name:         "service1",
+	Description:  "My Service 1 is magic",
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
 	Commands: services.ServiceConfigCommands{
@@ -28,10 +29,11 @@ var service1 = services.ServiceConfig{
 }
 
 var group1 = services.ServiceGroupConfig{
-	Name:     "group1",
-	Services: []*services.ServiceConfig{&service1},
-	Groups:   []*services.ServiceGroupConfig{},
-	Logger:   common.NullLogger{},
+	Name:        "group1",
+	Description: "My wonderfull group 1",
+	Services:    []*services.ServiceConfig{&service1},
+	Groups:      []*services.ServiceGroupConfig{},
+	Logger:      common.NullLogger{},
 }
 
 var service2 = services.ServiceConfig{
