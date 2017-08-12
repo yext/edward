@@ -41,7 +41,11 @@ type GroupDef struct {
 }
 
 // LoadConfigWithDir loads configuration from an io.Reader with the working directory explicitly specified
-func LoadConfigWithPath(reader io.Reader, filePath string, edwardVersion string, logger common.Logger) (Config, error) {
+func LoadConfig(filePath string, edwardVersion string, logger common.Logger) (Config, error) {
+	reader, err := os.Open(filePath)
+	if err != nil {
+		return Config{}, errors.WithStack(err)
+	}
 	workingDir := path.Dir(filePath)
 	config, err := loadConfigContents(reader, workingDir, logger)
 	config.FilePath = filePath
@@ -280,13 +284,17 @@ func (c *Config) combinePath(path string) *string {
 }
 
 func (c *Config) initMaps() error {
+	var err error
 	var svcs = make(map[string]*services.ServiceConfig)
 	var servicesSkipped = make(map[string]struct{})
 	for _, s := range append(c.Services, c.ImportedServices...) {
 		sc := s
 		sc.Logger = c.Logger
 		sc.Env = append(sc.Env, c.Env...)
-		sc.ConfigFile = c.FilePath
+		sc.ConfigFile, err = filepath.Abs(c.FilePath)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 		if sc.MatchesPlatform() {
 			if _, exists := svcs[sc.Name]; exists {
 				return errors.New("Service name already exists: " + sc.Name)

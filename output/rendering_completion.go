@@ -24,7 +24,8 @@ func NewCompletionRenderer(task tracker.Task) *CompletionRenderer {
 	}
 }
 
-func (r *CompletionRenderer) Render(w io.Writer, task tracker.Task) error {
+func (r *CompletionRenderer) Render(w io.Writer) error {
+	task := r.targetTask.Lineage()[0]
 	err := errors.WithStack(r.doRenderWithPrefix("", 0, w, task))
 	if err != nil {
 		return errors.WithStack(err)

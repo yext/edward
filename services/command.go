@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -56,6 +57,7 @@ func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (comm
 		command.Overrides = command.Overrides.Merge(overrides)
 		err = command.checkPid()
 	}()
+	defer service.printf("Got command: %v\n", command)
 
 	legacyPidFile := service.GetPidPathLegacy()
 	service.printf("Checking pidfile for %v", service.Name)
@@ -77,6 +79,27 @@ func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (comm
 	}
 
 	return command, nil
+}
+
+// Env provides the combined environment variables for this service command
+func (c *ServiceCommand) Env() []string {
+	return append(c.Service.Env, c.Overrides.Env...)
+}
+
+// Getenv returns the environment variable value for the provided key, if present.
+// Env overrides are consulted first, followed by service env settings, then the os Env.
+func (c *ServiceCommand) Getenv(key string) string {
+	for _, env := range c.Overrides.Env {
+		if strings.HasPrefix(env, key+"=") {
+			return strings.Replace(env, key+"=", "", 1)
+		}
+	}
+	for _, env := range c.Service.Env {
+		if strings.HasPrefix(env, key+"=") {
+			return strings.Replace(env, key+"=", "", 1)
+		}
+	}
+	return os.Getenv(key)
 }
 
 func (c *ServiceCommand) checkPid() error {
@@ -190,13 +213,13 @@ func (c *ServiceCommand) BuildWithTracker(force bool, task tracker.Task) error {
 }
 
 func (c *ServiceCommand) constructCommand(command string) (*exec.Cmd, error) {
-	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(command))
+	command, cmdArgs, err := commandline.ParseCommand(os.Expand(command, c.Getenv))
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 	cmd := exec.Command(command, cmdArgs...)
 	if c.Service.Path != nil {
-		cmd.Dir = os.ExpandEnv(*c.Service.Path)
+		cmd.Dir = os.Expand(*c.Service.Path, c.Getenv)
 	}
 	return cmd, nil
 }
@@ -357,6 +380,17 @@ func (c *ServiceCommand) waitUntilLive(command *exec.Cmd) error {
 				c.waitForListeningPorts(c.Service.LaunchChecks.Ports, cancel, command),
 			)
 		}
+	} else if c.Service.LaunchChecks != nil && c.Service.LaunchChecks.Wait != 0 {
+		startCheck = func(cancel <-chan struct{}) error {
+			delay := time.NewTimer(time.Duration(c.Service.LaunchChecks.Wait) * time.Millisecond)
+			defer delay.Stop()
+			select {
+			case <-cancel:
+				return nil
+			case <-delay.C:
+				return nil
+			}
+		}
 	} else {
 		startCheck = func(cancel <-chan struct{}) error {
 			return errors.WithStack(
@@ -468,15 +502,32 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) erro
 	return errors.WithStack(err)
 }
 
+func readAvailableLines(r io.ReadCloser) ([]string, error) {
+	var out []string
+	reader := bufio.NewReader(r)
+	for reader.Buffered() > 0 {
+		line, _, err := reader.ReadLine()
+		if err != nil {
+			return out, errors.WithStack(err)
+		}
+		out = append(out, string(line))
+	}
+	return nil, nil
+}
+
 func (c *ServiceCommand) getLaunchCommand(cfg OperationConfig) (*exec.Cmd, error) {
-	command := os.Args[0]
+	command := cfg.EdwardExecutable
 	cmdArgs := []string{
 		"run",
 	}
 	if cfg.NoWatch {
 		cmdArgs = append(cmdArgs, "--no-watch")
 	}
-	cmdArgs = append(cmdArgs, c.Service.Name)
+	workingDir, err := os.Getwd()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	cmdArgs = append(cmdArgs, "--directory", workingDir, c.Service.Name)
 
 	cmd := exec.Command(command, cmdArgs...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

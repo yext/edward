@@ -1,9 +1,11 @@
+// Copyright (c) 2015 HPE Software Inc. All rights reserved.
 // Copyright (c) 2013 ActiveState Software Inc. All rights reserved.
 
 package tail
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -142,11 +144,17 @@ func (tail *Tail) Tell() (offset int64, err error) {
 		return
 	}
 	offset, err = tail.file.Seek(0, os.SEEK_CUR)
-	if err == nil {
-		tail.lk.Lock()
-		offset -= int64(tail.reader.Buffered())
-		tail.lk.Unlock()
+	if err != nil {
+		return
 	}
+
+	tail.lk.Lock()
+	defer tail.lk.Unlock()
+	if tail.reader == nil {
+		return
+	}
+
+	offset -= int64(tail.reader.Buffered())
 	return
 }
 
@@ -156,12 +164,20 @@ func (tail *Tail) Stop() error {
 	return tail.Wait()
 }
 
-func (tail *Tail) close() {
-	close(tail.Lines)
-	tail.colseFile()
+// StopAtEOF stops tailing as soon as the end of the file is reached.
+func (tail *Tail) StopAtEOF() error {
+	tail.Kill(errStopAtEOF)
+	return tail.Wait()
 }
 
-func (tail *Tail) colseFile() {
+var errStopAtEOF = errors.New("tail: stop at eof")
+
+func (tail *Tail) close() {
+	close(tail.Lines)
+	tail.closeFile()
+}
+
+func (tail *Tail) closeFile() {
 	if tail.file != nil {
 		tail.file.Close()
 		tail.file = nil
@@ -169,7 +185,7 @@ func (tail *Tail) colseFile() {
 }
 
 func (tail *Tail) reopen() error {
-	tail.colseFile()
+	tail.closeFile()
 	for {
 		var err error
 		tail.file, err = OpenFile(tail.Filename)
@@ -236,6 +252,7 @@ func (tail *Tail) tailFileSync() {
 
 	var offset int64 = 0
 	var err error
+
 	// Read line by line.
 	for {
 		// do not seek in named pipes
@@ -265,8 +282,7 @@ func (tail *Tail) tailFileSync() {
 				case <-tail.Dying():
 					return
 				}
-				err = tail.seekEnd()
-				if err != nil {
+				if err := tail.seekEnd(); err != nil {
 					tail.Kill(err)
 					return
 				}
@@ -307,6 +323,9 @@ func (tail *Tail) tailFileSync() {
 
 		select {
 		case <-tail.Dying():
+			if tail.Err() == errStopAtEOF {
+				continue
+			}
 			return
 		default:
 		}

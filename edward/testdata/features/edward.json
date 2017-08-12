@@ -1,0 +1,74 @@
+{
+    "groups": [
+        {
+            "name": "env-group",
+            "children": [
+                "env-for-group"
+            ],
+            "env": [
+                "BUILD=build",
+                "PORT=51937",
+                "APPLIED=YES"
+            ]
+        }
+    ],
+    "services": [
+        {
+            "name": "warmup",
+            "path": "edward-test-service",
+            "commands": {
+                "build": "go build",
+                "launch": "./edward-test-service 51936"
+            },
+            "warmup": {
+                "url": "http://127.0.0.1:51936"
+            }
+        },
+        {
+            "name": "env",
+            "path": "edward-test-expectenv",
+            "commands": {
+                "build": "go ${BUILD}",
+                "launch": "./edward-test-expectenv ${PORT}"
+            },
+            "env": [
+                "BUILD=build",
+                "PORT=51937",
+                "APPLIED=YES"
+            ]
+        },
+        {
+            "name": "env-for-group",
+            "path": "edward-test-expectenv",
+            "commands": {
+                "build": "go ${BUILD}",
+                "launch": "./edward-test-expectenv ${PORT}"
+            },
+            "env": [
+                "APPLIED=NO"
+            ]
+        },
+        {
+            "name": "wait",
+            "path": "edward-test-noport",
+            "commands": {
+                "build": "go build",
+                "launch": "./edward-test-noport"
+            },
+            "launch_checks": {
+                "wait": 500
+            }
+        },
+        {
+            "name": "logLine",
+            "path": "edward-test-noport",
+            "commands": {
+                "build": "go build",
+                "launch": "./edward-test-noport"
+            },
+            "launch_checks": {
+                "log_text": "Started"
+            }
+        }
+    ]
+}

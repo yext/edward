@@ -120,6 +120,24 @@ Alternatively, you can specify a set of ports:
 
 And Edward will wait for all the listed ports to be open before considering the service started. When ports are specified, the process that opens them will not be taken into account.
 
+You can also configure Edward to wait for a given amount of time (in ms) before considering a service as successfully started:
+
+```json
+{
+    "name": "myservice",
+    ...
+    "launch_checks": {
+      "wait": 500
+    }
+}
+```
+
+If the service process exits before the end of this time, it will be considered to have failed.
+
+{{< warning title="Only one launch check may be used" >}}
+Note that only one of these checks may be configured for a single service.
+{{< /warning >}}
+
 ### Environment Variables
 
 To specify environment variables to be passed to a service, you can add the *env* attribute, which is an array of environment variables in the form `KEY=VALUE`:

@@ -1,3 +1,4 @@
+// Copyright (c) 2015 HPE Software Inc. All rights reserved.
 // Copyright (c) 2013 ActiveState Software Inc. All rights reserved.
 
 package watch
@@ -45,7 +46,16 @@ func (fw *InotifyFileWatcher) BlockUntilExists(t *tomb.Tomb) error {
 		case evt, ok := <-events:
 			if !ok {
 				return fmt.Errorf("inotify watcher has been closed")
-			} else if filepath.Clean(evt.Name) == fw.Filename {
+			}
+			evtName, err := filepath.Abs(evt.Name)
+			if err != nil {
+				return err
+			}
+			fwFilename, err := filepath.Abs(fw.Filename)
+			if err != nil {
+				return err
+			}
+			if evtName == fwFilename {
 				return nil
 			}
 		case <-t.Dying():
@@ -66,7 +76,6 @@ func (fw *InotifyFileWatcher) ChangeEvents(t *tomb.Tomb, pos int64) (*FileChange
 
 	go func() {
 		defer RemoveWatch(fw.Filename)
-		defer changes.Close()
 
 		events := Events(fw.Filename)
 

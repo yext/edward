@@ -93,9 +93,20 @@ func (c *ServiceConfig) UnmarshalJSON(data []byte) error {
 // validate checks if this config is allowed
 func (c *ServiceConfig) validate() error {
 	if c.LaunchChecks != nil {
-		if len(c.LaunchChecks.LogText) > 0 && len(c.LaunchChecks.Ports) > 0 {
-			return errors.New("cannot specify both a log and port launch check")
+		checkCount := 0
+		if len(c.LaunchChecks.LogText) > 0 {
+			checkCount++
 		}
+		if len(c.LaunchChecks.Ports) > 0 {
+			checkCount++
+		}
+		if c.LaunchChecks.Wait != 0 {
+			checkCount++
+		}
+		if checkCount > 1 {
+			return errors.New("cannot specify multiple launch check types for one service")
+		}
+
 	}
 	return nil
 }
@@ -163,10 +174,12 @@ func (c *ServiceConfig) printf(format string, v ...interface{}) {
 
 // LaunchChecks defines the mechanism for testing whether a service has started successfully
 type LaunchChecks struct {
-	// A string to look for in the service's logs that indicates it has completed startup
+	// A string to look for in the service's logs that indicates it has completed startup.
 	LogText string `json:"log_text,omitempty"`
-	// One or more specific ports that are expected to be opened when this service starts
+	// One or more specific ports that are expected to be opened when this service starts.
 	Ports []int `json:"ports,omitempty"`
+	// Wait for a specified amount of time (in ms) before calling the service started if still running.
+	Wait int64 `json:"wait,omitempty"`
 }
 
 // ServiceConfigProperties provides a set of regexes to detect properties of a service
@@ -320,11 +333,13 @@ func (c *ServiceConfig) doStop(cfg OperationConfig, overrides ContextOverride, t
 		return nil
 	}
 
+	c.printf("Interrupting process for %v\n", c.Name)
 	stopped, err := c.interruptProcess(cfg, command)
 	if err != nil {
 		job.SetState(tracker.TaskStateFailed, err.Error())
 		return nil
 	}
+	c.printf("Interrupt succeeded, was process stopped? %v\n", stopped)
 
 	if !stopped {
 		c.printf("SIGINT failed to stop service, waiting for 5s before sending SIGKILL\n")
@@ -348,6 +363,7 @@ func (c *ServiceConfig) doStop(cfg OperationConfig, overrides ContextOverride, t
 		}
 	}
 
+	c.printf("Cleaning up state after shutdown")
 	// Remove leftover files
 	command.clearState()
 	job.SetState(tracker.TaskStateSuccess)
