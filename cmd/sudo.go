@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"bytes"
@@ -64,7 +64,7 @@ func prepareForSudo() error {
 
 func sudoIfNeeded(sgs []services.ServiceOrGroup) error {
 	for _, sg := range sgs {
-		if sg.IsSudo(getOperationConfig()) {
+		if sg.IsSudo(services.OperationConfig{}) {
 			logger.Printf("sudo required for %v\n", sg.GetName())
 			return errors.WithStack(prepareForSudo())
 		}
