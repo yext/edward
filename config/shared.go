@@ -87,6 +87,16 @@ func GetAllGroupNames() []string {
 	return groupNames
 }
 
+// GetAllGroupsSorted returns a slice of all groups, sorted by name
+func GetAllGroupsSorted() []services.ServiceOrGroup {
+	var as []services.ServiceOrGroup
+	for _, group := range groupMap {
+		as = append(as, group)
+	}
+	sort.Sort(serviceOrGroupByName(as))
+	return as
+}
+
 // GetAllServicesSorted returns a slice of all services, sorted by name
 func GetAllServicesSorted() []services.ServiceOrGroup {
 	var as []services.ServiceOrGroup

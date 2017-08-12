@@ -48,6 +48,7 @@ func (o *OperationConfig) IsExcluded(sg ServiceOrGroup) bool {
 // ServiceOrGroup provides a common interface to services and groups
 type ServiceOrGroup interface {
 	GetName() string
+	GetDescription() string
 	Build(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error                     // Build this service/group from source
 	Start(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error  // Build and Launch this service/group
 	Launch(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error // Launch this service/group without building
@@ -58,7 +59,7 @@ type ServiceOrGroup interface {
 	Watch() ([]ServiceWatch, error)
 }
 
-// ContextOverrides defines overrides for service configuration caused by commandline
+// ContextOverride defines overrides for service configuration caused by commandline
 // flags or group configuration.
 type ContextOverride struct {
 	// Overrides to environment variables

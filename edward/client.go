@@ -274,20 +274,17 @@ func (c *Client) Status(names []string) error {
 }
 
 func (c *Client) List() error {
-	groupNames := config.GetAllGroupNames()
-	serviceNames := config.GetAllServiceNames()
-
-	sort.Strings(groupNames)
-	sort.Strings(serviceNames)
+	groups := config.GetAllGroupsSorted()
+	services := config.GetAllServicesSorted()
 
 	fmt.Fprintln(c.Output, "Services and groups")
 	fmt.Fprintln(c.Output, "Groups:")
-	for _, name := range groupNames {
-		fmt.Fprintln(c.Output, "\t", name)
+	for _, g := range groups {
+		fmt.Fprintln(c.Output, "\t", g.GetName(), ": ", g.GetDescription())
 	}
 	fmt.Fprintln(c.Output, "Services:")
-	for _, name := range serviceNames {
-		fmt.Fprintln(c.Output, "\t", name)
+	for _, s := range services {
+		fmt.Fprintln(c.Output, "\t", s.GetName(), ": ", s.GetDescription())
 	}
 
 	return nil
