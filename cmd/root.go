@@ -75,7 +75,7 @@ Build, start and manage service instances with a single command.`,
 			// Check for legacy pidfiles and error out if any are found
 			for _, service := range config.GetServiceMap() {
 				if _, err := os.Stat(service.GetPidPathLegacy()); !os.IsNotExist(err) {
-					return errors.New("one or more services were started with an older version of Edward. Please run `edward stop` to stop these instances.")
+					return errors.New("one or more services were started with an older version of Edward. Please run `edward stop` to stop these instances")
 				}
 			}
 		}

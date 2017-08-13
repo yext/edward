@@ -11,17 +11,17 @@ var generateCmd = &cobra.Command{
 	Short: "Automatically generate Edward config for a source tree",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return errors.WithStack(
-			edwardClient.Generate(args, *noPrompt, *targets),
+			edwardClient.Generate(args, *force, *targets),
 		)
 	},
 }
 
-var noPrompt *bool
+var force *bool
 var targets *[]string
 
 func init() {
 	RootCmd.AddCommand(generateCmd)
 
-	noPrompt = generateCmd.Flags().BoolP("no_prompt", "n", false, "Skip confirmation prompt")
+	force = generateCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 	targets = generateCmd.Flags().StringArray("target", nil, "Explicitly specify a target for this generation. If no targets are given, all targets will be used.")
 }

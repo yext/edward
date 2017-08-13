@@ -28,8 +28,8 @@ type Client struct {
 
 	Output io.Writer
 
-	Config   string
-	NoPrompt bool
+	Config string
+	Force  bool
 
 	ServiceChecks func([]services.ServiceOrGroup) error
 
@@ -81,15 +81,13 @@ func (c *Client) Start(names []string, skipBuild bool, tail bool, noWatch bool, 
 	return nil
 }
 
-func (c *Client) Restart(names []string, noPrompt bool, skipBuild bool, tail bool, noWatch bool, exclude []string) error {
+func (c *Client) Restart(names []string, force bool, skipBuild bool, tail bool, noWatch bool, exclude []string) error {
 
-	// Prompt user to confirm the restart
-	if !noPrompt {
-		if !askForConfirmation("Are you sure you want to restart?") {
+	if len(names) == 0 {
+		// Prompt user to confirm the restart
+		if !force && !askForConfirmation("Are you sure you want to restart?") {
 			return nil
 		}
-	}
-	if len(names) == 0 {
 		c.restartAll(skipBuild, tail, noWatch, exclude)
 	} else {
 		err := c.restartOneOrMoreServices(names, skipBuild, tail, noWatch, exclude)
@@ -374,7 +372,7 @@ func generatorsMatchingTargets(targets []string) ([]generators.Generator, error)
 	return filteredGenerators, nil
 }
 
-func (c *Client) Generate(names []string, noPrompt bool, targets []string) error {
+func (c *Client) Generate(names []string, force bool, targets []string) error {
 	var cfg config.Config
 	configPath := c.Config
 	if configPath == "" {
@@ -422,7 +420,7 @@ func (c *Client) Generate(names []string, noPrompt bool, targets []string) error
 	}
 
 	// Prompt user to confirm the list of services that will be generated
-	if !noPrompt {
+	if !force {
 		fmt.Println("The following will be generated:")
 		if len(foundServices) > 0 {
 			fmt.Println("Services:")

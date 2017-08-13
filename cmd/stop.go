@@ -8,7 +8,7 @@ import (
 // stopCmd represents the stop command
 var stopCmd = &cobra.Command{
 	Use:   "stop",
-	Short: "Stop a service",
+	Short: "Stop a service or a group",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return errors.WithStack(edwardClient.Stop(args, *exclude))
 	},

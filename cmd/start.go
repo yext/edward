@@ -8,7 +8,7 @@ import (
 // startCmd represents the start command
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Build and launch a service",
+	Short: "Build and launch a service or a group",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return errors.WithStack(
 			edwardClient.Start(args, *skipBuild, *tail, *noWatch, *exclude),
