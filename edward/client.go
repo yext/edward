@@ -384,7 +384,7 @@ func (c *Client) Generate(names []string, noPrompt bool, targets []string) error
 		}
 	}
 
-	if _, err := os.Stat(configPath); err == nil {
+	if f, err := os.Stat(configPath); err == nil && f.Size() != 0 {
 		cfg, err = config.LoadConfig(configPath, common.EdwardVersion, c.Logger)
 		if err != nil {
 			return errors.WithMessage(err, configPath)
