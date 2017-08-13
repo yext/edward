@@ -41,7 +41,7 @@ type GroupDef struct {
 	Env         []string `json:"env,omitempty"`
 }
 
-// LoadConfigWithDir loads configuration from an io.Reader with the working directory explicitly specified
+// LoadConfig loads configuration from an io.Reader with the working directory explicitly specified
 func LoadConfig(filePath string, edwardVersion string, logger common.Logger) (Config, error) {
 	reader, err := os.Open(filePath)
 	if err != nil {

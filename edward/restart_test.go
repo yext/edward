@@ -115,7 +115,7 @@ func TestRestart(t *testing.T) {
 			tf = newTestFollower()
 			client.Follower = tf
 
-			err = client.Restart(test.servicesRestart, test.skipBuild, false, test.noWatch, test.exclude)
+			err = client.Restart(test.servicesRestart, true, test.skipBuild, false, test.noWatch, test.exclude)
 			must.BeEqualErrors(t, test.err, err)
 			must.BeEqual(t, test.expectedStates, tf.states)
 			must.BeEqual(t, test.expectedMessages, tf.messages)
