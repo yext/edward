@@ -81,7 +81,14 @@ func (c *Client) Start(names []string, skipBuild bool, tail bool, noWatch bool, 
 	return nil
 }
 
-func (c *Client) Restart(names []string, skipBuild bool, tail bool, noWatch bool, exclude []string) error {
+func (c *Client) Restart(names []string, noPrompt bool, skipBuild bool, tail bool, noWatch bool, exclude []string) error {
+
+	// Prompt user to confirm the restart
+	if !noPrompt {
+		if !askForConfirmation("Are you sure you want to restart?") {
+			return nil
+		}
+	}
 	if len(names) == 0 {
 		c.restartAll(skipBuild, tail, noWatch, exclude)
 	} else {
