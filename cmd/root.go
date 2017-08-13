@@ -38,7 +38,7 @@ Build, start and manage service instances with a single command.`,
 	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Begin logging
-		logger.Printf("=== Edward v%v ===\n", "")
+		logger.Printf("=== Edward v%v ===\n", common.EdwardVersion)
 		logger.Printf("Args: %v\n", os.Args)
 
 		edwardClient = edward.NewClient()
