@@ -100,7 +100,15 @@ func verifyAndStopRunners(t *testing.T, serviceCount int) {
 	}
 	if len(children) != serviceCount {
 		// We can't know which test or operation this would be for, so don't try to stop anything
-		t.Fatalf("Expected %d children, got %d", serviceCount, len(children))
+		var childNames []string
+		for _, child := range children {
+			cmdline, err := child.Cmdline()
+			if err != nil {
+				t.Errorf("Error getting cmdline: %v", err)
+			}
+			childNames = append(childNames, cmdline)
+		}
+		t.Fatalf("Expected %d children, got %s", serviceCount, strings.Join(childNames, ", "))
 	}
 	for _, child := range children {
 		err = verifyAndStopRunner(t, child)

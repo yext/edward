@@ -218,16 +218,75 @@ func TestDockerGenerator(t *testing.T) {
 					},
 				},
 			},
-			outErr: nil,
+		},
+		{
+			name: "Docker Nested",
+			path: "testdata/docker/nested/",
+			outServices: []*services.ServiceConfig{
+				{
+					Name: "child",
+					Path: common.StringToStringPointer("parent/child"),
+					Env:  []string{},
+					Commands: services.ServiceConfigCommands{
+						Build:  "docker build -t child:edward .",
+						Launch: "docker run -p 80:80 child:edward",
+					},
+					LaunchChecks: &services.LaunchChecks{
+						Ports: []int{80},
+					},
+				},
+				{
+					Name: "parent",
+					Path: common.StringToStringPointer("parent"),
+					Env:  []string{},
+					Commands: services.ServiceConfigCommands{
+						Build:  "docker build -t parent:edward .",
+						Launch: "docker run -p 80:80 parent:edward",
+					},
+					LaunchChecks: &services.LaunchChecks{
+						Ports: []int{80},
+					},
+				},
+			},
+		},
+		{
+			name: "Docker Nested With Go",
+			path: "testdata/docker/nestedgo/",
+			outServices: []*services.ServiceConfig{
+				{
+					Name: "child",
+					Path: common.StringToStringPointer("parent/child"),
+					Env:  []string{},
+					Commands: services.ServiceConfigCommands{
+						Build:  "go install",
+						Launch: "child",
+					},
+				},
+				{
+					Name: "parent",
+					Path: common.StringToStringPointer("parent"),
+					Env:  []string{},
+					Commands: services.ServiceConfigCommands{
+						Build:  "docker build -t parent:edward .",
+						Launch: "docker run -p 80:80 parent:edward",
+					},
+					LaunchChecks: &services.LaunchChecks{
+						Ports: []int{80},
+					},
+				},
+			},
 		},
 	}
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			gc := &GeneratorCollection{
-				Generators: []Generator{&DockerGenerator{}},
-				Path:       test.path,
-				Targets:    test.targets,
+				Generators: []Generator{
+					&DockerGenerator{},
+					&GoGenerator{},
+				},
+				Path:    test.path,
+				Targets: test.targets,
 			}
 			err := gc.Generate()
 			services := gc.Services()

@@ -500,6 +500,12 @@ supported projects that are found.</p>
 <li>Procfile</li>
 </ul>
 
+<p>You can use the <code>--target</code> flag to limit the types of projects for which services are generated. For example:</p>
+
+<p>$ edward generate &ndash;target go &ndash;target docker</p>
+
+<p>Will generate services from only go and Docker projects.</p>
+
 <h3 id="go">Go</h3>
 
 <p>The <em>Go</em> generator will create service configuration for services written in the <a href="https://golang.org/">Go programming language</a>.</p>

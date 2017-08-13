@@ -66,6 +66,16 @@ func (d *directory) Ignores() *ignore.GitIgnore {
 	return nil
 }
 
+// SkipAll indicates that all generators should skip this directory and
+// subdirectories.
+var SkipAll skipAllErr = skipAllErr("skipped")
+
+type skipAllErr string
+
+func (s skipAllErr) Error() string {
+	return string(s)
+}
+
 func (d *directory) Generate(generators []Generator) error {
 	if d == nil || len(generators) == 0 {
 		return nil
@@ -73,15 +83,15 @@ func (d *directory) Generate(generators []Generator) error {
 
 	var childGenerators []Generator
 	for _, generator := range generators {
-		found, err := generator.VisitDir(d.Path)
+		_, err := generator.VisitDir(d.Path)
+		if err == SkipAll {
+			return nil
+		}
 		if err != nil && err != filepath.SkipDir {
 			return errors.WithStack(err)
 		}
 		if err != filepath.SkipDir {
 			childGenerators = append(childGenerators, generator)
-		}
-		if found {
-			break
 		}
 	}
 

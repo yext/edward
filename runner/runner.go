@@ -9,32 +9,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/urfave/cli"
 	"github.com/yext/edward/commandline"
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/services"
 )
-
-var Instance = &Runner{}
-
-// Command defines the CLI config for the 'run' command
-var Command = cli.Command{
-	Name:   "run",
-	Hidden: true,
-	Action: Instance.run,
-	Flags: []cli.Flag{
-		cli.BoolFlag{
-			Name:        "no-watch",
-			Usage:       "Disable autorestart",
-			Destination: &(Instance.noWatch),
-		},
-		cli.StringFlag{
-			Name:        "d, directory",
-			Usage:       "Working directory",
-			Destination: &(Instance.workingDir),
-		},
-	},
-}
 
 // Runner provides state and functions for running a given service
 type Runner struct {
@@ -44,8 +22,8 @@ type Runner struct {
 	messageLog *Log
 
 	commandWait sync.WaitGroup
-	noWatch     bool
-	workingDir  string
+	NoWatch     bool
+	WorkingDir  string
 
 	Logger Logger
 }
@@ -109,15 +87,14 @@ type Logger interface {
 	Printf(format string, a ...interface{})
 }
 
-func (r *Runner) run(c *cli.Context) error {
-	if r.workingDir != "" {
-		err := os.Chdir(r.workingDir)
+func (r *Runner) Run(args []string) error {
+	if r.WorkingDir != "" {
+		err := os.Chdir(r.WorkingDir)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 	}
 
-	args := c.Args()
 	if len(args) < 1 {
 		return errors.New("a service name is required")
 	}
@@ -169,7 +146,6 @@ func (r *Runner) configureLogs() error {
 }
 
 func (r *Runner) configureSignals() {
-	r.Messagef("Configuring signals")
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
 	go func() {
@@ -184,7 +160,7 @@ func (r *Runner) configureSignals() {
 }
 
 func (r *Runner) configureWatch() func() {
-	if !r.noWatch {
+	if !r.NoWatch {
 		closeWatchers, err := BeginWatch(r.service, r.restartService, r.messageLog)
 		if err != nil {
 			r.Messagef("Could not enable auto-restart: %v\n", err)

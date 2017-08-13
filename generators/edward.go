@@ -33,7 +33,7 @@ func (v *EdwardGenerator) VisitDir(path string) (bool, error) {
 				return false, errors.WithStack(err)
 			}
 			v.found = append(v.found, relPath)
-			return true, nil
+			return true, SkipAll
 		}
 	}
 
