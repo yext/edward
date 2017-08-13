@@ -331,7 +331,43 @@ func (c *Client) Log(names []string) error {
 	return nil
 }
 
-func (c *Client) Generate(names []string, noPrompt bool) error {
+func generatorsMatchingTargets(targets []string) ([]generators.Generator, error) {
+	allGenerators := []generators.Generator{
+		&generators.EdwardGenerator{},
+		&generators.DockerGenerator{},
+		&generators.GoGenerator{},
+		&generators.IcbmGenerator{},
+	}
+	if len(targets) == 0 {
+		return allGenerators, nil
+	}
+
+	targetSet := make(map[string]struct{})
+	for _, target := range targets {
+		targetSet[target] = struct{}{}
+	}
+
+	var filteredGenerators = make([]generators.Generator, 0, len(allGenerators))
+	for _, gen := range allGenerators {
+		if _, exists := targetSet[gen.Name()]; exists {
+			filteredGenerators = append(filteredGenerators, gen)
+			delete(targetSet, gen.Name())
+		}
+	}
+
+	if len(targetSet) > 0 {
+		var missingTargets = make([]string, 0, len(targetSet))
+		for target := range targetSet {
+			missingTargets = append(missingTargets, target)
+		}
+		return nil, fmt.Errorf("targets not found: %v", strings.Join(missingTargets, ", "))
+
+	}
+
+	return filteredGenerators, nil
+}
+
+func (c *Client) Generate(names []string, noPrompt bool, targets []string) error {
 	var cfg config.Config
 	configPath := c.Config
 	if configPath == "" {
@@ -355,15 +391,15 @@ func (c *Client) Generate(names []string, noPrompt bool) error {
 		return errors.WithStack(err)
 	}
 
+	targetedGenerators, err := generatorsMatchingTargets(targets)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	generators := &generators.GeneratorCollection{
-		Generators: []generators.Generator{
-			&generators.EdwardGenerator{},
-			&generators.DockerGenerator{},
-			&generators.GoGenerator{},
-			&generators.IcbmGenerator{},
-		},
-		Path:    wd,
-		Targets: names,
+		Generators: targetedGenerators,
+		Path:       wd,
+		Targets:    names,
 	}
 	err = generators.Generate()
 	if err != nil {
@@ -372,6 +408,11 @@ func (c *Client) Generate(names []string, noPrompt bool) error {
 	foundServices := generators.Services()
 	foundGroups := generators.Groups()
 	foundImports := generators.Imports()
+
+	if len(foundServices) == 0 && len(foundGroups) == 0 {
+		fmt.Println("No services found")
+		return nil
+	}
 
 	// Prompt user to confirm the list of services that will be generated
 	if !noPrompt {

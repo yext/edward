@@ -121,6 +121,12 @@ Edward supports autogeneration for four types of project:
 * icbm
 * Procfile
 
+You can use the `--target` flag to limit the types of projects for which services are generated. For example:
+
+   $ edward generate --target go --target docker
+
+Will generate services from only go and Docker projects.
+
 ### Go
 
 The *Go* generator will create service configuration for services written in the [Go programming language](https://golang.org/).
