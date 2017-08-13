@@ -10,12 +10,16 @@ var stopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Stop a service or a group",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return errors.WithStack(edwardClient.Stop(args, *exclude))
+		return errors.WithStack(edwardClient.Stop(args, *stopFlags.exclude))
 	},
+}
+
+var stopFlags struct {
+	exclude *[]string
 }
 
 func init() {
 	RootCmd.AddCommand(stopCmd)
 
-	exclude = stopCmd.Flags().StringArrayP("exclude", "e", nil, "Exclude `SERVICE` from this operation")
+	stopFlags.exclude = stopCmd.Flags().StringArrayP("exclude", "e", nil, "Exclude `SERVICE` from this operation")
 }

@@ -11,19 +11,22 @@ var runCmd = &cobra.Command{
 	Hidden: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r := &runner.Runner{}
-		r.NoWatch = *noWatch
-		r.WorkingDir = *runnerDirectory
+		r.NoWatch = *runFlags.noWatch
+		r.WorkingDir = *runFlags.directory
 		r.Logger = logger
 		r.Run(args)
 		return nil
 	},
 }
 
-var runnerDirectory *string
+var runFlags struct {
+	noWatch   *bool
+	directory *string
+}
 
 func init() {
 	RootCmd.AddCommand(runCmd)
 
-	noWatch = runCmd.Flags().Bool("no-watch", false, "Disable autorestart")
-	runnerDirectory = runCmd.Flags().StringP("directory", "d", "", "Working directory")
+	runFlags.noWatch = runCmd.Flags().Bool("no-watch", false, "Disable autorestart")
+	runFlags.directory = runCmd.Flags().StringP("directory", "d", "", "Working directory")
 }
