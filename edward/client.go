@@ -518,6 +518,13 @@ func (c *Client) tailFromFlag(names []string) error {
 }
 
 func askForConfirmation(question string) bool {
+
+	// Skip confirmations for children. For example, for enabling sudo.
+	isChild := os.Getenv("ISCHILD")
+	if isChild != "" {
+		return true
+	}
+
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Printf("%s [y/n]? ", question)
