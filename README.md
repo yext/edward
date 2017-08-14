@@ -61,6 +61,7 @@ Edward can generate configuration for projects using:
 * Docker
 * ICBM
 * Procfiles
+* Other Edward config files
 
 Don't see your project described above? No problem! Edward can be manually configured for any
 service that can be built and started from the command line.
