@@ -1,8 +1,7 @@
 package edward
 
 import (
-	"fmt"
-	"os"
+	"bytes"
 	"strconv"
 	"strings"
 
@@ -12,7 +11,7 @@ import (
 	"github.com/yext/edward/services"
 )
 
-func (c *Client) Status(names []string) error {
+func (c *Client) Status(names []string) (string, error) {
 	var sgs []services.ServiceOrGroup
 	var err error
 	if len(names) == 0 {
@@ -20,7 +19,7 @@ func (c *Client) Status(names []string) error {
 			var s []services.ServiceStatus
 			s, err = service.Status()
 			if err != nil {
-				return errors.WithStack(err)
+				return "", errors.WithStack(err)
 			}
 			for _, status := range s {
 				if status.Status != services.StatusStopped {
@@ -29,23 +28,23 @@ func (c *Client) Status(names []string) error {
 			}
 		}
 		if len(sgs) == 0 {
-			fmt.Println("No services are running")
-			return nil
+			return "No services are running\n", nil
 		}
 	} else {
 
 		sgs, err = config.GetServicesOrGroups(names)
 		if err != nil {
-			return errors.WithStack(err)
+			return "", errors.WithStack(err)
 		}
 	}
 
 	if len(sgs) == 0 {
-		fmt.Println("No services found")
-		return nil
+		return "No services found\n", nil
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
+	buf := new(bytes.Buffer)
+
+	table := tablewriter.NewWriter(buf)
 	table.SetHeader([]string{
 		"Name",
 		"Status",
@@ -60,7 +59,7 @@ func (c *Client) Status(names []string) error {
 	for _, s := range sgs {
 		statuses, err := s.Status()
 		if err != nil {
-			return errors.WithStack(err)
+			return "", errors.WithStack(err)
 		}
 		for _, status := range statuses {
 			table.Append([]string{
@@ -75,5 +74,5 @@ func (c *Client) Status(names []string) error {
 		}
 	}
 	table.Render()
-	return nil
+	return buf.String(), nil
 }
