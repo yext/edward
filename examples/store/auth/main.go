@@ -15,6 +15,5 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/", handler)
 	fmt.Println("Starting to listen on port", os.Args[1])
-
 	http.ListenAndServe(":"+os.Args[1], nil)
 }

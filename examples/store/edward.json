@@ -4,7 +4,7 @@
         "name": "store",
         "children": [
           "database",
-          "users",
+          "auth",
           "products",
           "carts",
           "checkout",
@@ -78,16 +78,16 @@
             }
         },
         {
-            "name": "users",
-            "path": "users",
+            "name": "auth",
+            "path": "auth",
             "commands": {
                 "build": "go install",
-                "launch": "users 12305"
+                "launch": "auth 12305"
             },
             "launch_checks": null,
             "watch": {
                 "include": [
-                    "users"
+                    "auth"
                 ]
             }
         },

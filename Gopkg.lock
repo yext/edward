@@ -27,12 +27,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/gosuri/uilive"
-  packages = ["."]
-  revision = "ac356e6e42cd31fcef8e6aec13ae9ed6fe87713e"
-
-[[projects]]
-  branch = "master"
   name = "github.com/hashicorp/go-version"
   packages = ["."]
   revision = "03c5bf6be031b6dd45afec16b1cf94fc8938bc77"
@@ -183,6 +177,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/theothertomelliott/uilive"
+  packages = ["."]
+  revision = "e481c8e66f15df6bab3844a4a31ba15fabe95d49"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
   revision = "cd2c276457edda6df7fb04895d3fd6a6add42926"
@@ -220,6 +220,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "57cc6cceda1af15a010355faf55b7331601d484a881d68ee24cb3169203b44cf"
+  inputs-digest = "170dec39ca8918e5c942d619a365a9500a94883ab7907f96bbfa3ced0c0150fc"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -3,7 +3,7 @@ package output
 import (
 	"time"
 
-	"github.com/gosuri/uilive"
+	"github.com/theothertomelliott/uilive"
 	"github.com/yext/edward/tracker"
 )
 
@@ -33,12 +33,9 @@ func (f *Follower) Handle(update tracker.Task) {
 	state := update.State()
 	if state != tracker.TaskStatePending &&
 		state != tracker.TaskStateInProgress {
+		bp := f.writer.Bypass()
 		renderer := NewCompletionRenderer(update)
-		renderer.Render(f.writer)
-		f.writer.Stop()
-
-		f.writer = uilive.New()
-		f.writer.Start()
+		renderer.Render(bp)
 	}
 
 	f.inProgress.Render(f.writer, update)
