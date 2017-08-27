@@ -70,7 +70,7 @@ func TestStatus(t *testing.T) {
 			}
 			must.BeEqualErrors(t, test.err, err)
 
-			err = client.Stop(test.services, test.exclude)
+			err = client.Stop(test.services, true, test.exclude)
 			if err != nil {
 				t.Fatal(err)
 			}

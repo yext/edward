@@ -8,10 +8,14 @@ import (
 	"github.com/yext/edward/worker"
 )
 
-func (c *Client) Stop(names []string, exclude []string) error {
+func (c *Client) Stop(names []string, force bool, exclude []string) error {
 	var sgs []services.ServiceOrGroup
 	var err error
 	if len(names) == 0 {
+		// Prompt user to confirm
+		if !force && !askForConfirmation("Are you sure you want to stop all services?") {
+			return nil
+		}
 		allSrv := config.GetAllServicesSorted()
 		for _, service := range allSrv {
 			var s []services.ServiceStatus

@@ -109,7 +109,7 @@ func TestStopAll(t *testing.T) {
 			tf = newTestFollower()
 			client.Follower = tf
 
-			err = client.Stop(test.servicesStop, test.exclude)
+			err = client.Stop(test.servicesStop, true, test.exclude)
 			must.BeEqualErrors(t, test.err, err)
 			must.BeEqual(t, test.expectedStates, tf.states)
 			must.BeEqual(t, test.expectedMessages, tf.messages)
