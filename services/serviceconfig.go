@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -32,6 +33,8 @@ var _ ServiceOrGroup = &ServiceConfig{}
 type ServiceConfig struct {
 	// Service name, used to identify in commands
 	Name string `json:"name"`
+	// Alternative names for this service
+	Aliases []string `json:"aliases"`
 	// Service description
 	Description string `json:"description"`
 	// Optional path to service. If nil, uses cwd
@@ -64,6 +67,21 @@ type ServiceConfig struct {
 	Logger common.Logger `json:"-"`
 
 	lockToken string
+
+	mtx sync.Mutex
+}
+
+// Matches returns true if the service name or an alias matches the provided name.
+func (c *ServiceConfig) Matches(name string) bool {
+	if c.Name == name {
+		return true
+	}
+	for _, alias := range c.Aliases {
+		if alias == name {
+			return true
+		}
+	}
+	return false
 }
 
 // UnmarshalJSON provides additional handling when unmarshaling a service from config.

@@ -66,6 +66,17 @@ func GetServiceOrGroup(name string) (services.ServiceOrGroup, error) {
 	if service, ok := serviceMap[name]; ok {
 		return service, nil
 	}
+	// Check aliases
+	for _, group := range groupMap {
+		if group.Matches(name) {
+			return group, nil
+		}
+	}
+	for _, service := range serviceMap {
+		if service.Matches(name) {
+			return service, nil
+		}
+	}
 	return nil, errors.New("Service or group not found")
 }
 

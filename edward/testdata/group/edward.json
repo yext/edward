@@ -2,12 +2,14 @@
     "groups": [
         {
             "name": "group",
+            "aliases": ["groupalias"],
             "children": ["service1","service2","service3"]
         }
     ],
     "services": [
         {
             "name": "service1",
+            "aliases": ["service1alias"],
             "path": "edward-test-service",
             "commands": {
                 "build": "go build",

@@ -13,6 +13,8 @@ var _ ServiceOrGroup = &ServiceGroupConfig{}
 type ServiceGroupConfig struct {
 	// A name for this group, used to identify it in commands
 	Name string
+	// Alternative names for this group
+	Aliases []string
 	// A description
 	Description string
 	// Full services contained within this group
@@ -24,6 +26,19 @@ type ServiceGroupConfig struct {
 	Env []string
 
 	Logger common.Logger
+}
+
+// Matches returns true if the group name or an alias matches the provided name.
+func (c *ServiceGroupConfig) Matches(name string) bool {
+	if c.Name == name {
+		return true
+	}
+	for _, alias := range c.Aliases {
+		if alias == name {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *ServiceGroupConfig) printf(format string, v ...interface{}) {

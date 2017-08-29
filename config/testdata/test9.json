@@ -1,0 +1,25 @@
+{
+	"services": [
+		{
+			"name": "service1",
+			"aliases": ["service2"],
+			"path": ".",
+			"requiresSudo": true,
+			"commands": {
+				"build": "buildCmd",
+				"launch": "launchCmd",
+				"stop": "stopCmd"
+			},
+			"log_properties": {
+				"started": "startedProperty"
+			}
+		}
+	],
+	"groups": [
+		{
+			"name": "group1",
+			"aliases": ["group2"],
+			"children": ["service1"]
+		}
+	]
+}

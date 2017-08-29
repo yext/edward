@@ -3,10 +3,12 @@ package config
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	version "github.com/hashicorp/go-version"
@@ -35,7 +37,8 @@ type Config struct {
 
 // GroupDef defines a group based on a list of children specified by name
 type GroupDef struct {
-	Name        string   `json:"name"`
+	Name        string `json:"name"`
+	Aliases     []string
 	Description string   `json:"description"`
 	Children    []string `json:"children"`
 	Env         []string `json:"env,omitempty"`
@@ -219,6 +222,7 @@ func (c *Config) AddGroups(groups []services.ServiceGroupConfig) error {
 	for _, group := range groups {
 		grp := GroupDef{
 			Name:        group.Name,
+			Aliases:     group.Aliases,
 			Description: group.Description,
 			Children:    []string{},
 			Env:         group.Env,
@@ -285,10 +289,30 @@ func (c *Config) combinePath(path string) *string {
 	return &fullPath
 }
 
+func addToMap(m map[string]struct{}, values ...string) {
+	for _, v := range values {
+		m[v] = struct{}{}
+	}
+}
+
+func intersect(m map[string]struct{}, values ...string) []string {
+	var out []string
+	for _, v := range values {
+		if _, ok := m[v]; ok {
+			out = append(out, v)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
 func (c *Config) initMaps() error {
 	var err error
 	var svcs = make(map[string]*services.ServiceConfig)
 	var servicesSkipped = make(map[string]struct{})
+
+	var namesInUse = make(map[string]struct{})
+
 	for _, s := range append(c.Services, c.ImportedServices...) {
 		sc := s
 		sc.Logger = c.Logger
@@ -298,10 +322,11 @@ func (c *Config) initMaps() error {
 			return errors.WithStack(err)
 		}
 		if sc.MatchesPlatform() {
-			if _, exists := svcs[sc.Name]; exists {
-				return errors.New("Service name already exists: " + sc.Name)
+			if i := intersect(namesInUse, append(sc.Aliases, sc.Name)...); len(i) > 0 {
+				return fmt.Errorf("Duplicate name or alias: %v", strings.Join(i, ", "))
 			}
 			svcs[sc.Name] = &sc
+			addToMap(namesInUse, append(sc.Aliases, sc.Name)...)
 		} else {
 			servicesSkipped[sc.Name] = struct{}{}
 		}
@@ -324,21 +349,20 @@ func (c *Config) initMaps() error {
 			}
 		}
 
-		if _, exists := svcs[g.Name]; exists {
-			return errors.New("A service already exists with the name: " + g.Name)
-		}
-		if _, exists := groups[g.Name]; exists {
-			return errors.New("Group name already exists: " + g.Name)
+		if i := intersect(namesInUse, append(g.Aliases, g.Name)...); len(i) > 0 {
+			return fmt.Errorf("Duplicate name or alias: %v", strings.Join(i, ", "))
 		}
 
 		groups[g.Name] = &services.ServiceGroupConfig{
 			Name:        g.Name,
+			Aliases:     g.Aliases,
 			Description: g.Description,
 			Services:    childServices,
 			Groups:      []*services.ServiceGroupConfig{},
 			Env:         g.Env,
 			Logger:      c.Logger,
 		}
+		addToMap(namesInUse, append(g.Aliases, g.Name)...)
 	}
 
 	// Second pass: Groups
