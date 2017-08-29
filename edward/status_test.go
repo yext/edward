@@ -13,21 +13,51 @@ import (
 
 func TestStatus(t *testing.T) {
 	var tests = []struct {
-		name      string
-		path      string
-		config    string
-		services  []string
-		skipBuild bool
-		tail      bool
-		noWatch   bool
-		exclude   []string
-		err       error
+		name             string
+		path             string
+		config           string
+		runningServices  []string
+		inServices       []string
+		expectedServices []string
+		err              error
 	}{
 		{
-			name:     "single service",
-			path:     "testdata/single",
-			config:   "edward.json",
-			services: []string{"service"},
+			name:             "single service",
+			path:             "testdata/single",
+			config:           "edward.json",
+			runningServices:  []string{"service"},
+			expectedServices: []string{"service"},
+		},
+		{
+			name:             "multiple services",
+			path:             "testdata/multiple",
+			config:           "edward.json",
+			runningServices:  []string{"service1", "service2"},
+			expectedServices: []string{"service1", "service2"},
+		},
+		{
+			name:             "multiple services - one specified",
+			path:             "testdata/multiple",
+			config:           "edward.json",
+			runningServices:  []string{"service1", "service2"},
+			inServices:       []string{"service2"},
+			expectedServices: []string{"service2"},
+		},
+		{
+			name:             "full group",
+			path:             "testdata/group",
+			config:           "edward.json",
+			runningServices:  []string{"group"},
+			inServices:       []string{"group"},
+			expectedServices: []string{"service1", "service2", "service3"},
+		},
+		{
+			name:             "partial group",
+			path:             "testdata/group",
+			config:           "edward.json",
+			runningServices:  []string{"service2", "service3"},
+			inServices:       []string{"group"},
+			expectedServices: []string{"service2", "service3"},
 		},
 	}
 	for _, test := range tests {
@@ -56,21 +86,20 @@ func TestStatus(t *testing.T) {
 
 			client.EdwardExecutable = edwardExecutable
 
-			err = client.Start(test.services, test.skipBuild, false, test.noWatch, test.exclude)
+			err = client.Start(test.runningServices, false, false, false, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			// TODO: Support specifying services
-			output, err := client.Status([]string{})
-			for _, service := range test.services {
+			output, err := client.Status(test.inServices)
+			for _, service := range test.expectedServices {
 				if !strings.Contains(output, service) {
 					t.Error("No status entry found for: ", service)
 				}
 			}
 			must.BeEqualErrors(t, test.err, err)
 
-			err = client.Stop(test.services, true, test.exclude)
+			err = client.Stop(test.runningServices, true, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
