@@ -38,8 +38,9 @@ func TestMain(m *testing.M) {
 }
 
 type testFollower struct {
-	states   map[string]string
-	messages []string
+	states     map[string]string
+	stateOrder []string
+	messages   []string
 }
 
 func newTestFollower() *testFollower {
@@ -58,6 +59,9 @@ func (f *testFollower) Handle(update tracker.Task) {
 
 	fullName := strings.Join(names, " > ")
 	f.states[fullName] = update.State().String()
+	if len(f.stateOrder) == 0 || f.stateOrder[len(f.stateOrder)-1] != fullName {
+		f.stateOrder = append(f.stateOrder, fullName)
+	}
 	f.messages = append(f.messages, update.Messages()...)
 }
 func (f *testFollower) Done() {}

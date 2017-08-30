@@ -85,6 +85,7 @@ func TestStatus(t *testing.T) {
 			client.Follower = tf
 
 			client.EdwardExecutable = edwardExecutable
+			client.DisableConcurrentPhases = true
 
 			err = client.Start(test.runningServices, false, false, false, nil)
 			if err != nil {

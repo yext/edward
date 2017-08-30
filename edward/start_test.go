@@ -77,6 +77,26 @@ func TestStart(t *testing.T) {
 			expectedServices: 3,
 		},
 		{
+			name:     "nested group",
+			path:     "testdata/subgroup",
+			config:   "edward.json",
+			services: []string{"parentgroup"},
+			expectedStates: map[string]string{
+				"parentgroup":                                 "Pending",
+				"parentgroup > service1":                      "Pending",
+				"parentgroup > service1 > Build":              "Success",
+				"parentgroup > service1 > Start":              "Success",
+				"parentgroup > childgroup":                    "Pending",
+				"parentgroup > childgroup > service2":         "Pending",
+				"parentgroup > childgroup > service2 > Build": "Success",
+				"parentgroup > childgroup > service2 > Start": "Success",
+				"parentgroup > service3":                      "Pending",
+				"parentgroup > service3 > Build":              "Success",
+				"parentgroup > service3 > Start":              "Success",
+			},
+			expectedServices: 3,
+		},
+		{
 			name:     "groupalias",
 			path:     "testdata/group",
 			config:   "edward.json",
@@ -200,10 +220,104 @@ func TestStart(t *testing.T) {
 			tf := newTestFollower()
 			client.Follower = tf
 			client.EdwardExecutable = edwardExecutable
+			client.DisableConcurrentPhases = true
 
 			err = client.Start(test.services, test.skipBuild, false, test.noWatch, test.exclude)
 			must.BeEqual(t, test.expectedStates, tf.states)
 			must.BeEqual(t, test.expectedMessages, tf.messages)
+			must.BeEqualErrors(t, test.err, err)
+
+			// Verify that the process actually started
+			verifyAndStopRunners(t, test.expectedServices)
+		})
+	}
+}
+
+func TestStartOrder(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
+	var tests = []struct {
+		name               string
+		path               string
+		config             string
+		services           []string
+		skipBuild          bool
+		tail               bool
+		noWatch            bool
+		exclude            []string
+		expectedStateOrder []string
+		expectedServices   int
+		err                error
+	}{
+		{
+			name:     "group",
+			path:     "testdata/group",
+			config:   "edward.json",
+			services: []string{"group"},
+			expectedStateOrder: []string{
+				"group",
+				"group > service1",
+				"group > service1 > Build",
+				"group > service1 > Start",
+				"group > service2",
+				"group > service2 > Build",
+				"group > service2 > Start",
+				"group > service3",
+				"group > service3 > Build",
+				"group > service3 > Start",
+			},
+			expectedServices: 3,
+		},
+		{
+			name:     "nested group",
+			path:     "testdata/subgroup",
+			config:   "edward.json",
+			services: []string{"parentgroup"},
+			expectedStateOrder: []string{
+				"parentgroup",
+				"parentgroup > service1",
+				"parentgroup > service1 > Build",
+				"parentgroup > service1 > Start",
+				"parentgroup > childgroup",
+				"parentgroup > childgroup > service2",
+				"parentgroup > childgroup > service2 > Build",
+				"parentgroup > childgroup > service2 > Start",
+				"parentgroup > service3",
+				"parentgroup > service3 > Build",
+				"parentgroup > service3 > Start",
+			},
+			expectedServices: 3,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Set up edward home directory
+			if err := home.EdwardConfig.Initialize(); err != nil {
+				t.Fatal(err)
+			}
+
+			var err error
+
+			// Copy test content into a temp dir on the GOPATH & defer deletion
+			cleanup := createWorkingDir(t, test.name, test.path)
+			defer cleanup()
+
+			err = config.LoadSharedConfig(test.config, common.EdwardVersion, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := edward.NewClient()
+			client.Config = test.config
+			tf := newTestFollower()
+			client.Follower = tf
+			client.EdwardExecutable = edwardExecutable
+			client.DisableConcurrentPhases = true
+
+			err = client.Start(test.services, test.skipBuild, false, test.noWatch, test.exclude)
+			must.BeEqual(t, test.expectedStateOrder, tf.stateOrder)
 			must.BeEqualErrors(t, test.err, err)
 
 			// Verify that the process actually started

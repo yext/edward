@@ -21,13 +21,15 @@ type Client struct {
 	Output io.Writer
 
 	Config string
-	Force  bool
 
 	ServiceChecks func([]services.ServiceOrGroup) error
 
 	EdwardExecutable string
 
 	Follower TaskFollower
+
+	// Prevent build, launch and stop phases from running concurrently
+	DisableConcurrentPhases bool
 }
 
 type TaskFollower interface {
@@ -53,7 +55,11 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, ta
 	task := tracker.NewTask(c.Follower.Handle)
 	defer c.Follower.Done()
 
-	p := worker.NewPool(1)
+	poolSize := 1
+	if c.DisableConcurrentPhases {
+		poolSize = 0
+	}
+	p := worker.NewPool(poolSize)
 	p.Start()
 	defer func() {
 		p.Stop()

@@ -1,6 +1,8 @@
 package services
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/tracker"
@@ -21,6 +23,9 @@ type ServiceGroupConfig struct {
 	Services []*ServiceConfig
 	// Groups on which this group depends
 	Groups []*ServiceGroupConfig
+
+	// Launch order for children
+	ChildOrder []string
 
 	// Environment variables to be passed to all child services
 	Env []string
@@ -87,6 +92,20 @@ func (c *ServiceGroupConfig) getOverrides(o ContextOverride) ContextOverride {
 	return override.Merge(o)
 }
 
+func (c *ServiceGroupConfig) getChild(name string) ServiceOrGroup {
+	for _, group := range c.Groups {
+		if group.Name == name {
+			return group
+		}
+	}
+	for _, service := range c.Services {
+		if service.Name == name {
+			return service
+		}
+	}
+	return nil
+}
+
 // Start will build and launch all services within this group
 func (c *ServiceGroupConfig) Start(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
 	if cfg.IsExcluded(c) {
@@ -94,21 +113,18 @@ func (c *ServiceGroupConfig) Start(cfg OperationConfig, overrides ContextOverrid
 	}
 	groupTracker := task.Child(c.GetName())
 
-	for _, group := range c.Groups {
-		err := group.Start(cfg, c.getOverrides(overrides), groupTracker, pool)
+	for _, childName := range c.ChildOrder {
+		child := c.getChild(childName)
+		if child == nil {
+			return fmt.Errorf("Child not found: %s", childName)
+		}
+		err := child.Start(cfg, c.getOverrides(overrides), groupTracker, pool)
 		if err != nil {
 			// Always fail if any services in a dependant group failed
 			return errors.WithStack(err)
 		}
 	}
-	var outErr error
-	for _, service := range c.Services {
-		err := service.Start(cfg, c.getOverrides(overrides), groupTracker, pool)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	return outErr
+	return nil
 }
 
 // Launch will launch all services within this group

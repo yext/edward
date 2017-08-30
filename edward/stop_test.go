@@ -97,6 +97,7 @@ func TestStopAll(t *testing.T) {
 			client.Follower = tf
 
 			client.EdwardExecutable = edwardExecutable
+			client.DisableConcurrentPhases = true
 
 			err = client.Start(test.servicesStart, test.skipBuild, false, test.noWatch, test.exclude)
 			if err != nil {

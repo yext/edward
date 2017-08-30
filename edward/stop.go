@@ -51,7 +51,12 @@ func (c *Client) Stop(names []string, force bool, exclude []string) error {
 	task := tracker.NewTask(c.Follower.Handle)
 	defer c.Follower.Done()
 
-	p := worker.NewPool(3)
+	poolSize := 3
+	if c.DisableConcurrentPhases {
+		poolSize = 0
+	}
+
+	p := worker.NewPool(poolSize)
 	p.Start()
 	defer func() {
 		p.Stop()

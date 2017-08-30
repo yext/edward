@@ -361,6 +361,7 @@ func (c *Config) initMaps() error {
 			Groups:      []*services.ServiceGroupConfig{},
 			Env:         g.Env,
 			Logger:      c.Logger,
+			ChildOrder:  g.Children,
 		}
 		addToMap(namesInUse, append(g.Aliases, g.Name)...)
 	}

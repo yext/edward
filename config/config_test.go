@@ -49,15 +49,17 @@ var group1 = services.ServiceGroupConfig{
 	Description: "My wonderfull group 1",
 	Services:    []*services.ServiceConfig{&service1},
 	Groups:      []*services.ServiceGroupConfig{},
+	ChildOrder:  []string{"service1"},
 	Logger:      common.NullLogger{},
 }
 
 var group1alias = services.ServiceGroupConfig{
-	Name:     "group1",
-	Aliases:  []string{"group2"},
-	Services: []*services.ServiceConfig{&service1alias},
-	Groups:   []*services.ServiceGroupConfig{},
-	Logger:   common.NullLogger{},
+	Name:       "group1",
+	Aliases:    []string{"group2"},
+	Services:   []*services.ServiceConfig{&service1alias},
+	Groups:     []*services.ServiceGroupConfig{},
+	ChildOrder: []string{"service1"},
+	Logger:     common.NullLogger{},
 }
 
 var service2 = services.ServiceConfig{
@@ -72,10 +74,11 @@ var service2 = services.ServiceConfig{
 }
 
 var group2 = services.ServiceGroupConfig{
-	Name:     "group2",
-	Services: []*services.ServiceConfig{&service2},
-	Groups:   []*services.ServiceGroupConfig{},
-	Logger:   common.NullLogger{},
+	Name:       "group2",
+	Services:   []*services.ServiceConfig{&service2},
+	Groups:     []*services.ServiceGroupConfig{},
+	Logger:     common.NullLogger{},
+	ChildOrder: []string{"service2"},
 }
 
 var service3 = services.ServiceConfig{
@@ -94,10 +97,11 @@ var service3 = services.ServiceConfig{
 }
 
 var group3 = services.ServiceGroupConfig{
-	Name:     "group3",
-	Services: []*services.ServiceConfig{&service3},
-	Groups:   []*services.ServiceGroupConfig{},
-	Logger:   common.NullLogger{},
+	Name:       "group3",
+	Services:   []*services.ServiceConfig{&service3},
+	Groups:     []*services.ServiceGroupConfig{},
+	Logger:     common.NullLogger{},
+	ChildOrder: []string{"service3"},
 }
 
 var fileBasedTests = []struct {

@@ -75,7 +75,12 @@ func (c *Client) restartOneOrMoreServices(serviceNames []string, skipBuild bool,
 	task := tracker.NewTask(c.Follower.Handle)
 	defer c.Follower.Done()
 
-	launchPool := worker.NewPool(1)
+	poolSize := 1
+	if c.DisableConcurrentPhases {
+		poolSize = 0
+	}
+
+	launchPool := worker.NewPool(poolSize)
 	launchPool.Start()
 	defer func() {
 		launchPool.Stop()
