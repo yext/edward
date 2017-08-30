@@ -41,6 +41,23 @@ func newDirectory(path string, parent *directory) (*directory, error) {
 	}
 
 	for _, file := range files {
+
+		// Follow symlinked dirs
+		if file.Mode()&os.ModeSymlink != 0 {
+			linkPath, err := os.Readlink(filepath.Join(path, file.Name()))
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+			resolved := filepath.Join(path, linkPath)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+			file, err = os.Stat(resolved)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+		}
+
 		if file.IsDir() {
 			child, err := newDirectory(filepath.Join(path, file.Name()), d)
 			if err != nil {
