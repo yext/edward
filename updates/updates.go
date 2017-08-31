@@ -66,13 +66,28 @@ func findLatestVersionTag(refs []byte) (string, error) {
 
 	var greatestVersion string
 
-	var validID = regexp.MustCompile(`[vV]?([0-9]+\.[0-9]+\.[0-9])?$`)
+	var validID = regexp.MustCompile(`[vV]?([0-9]+\.[0-9]+\.[0-9]+)?$`)
 	for err != io.EOF {
 		match := validID.FindString(string(line))
 		match = strings.Replace(match, "v", "", 1)
 		match = strings.Replace(match, "V", "", 1)
-		if len(match) > 0 && match > greatestVersion {
+
+		if len(greatestVersion) == 0 {
 			greatestVersion = match
+		}
+
+		if len(match) > 0 {
+			m, err1 := version.NewVersion(match)
+			g, err2 := version.NewVersion(greatestVersion)
+			if err1 != nil {
+				return "", errors.WithStack(err1)
+			}
+			if err2 != nil {
+				return "", errors.WithStack(err2)
+			}
+			if m.GreaterThan(g) {
+				greatestVersion = match
+			}
 		}
 		line, _, err = reader.ReadLine()
 	}
