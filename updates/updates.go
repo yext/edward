@@ -3,12 +3,12 @@ package updates
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/go-version"
@@ -62,20 +62,19 @@ func UpdateAvailable(repo, currentVersion, cachePath string, logger common.Logge
 func findLatestVersionTag(refs []byte) (string, error) {
 	r := bytes.NewReader(refs)
 	reader := bufio.NewReader(r)
-	line, isPrefix, err := reader.ReadLine()
+	line, _, err := reader.ReadLine()
 
 	var greatestVersion string
 
-	var validID = regexp.MustCompile(`([0-9]+\.[0-9]+\.[0-9])?$`)
+	var validID = regexp.MustCompile(`[vV]?([0-9]+\.[0-9]+\.[0-9])?$`)
 	for err != io.EOF {
-		if isPrefix {
-			fmt.Println("Prefix")
-		}
 		match := validID.FindString(string(line))
+		match = strings.Replace(match, "v", "", 1)
+		match = strings.Replace(match, "V", "", 1)
 		if len(match) > 0 && match > greatestVersion {
 			greatestVersion = match
 		}
-		line, isPrefix, err = reader.ReadLine()
+		line, _, err = reader.ReadLine()
 	}
 	return greatestVersion, nil
 }
