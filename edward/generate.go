@@ -13,42 +13,6 @@ import (
 	"github.com/yext/edward/generators"
 )
 
-func generatorsMatchingTargets(targets []string) ([]generators.Generator, error) {
-	allGenerators := []generators.Generator{
-		&generators.EdwardGenerator{},
-		&generators.DockerGenerator{},
-		&generators.GoGenerator{},
-		&generators.IcbmGenerator{},
-	}
-	if len(targets) == 0 {
-		return allGenerators, nil
-	}
-
-	targetSet := make(map[string]struct{})
-	for _, target := range targets {
-		targetSet[target] = struct{}{}
-	}
-
-	var filteredGenerators = make([]generators.Generator, 0, len(allGenerators))
-	for _, gen := range allGenerators {
-		if _, exists := targetSet[gen.Name()]; exists {
-			filteredGenerators = append(filteredGenerators, gen)
-			delete(targetSet, gen.Name())
-		}
-	}
-
-	if len(targetSet) > 0 {
-		var missingTargets = make([]string, 0, len(targetSet))
-		for target := range targetSet {
-			missingTargets = append(missingTargets, target)
-		}
-		return nil, fmt.Errorf("targets not found: %v", strings.Join(missingTargets, ", "))
-
-	}
-
-	return filteredGenerators, nil
-}
-
 func (c *Client) Generate(names []string, force bool, targets []string) error {
 	var cfg config.Config
 	configPath := c.Config
@@ -91,30 +55,64 @@ func (c *Client) Generate(names []string, force bool, targets []string) error {
 	foundGroups := generators.Groups()
 	foundImports := generators.Imports()
 
-	if len(foundServices) == 0 && len(foundGroups) == 0 {
-		fmt.Println("No services found")
+	if len(foundServices) == 0 &&
+		len(foundGroups) == 0 &&
+		len(foundImports) == 0 {
+		fmt.Println("No services, groups or imports found")
 		return nil
 	}
 
 	// Prompt user to confirm the list of services that will be generated
 	if !force {
+		var filteredServices []string
+		for _, service := range foundServices {
+			if _, ok := cfg.ServiceMap[service.Name]; !ok {
+				filteredServices = append(filteredServices, service.Name)
+			}
+		}
+		var filteredGroups []string
+		for _, group := range foundGroups {
+			if _, ok := cfg.GroupMap[group.Name]; !ok {
+				filteredGroups = append(filteredGroups, group.Name)
+			}
+		}
+		var filteredImports []string
+		for _, i := range foundImports {
+			var found bool
+			for _, existingImport := range cfg.Imports {
+				if existingImport == i {
+					found = true
+				}
+			}
+			if !found {
+				filteredImports = append(filteredImports, i)
+			}
+		}
+
+		if len(filteredImports) == 0 &&
+			len(filteredServices) == 0 &&
+			len(filteredGroups) == 0 {
+			fmt.Println("No new services, groups or imports found")
+			return nil
+		}
+
 		fmt.Println("The following will be generated:")
-		if len(foundServices) > 0 {
+		if len(filteredServices) > 0 {
 			fmt.Println("Services:")
 		}
-		for _, service := range foundServices {
-			fmt.Println("\t", service.Name)
+		for _, service := range filteredServices {
+			fmt.Println("\t", service)
 		}
-		if len(foundGroups) > 0 {
+		if len(filteredGroups) > 0 {
 			fmt.Println("Groups:")
 		}
-		for _, group := range foundGroups {
-			fmt.Println("\t", group.Name)
+		for _, group := range filteredGroups {
+			fmt.Println("\t", group)
 		}
 		if len(foundImports) > 0 {
 			fmt.Println("Imports:")
 		}
-		for _, i := range foundImports {
+		for _, i := range filteredImports {
 			fmt.Println("\t", i)
 		}
 
@@ -156,4 +154,39 @@ func (c *Client) Generate(names []string, force bool, targets []string) error {
 	fmt.Println("Wrote to:", configPath)
 
 	return nil
+}
+
+func generatorsMatchingTargets(targets []string) ([]generators.Generator, error) {
+	allGenerators := []generators.Generator{
+		&generators.EdwardGenerator{},
+		&generators.DockerGenerator{},
+		&generators.GoGenerator{},
+		&generators.IcbmGenerator{},
+	}
+	if len(targets) == 0 {
+		return allGenerators, nil
+	}
+
+	targetSet := make(map[string]struct{})
+	for _, target := range targets {
+		targetSet[target] = struct{}{}
+	}
+
+	var filteredGenerators = make([]generators.Generator, 0, len(allGenerators))
+	for _, gen := range allGenerators {
+		if _, exists := targetSet[gen.Name()]; exists {
+			filteredGenerators = append(filteredGenerators, gen)
+			delete(targetSet, gen.Name())
+		}
+	}
+
+	if len(targetSet) > 0 {
+		var missingTargets = make([]string, 0, len(targetSet))
+		for target := range targetSet {
+			missingTargets = append(missingTargets, target)
+		}
+		return nil, fmt.Errorf("targets not found: %v", strings.Join(missingTargets, ", "))
+	}
+
+	return filteredGenerators, nil
 }
