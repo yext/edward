@@ -11,6 +11,7 @@ import (
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/generators"
+	"github.com/yext/edward/services"
 )
 
 func (c *Client) Generate(names []string, force bool, targets []string) error {
@@ -64,60 +65,9 @@ func (c *Client) Generate(names []string, force bool, targets []string) error {
 
 	// Prompt user to confirm the list of services that will be generated
 	if !force {
-		var filteredServices []string
-		for _, service := range foundServices {
-			if _, ok := cfg.ServiceMap[service.Name]; !ok {
-				filteredServices = append(filteredServices, service.Name)
-			}
-		}
-		var filteredGroups []string
-		for _, group := range foundGroups {
-			if _, ok := cfg.GroupMap[group.Name]; !ok {
-				filteredGroups = append(filteredGroups, group.Name)
-			}
-		}
-		var filteredImports []string
-		for _, i := range foundImports {
-			var found bool
-			for _, existingImport := range cfg.Imports {
-				if existingImport == i {
-					found = true
-				}
-			}
-			if !found {
-				filteredImports = append(filteredImports, i)
-			}
-		}
-
-		if len(filteredImports) == 0 &&
-			len(filteredServices) == 0 &&
-			len(filteredGroups) == 0 {
-			fmt.Println("No new services, groups or imports found")
-			return nil
-		}
-
-		fmt.Println("The following will be generated:")
-		if len(filteredServices) > 0 {
-			fmt.Println("Services:")
-		}
-		for _, service := range filteredServices {
-			fmt.Println("\t", service)
-		}
-		if len(filteredGroups) > 0 {
-			fmt.Println("Groups:")
-		}
-		for _, group := range filteredGroups {
-			fmt.Println("\t", group)
-		}
-		if len(foundImports) > 0 {
-			fmt.Println("Imports:")
-		}
-		for _, i := range filteredImports {
-			fmt.Println("\t", i)
-		}
-
-		if !askForConfirmation("Do you wish to continue?") {
-			return nil
+		confirmed, err := confirmList(&cfg, foundServices, foundGroups, foundImports)
+		if !confirmed {
+			return errors.WithStack(err)
 		}
 	}
 
@@ -154,6 +104,69 @@ func (c *Client) Generate(names []string, force bool, targets []string) error {
 	fmt.Println("Wrote to:", configPath)
 
 	return nil
+}
+
+func confirmList(cfg *config.Config,
+	foundServices []*services.ServiceConfig,
+	foundGroups []*services.ServiceGroupConfig,
+	foundImports []string) (bool, error) {
+	var filteredServices []string
+	for _, service := range foundServices {
+		if _, ok := cfg.ServiceMap[service.Name]; !ok {
+			filteredServices = append(filteredServices, service.Name)
+		}
+	}
+	var filteredGroups []string
+	for _, group := range foundGroups {
+		if _, ok := cfg.GroupMap[group.Name]; !ok {
+			filteredGroups = append(filteredGroups, group.Name)
+		}
+	}
+	var filteredImports []string
+	for _, i := range foundImports {
+		var found bool
+		for _, existingImport := range cfg.Imports {
+			if existingImport == i {
+				found = true
+			}
+		}
+		if !found {
+			filteredImports = append(filteredImports, i)
+		}
+	}
+
+	if len(filteredImports) == 0 &&
+		len(filteredServices) == 0 &&
+		len(filteredGroups) == 0 {
+		fmt.Println("No new services, groups or imports found")
+		return false, nil
+	}
+
+	fmt.Println("The following will be generated:")
+	if len(filteredServices) > 0 {
+		fmt.Println("Services:")
+	}
+	for _, service := range filteredServices {
+		fmt.Println("\t", service)
+	}
+	if len(filteredGroups) > 0 {
+		fmt.Println("Groups:")
+	}
+	for _, group := range filteredGroups {
+		fmt.Println("\t", group)
+	}
+	if len(foundImports) > 0 {
+		fmt.Println("Imports:")
+	}
+	for _, i := range filteredImports {
+		fmt.Println("\t", i)
+	}
+
+	if !askForConfirmation("Do you wish to continue?") {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func generatorsMatchingTargets(targets []string) ([]generators.Generator, error) {
