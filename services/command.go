@@ -113,6 +113,7 @@ func (c *ServiceCommand) checkPid() error {
 	if !exists {
 		c.printf("Process for %v was not found, resetting.\n", c.Service.Name)
 		c.clearState()
+		return nil
 	}
 
 	proc, err := process.NewProcess(int32(c.Pid))
