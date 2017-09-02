@@ -13,7 +13,7 @@ func (c *Client) Stop(names []string, force bool, exclude []string) error {
 	var err error
 	if len(names) == 0 {
 		// Prompt user to confirm
-		if !force && !askForConfirmation("Are you sure you want to stop all services?") {
+		if !force && !c.askForConfirmation("Are you sure you want to stop all services?") {
 			return nil
 		}
 		allSrv := config.GetAllServicesSorted()

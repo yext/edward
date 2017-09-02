@@ -18,6 +18,7 @@ import (
 type Client struct {
 	Logger *log.Logger
 
+	Input  io.Reader
 	Output io.Writer
 
 	Config string
@@ -39,6 +40,7 @@ type TaskFollower interface {
 
 func NewClient() *Client {
 	return &Client{
+		Input:    os.Stdin,
 		Output:   os.Stdout,
 		Follower: output.NewFollower(),
 	}
@@ -84,7 +86,7 @@ func (c *Client) tailFromFlag(names []string) error {
 	return errors.WithStack(c.Log(names))
 }
 
-func askForConfirmation(question string) bool {
+func (c *Client) askForConfirmation(question string) bool {
 
 	// Skip confirmations for children. For example, for enabling sudo.
 	isChild := os.Getenv("ISCHILD")
@@ -92,9 +94,9 @@ func askForConfirmation(question string) bool {
 		return true
 	}
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := bufio.NewReader(c.Input)
 	for {
-		fmt.Printf("%s [y/n]? ", question)
+		fmt.Fprintf(c.Output, "%s [y/n]? ", question)
 
 		response, err := reader.ReadString('\n')
 		if err != nil {

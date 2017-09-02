@@ -14,7 +14,7 @@ func (c *Client) Restart(names []string, force bool, skipBuild bool, tail bool, 
 
 	if len(names) == 0 {
 		// Prompt user to confirm the restart
-		if !force && !askForConfirmation("Are you sure you want to restart all services?") {
+		if !force && !c.askForConfirmation("Are you sure you want to restart all services?") {
 			return nil
 		}
 		c.restartAll(skipBuild, tail, noWatch, exclude)

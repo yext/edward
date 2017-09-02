@@ -65,7 +65,7 @@ func (c *Client) Generate(names []string, force bool, targets []string) error {
 
 	// Prompt user to confirm the list of services that will be generated
 	if !force {
-		confirmed, err := confirmList(&cfg, foundServices, foundGroups, foundImports)
+		confirmed, err := c.confirmList(&cfg, foundServices, foundGroups, foundImports)
 		if !confirmed {
 			return errors.WithStack(err)
 		}
@@ -101,12 +101,12 @@ func (c *Client) Generate(names []string, force bool, targets []string) error {
 		return errors.WithStack(err)
 	}
 
-	fmt.Println("Wrote to:", configPath)
+	fmt.Fprintln(c.Output, "Wrote to:", configPath)
 
 	return nil
 }
 
-func confirmList(cfg *config.Config,
+func (c *Client) confirmList(cfg *config.Config,
 	foundServices []*services.ServiceConfig,
 	foundGroups []*services.ServiceGroupConfig,
 	foundImports []string) (bool, error) {
@@ -138,31 +138,31 @@ func confirmList(cfg *config.Config,
 	if len(filteredImports) == 0 &&
 		len(filteredServices) == 0 &&
 		len(filteredGroups) == 0 {
-		fmt.Println("No new services, groups or imports found")
+		fmt.Fprintln(c.Output, "No new services, groups or imports found")
 		return false, nil
 	}
 
-	fmt.Println("The following will be generated:")
+	fmt.Fprintln(c.Output, "The following will be generated:")
 	if len(filteredServices) > 0 {
-		fmt.Println("Services:")
+		fmt.Fprintln(c.Output, "Services:")
 	}
 	for _, service := range filteredServices {
-		fmt.Println("\t", service)
+		fmt.Fprintln(c.Output, "\t", service)
 	}
 	if len(filteredGroups) > 0 {
-		fmt.Println("Groups:")
+		fmt.Fprintln(c.Output, "Groups:")
 	}
 	for _, group := range filteredGroups {
-		fmt.Println("\t", group)
+		fmt.Fprintln(c.Output, "\t", group)
 	}
 	if len(foundImports) > 0 {
-		fmt.Println("Imports:")
+		fmt.Fprintln(c.Output, "Imports:")
 	}
 	for _, i := range filteredImports {
-		fmt.Println("\t", i)
+		fmt.Fprintln(c.Output, "\t", i)
 	}
 
-	if !askForConfirmation("Do you wish to continue?") {
+	if !c.askForConfirmation("Do you wish to continue?") {
 		return false, nil
 	}
 
