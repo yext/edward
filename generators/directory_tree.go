@@ -20,13 +20,14 @@ type directory struct {
 
 // newDirectory builds a directory structure under the specified path
 func newDirectory(path string, parent *directory) (*directory, error) {
-	if parent != nil && parent.Ignores() != nil && parent.Ignores().MatchesPath(path) {
-		return nil, nil
-	}
-
 	ignores, err := loadIgnores(path, nil)
 	if err != nil {
 		return nil, errors.WithStack(err)
+	}
+
+	if (ignores != nil && ignores.MatchesPath(path)) ||
+		(parent != nil && parent.Ignores() != nil && parent.Ignores().MatchesPath(path)) {
+		return nil, nil
 	}
 
 	files, err := ioutil.ReadDir(path)
