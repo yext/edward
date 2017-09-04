@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -43,6 +44,7 @@ func NewClient() *Client {
 		Input:    os.Stdin,
 		Output:   os.Stdout,
 		Follower: output.NewFollower(),
+		Logger:   log.New(ioutil.Discard, "", 0), // Default to a logger that discards output
 	}
 }
 

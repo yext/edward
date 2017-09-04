@@ -59,13 +59,29 @@ func (c *Client) Generate(names []string, force bool, targets []string) error {
 	if len(foundServices) == 0 &&
 		len(foundGroups) == 0 &&
 		len(foundImports) == 0 {
-		fmt.Println("No services, groups or imports found")
+		fmt.Fprintln(c.Output, "No services, groups or imports found")
+		return nil
+	}
+
+	filteredServices, filteredGroups, filteredImports, err := c.filterGenerated(
+		&cfg,
+		foundServices,
+		foundGroups,
+		foundImports,
+	)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	if len(filteredServices) == 0 &&
+		len(filteredGroups) == 0 &&
+		len(filteredImports) == 0 {
+		fmt.Fprintln(c.Output, "No new services, groups or imports found")
 		return nil
 	}
 
 	// Prompt user to confirm the list of services that will be generated
 	if !force {
-		confirmed, err := c.confirmList(&cfg, foundServices, foundGroups, foundImports)
+		confirmed, err := c.confirmList(&cfg, filteredServices, filteredGroups, filteredImports)
 		if !confirmed {
 			return errors.WithStack(err)
 		}
@@ -106,10 +122,10 @@ func (c *Client) Generate(names []string, force bool, targets []string) error {
 	return nil
 }
 
-func (c *Client) confirmList(cfg *config.Config,
+func (c *Client) filterGenerated(cfg *config.Config,
 	foundServices []*services.ServiceConfig,
 	foundGroups []*services.ServiceGroupConfig,
-	foundImports []string) (bool, error) {
+	foundImports []string) ([]string, []string, []string, error) {
 	var filteredServices []string
 	for _, service := range foundServices {
 		if _, ok := cfg.ServiceMap[service.Name]; !ok {
@@ -134,32 +150,32 @@ func (c *Client) confirmList(cfg *config.Config,
 			filteredImports = append(filteredImports, i)
 		}
 	}
+	return filteredServices, filteredGroups, filteredImports, nil
+}
 
-	if len(filteredImports) == 0 &&
-		len(filteredServices) == 0 &&
-		len(filteredGroups) == 0 {
-		fmt.Fprintln(c.Output, "No new services, groups or imports found")
-		return false, nil
-	}
+func (c *Client) confirmList(cfg *config.Config,
+	filteredServices []string,
+	filteredGroups []string,
+	filteredImports []string) (bool, error) {
 
 	fmt.Fprintln(c.Output, "The following will be generated:")
 	if len(filteredServices) > 0 {
 		fmt.Fprintln(c.Output, "Services:")
 	}
 	for _, service := range filteredServices {
-		fmt.Fprintln(c.Output, "\t", service)
+		fmt.Fprintf(c.Output, "\t%v\n", service)
 	}
 	if len(filteredGroups) > 0 {
 		fmt.Fprintln(c.Output, "Groups:")
 	}
 	for _, group := range filteredGroups {
-		fmt.Fprintln(c.Output, "\t", group)
+		fmt.Fprintf(c.Output, "\t%v\n", group)
 	}
-	if len(foundImports) > 0 {
+	if len(filteredImports) > 0 {
 		fmt.Fprintln(c.Output, "Imports:")
 	}
 	for _, i := range filteredImports {
-		fmt.Fprintln(c.Output, "\t", i)
+		fmt.Fprintf(c.Output, "\t%v\n", i)
 	}
 
 	if !c.askForConfirmation("Do you wish to continue?") {
