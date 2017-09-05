@@ -216,6 +216,22 @@ func (c *Config) AppendGroups(groups []*services.ServiceGroupConfig) error {
 	return errors.WithStack(c.AddGroups(groupsDereferenced))
 }
 
+func (c *Config) RemoveGroup(name string) error {
+	if _, ok := c.GroupMap[name]; !ok {
+		return errors.New("Group not found")
+	}
+	delete(c.GroupMap, name)
+
+	existingGroupDefs := c.Groups
+	c.Groups = make([]GroupDef, 0, len(existingGroupDefs))
+	for _, group := range existingGroupDefs {
+		if group.Name != name {
+			c.Groups = append(c.Groups, group)
+		}
+	}
+	return nil
+}
+
 // AddGroups adds a slice of groups to the Config
 func (c *Config) AddGroups(groups []services.ServiceGroupConfig) error {
 	c.printf("Adding %d groups.\n", len(groups))

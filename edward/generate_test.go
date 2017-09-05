@@ -33,7 +33,7 @@ func TestGenerate(t *testing.T) {
 		input            string
 		expectedOutput   string
 		expectedServices []string
-		expectedGroups   []string
+		expectedGroups   map[string][]string
 		err              error
 	}{
 		{
@@ -84,7 +84,7 @@ Services:
 Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 `,
 			expectedServices: []string{"edward-test-service"},
-			expectedGroups:   []string{"newgroup"},
+			expectedGroups:   map[string][]string{"newgroup": []string{"edward-test-service"}},
 		},
 		{
 			name:   "new config and service with existing group",
@@ -98,7 +98,7 @@ Services:
 Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 `,
 			expectedServices: []string{"edward-test-service", "edward-test-service2"},
-			expectedGroups:   []string{"group1"},
+			expectedGroups:   map[string][]string{"group1": []string{"edward-test-service", "edward-test-service2"}},
 		},
 	}
 	for _, test := range tests {
@@ -164,20 +164,35 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 			cfg, err := config.LoadConfig(test.config, common.EdwardVersion, client.Logger)
 			if err != nil {
 				t.Error(err)
-			} else {
-				var services []string
-				var groups []string
-				for _, service := range cfg.ServiceMap {
-					services = append(services, service.Name)
-				}
-				sort.Strings(services)
-				for _, group := range cfg.GroupMap {
-					groups = append(groups, group.Name)
-				}
-				sort.Strings(groups)
+				return
+			}
 
-				must.BeEqual(t, test.expectedServices, services)
-				must.BeEqual(t, test.expectedGroups, groups)
+			var services []string
+			var groups []string
+			for _, service := range cfg.ServiceMap {
+				services = append(services, service.Name)
+			}
+			sort.Strings(services)
+			for _, group := range cfg.GroupMap {
+				groups = append(groups, group.Name)
+			}
+			sort.Strings(groups)
+
+			must.BeEqual(t, test.expectedServices, services)
+			for groupName, expectedChildren := range test.expectedGroups {
+				if group, ok := cfg.GroupMap[groupName]; ok {
+					var children []string
+					for _, childService := range group.Services {
+						children = append(children, childService.Name)
+					}
+					for _, childGroup := range group.Groups {
+						children = append(children, childGroup.Name)
+					}
+					sort.Strings(children)
+					must.BeEqual(t, expectedChildren, children, fmt.Sprintf("Children for group '%s' did not match\n", group.Name))
+				} else {
+					t.Errorf("Group not found %s", groupName)
+				}
 			}
 		})
 	}

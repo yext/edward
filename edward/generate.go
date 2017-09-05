@@ -102,24 +102,25 @@ func (c *Client) Generate(names []string, force bool, group string, targets []st
 
 	// Put all discovered services into the specified group
 	if len(group) > 0 {
-		var newGroup *services.ServiceGroupConfig
-		if g, ok := cfg.GroupMap[group]; ok {
-			newGroup = g
-		} else {
-			newGroup = &services.ServiceGroupConfig{
-				Name: group,
-			}
-			err = cfg.AppendGroups([]*services.ServiceGroupConfig{
-				newGroup,
-			})
+		var newGroupConfig *services.ServiceGroupConfig
+		if existingGroup, ok := cfg.GroupMap[group]; ok {
+			newGroupConfig = existingGroup
+			err := cfg.RemoveGroup(group)
 			if err != nil {
 				return errors.WithStack(err)
 			}
+		} else {
+			newGroupConfig = &services.ServiceGroupConfig{
+				Name: group,
+			}
 		}
-		for _, serviceName := range filteredServices {
-			newGroup.Services = append(newGroup.Services, cfg.ServiceMap[serviceName])
+		for _, s := range filteredServices {
+			newGroupConfig.Services = append(newGroupConfig.Services, cfg.ServiceMap[s])
 		}
-
+		for _, g := range filteredGroups {
+			newGroupConfig.Groups = append(newGroupConfig.Groups, cfg.GroupMap[g])
+		}
+		cfg.AppendGroups([]*services.ServiceGroupConfig{newGroupConfig})
 	}
 
 	cfg.Imports = append(cfg.Imports, foundImports...)
