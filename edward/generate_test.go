@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/theothertomelliott/must"
+	"github.com/yext/edward/common"
+	"github.com/yext/edward/config"
 	"github.com/yext/edward/edward"
 	"github.com/yext/edward/home"
 )
@@ -20,28 +22,32 @@ func TestGenerate(t *testing.T) {
 	}
 
 	var tests = []struct {
-		name           string
-		path           string
-		config         string
-		services       []string
-		targets        []string
-		force          bool
-		input          string
-		expectedOutput string
-		err            error
+		name             string
+		path             string
+		config           string
+		services         []string
+		targets          []string
+		force            bool
+		input            string
+		expectedOutput   string
+		expectedServices []string
+		expectedGroups   []string
+		err              error
 	}{
 		{
-			name:           "existing config and services",
-			path:           "testdata/generate/singlewithconfig",
-			config:         "edward.json",
-			expectedOutput: "No new services, groups or imports found\n",
+			name:             "existing config and services",
+			path:             "testdata/generate/singlewithconfig",
+			config:           "edward.json",
+			expectedOutput:   "No new services, groups or imports found\n",
+			expectedServices: []string{"edward-test-service"},
 		},
 		{
-			name:           "existing config and services - forced",
-			path:           "testdata/generate/singlewithconfig",
-			config:         "edward.json",
-			expectedOutput: "No new services, groups or imports found\n",
-			force:          true,
+			name:             "existing config and services - forced",
+			path:             "testdata/generate/singlewithconfig",
+			config:           "edward.json",
+			expectedOutput:   "No new services, groups or imports found\n",
+			force:            true,
+			expectedServices: []string{"edward-test-service"},
 		},
 		{
 			name:   "new config and service",
@@ -53,6 +59,7 @@ Services:
 	edward-test-service
 Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 `,
+			expectedServices: []string{"edward-test-service"},
 		},
 		{
 			name:   "new config and service - forced",
@@ -61,6 +68,7 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 			force:  true,
 			expectedOutput: `Wrote to: ${TMP_PATH}/edward.json
 `,
+			expectedServices: []string{"edward-test-service"},
 		},
 	}
 	for _, test := range tests {
@@ -123,7 +131,22 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 			must.BeEqual(t, expectedOutput, output)
 			must.BeEqualErrors(t, test.err, err)
 
-			// TODO: Check the generated file
+			cfg, err := config.LoadConfig(test.config, common.EdwardVersion, client.Logger)
+			if err != nil {
+				t.Error(err)
+			} else {
+				var services []string
+				var groups []string
+				for _, service := range cfg.ServiceMap {
+					services = append(services, service.Name)
+				}
+				for _, group := range cfg.GroupMap {
+					groups = append(groups, group.Name)
+				}
+
+				must.BeEqual(t, test.expectedServices, services)
+				must.BeEqual(t, test.expectedGroups, groups)
+			}
 		})
 	}
 }
