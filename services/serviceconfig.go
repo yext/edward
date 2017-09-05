@@ -34,9 +34,9 @@ type ServiceConfig struct {
 	// Service name, used to identify in commands
 	Name string `json:"name"`
 	// Alternative names for this service
-	Aliases []string `json:"aliases"`
+	Aliases []string `json:"aliases,omitempty"`
 	// Service description
-	Description string `json:"description"`
+	Description string `json:"description,omitempty"`
 	// Optional path to service. If nil, uses cwd
 	Path *string `json:"path,omitempty"`
 	// Does this service require sudo privileges?

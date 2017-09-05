@@ -37,9 +37,9 @@ type Config struct {
 
 // GroupDef defines a group based on a list of children specified by name
 type GroupDef struct {
-	Name        string `json:"name"`
-	Aliases     []string
-	Description string   `json:"description"`
+	Name        string   `json:"name"`
+	Aliases     []string `json:"aliases,omitempty"`
+	Description string   `json:"description,omitempty"`
 	Children    []string `json:"children"`
 	Env         []string `json:"env,omitempty"`
 }
