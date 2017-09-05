@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/theothertomelliott/must"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/config"
@@ -50,6 +51,13 @@ func TestGenerate(t *testing.T) {
 			expectedOutput:   "No new services, groups or imports found\n",
 			force:            true,
 			expectedServices: []string{"edward-test-service"},
+		},
+		{
+			name:   "duplicates",
+			path:   "testdata/generate/duplicatenames",
+			config: "edward.json",
+			force:  true,
+			err:    errors.New("Multiple services or groups were found with the names: edward-test-service"),
 		},
 		{
 			name:   "new config and service",
@@ -146,20 +154,23 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 				ioWg.Done()
 			}()
 
-			err = client.Generate(test.services, test.force, test.group, test.targets)
-
-			inputWriter.Close()
-			outputWriter.Close()
-
-			ioWg.Wait()
-
 			cwd, err := os.Getwd()
 			if err != nil {
 				t.Fatal(err)
 			}
+
+			err = client.Generate(test.services, test.force, test.group, test.targets)
+			inputWriter.Close()
+			outputWriter.Close()
+			must.BeEqualErrors(t, test.err, err)
+			if err != nil {
+				return
+			}
+
+			ioWg.Wait()
+
 			expectedOutput := strings.Replace(test.expectedOutput, "${TMP_PATH}", cwd, 1)
 			must.BeEqual(t, expectedOutput, output)
-			must.BeEqualErrors(t, test.err, err)
 
 			cfg, err := config.LoadConfig(test.config, common.EdwardVersion, client.Logger)
 			if err != nil {

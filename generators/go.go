@@ -18,7 +18,7 @@ import (
 // GoGenerator generates go services from main packages
 type GoGenerator struct {
 	generatorBase
-	found map[string]string
+	foundServices []*services.ServiceConfig
 }
 
 // Name returns 'go' to identify this generator
@@ -30,7 +30,6 @@ func (v *GoGenerator) Name() string {
 // given starting path
 func (v *GoGenerator) StartWalk(path string) {
 	v.generatorBase.StartWalk(path)
-	v.found = make(map[string]string)
 }
 
 // VisitDir searches a directory for .go files, and will store a service if a main
@@ -55,7 +54,11 @@ func (v *GoGenerator) VisitDir(path string) (bool, error) {
 			if err != nil {
 				return false, errors.WithStack(err)
 			}
-			v.found[packageName] = packagePath
+			service, err := v.goService(packageName, packagePath)
+			if err != nil {
+				return false, errors.WithStack(err)
+			}
+			v.foundServices = append(v.foundServices, service)
 			return true, nil
 		}
 
@@ -66,17 +69,7 @@ func (v *GoGenerator) VisitDir(path string) (bool, error) {
 
 // Services returns the services generated during the last walk
 func (v *GoGenerator) Services() []*services.ServiceConfig {
-	var outServices []*services.ServiceConfig
-
-	for packageName, packagePath := range v.found {
-		service, err := v.goService(packageName, packagePath)
-		if err == nil {
-			outServices = append(outServices, service)
-		}
-		// TODO: Log any error?
-	}
-
-	return outServices
+	return v.foundServices
 }
 
 func (v *GoGenerator) goService(name, packagePath string) (*services.ServiceConfig, error) {

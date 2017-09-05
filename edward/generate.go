@@ -79,6 +79,12 @@ func (c *Client) Generate(names []string, force bool, group string, targets []st
 		return nil
 	}
 
+	// Check for duplicates
+	duplicates := findDuplicates(append(filteredServices, filteredGroups...))
+	if len(duplicates) > 0 {
+		return errors.New(fmt.Sprint("Multiple services or groups were found with the names: ", strings.Join(duplicates, ", ")))
+	}
+
 	// Prompt user to confirm the list of services that will be generated
 	if !force {
 		confirmed, err := c.confirmList(&cfg, filteredServices, filteredGroups, filteredImports)
@@ -144,6 +150,22 @@ func (c *Client) Generate(names []string, force bool, group string, targets []st
 	fmt.Fprintln(c.Output, "Wrote to:", configPath)
 
 	return nil
+}
+
+func findDuplicates(s []string) []string {
+	found := make(map[string]struct{})
+	duplicates := make(map[string]struct{})
+	for _, name := range s {
+		if _, ok := found[name]; ok {
+			duplicates[name] = struct{}{}
+		}
+		found[name] = struct{}{}
+	}
+	var dupList []string
+	for name := range duplicates {
+		dupList = append(dupList, name)
+	}
+	return dupList
 }
 
 func (c *Client) filterGenerated(cfg *config.Config,
