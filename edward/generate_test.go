@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -26,6 +27,7 @@ func TestGenerate(t *testing.T) {
 		path             string
 		config           string
 		services         []string
+		group            string
 		targets          []string
 		force            bool
 		input            string
@@ -69,6 +71,34 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 			expectedOutput: `Wrote to: ${TMP_PATH}/edward.json
 `,
 			expectedServices: []string{"edward-test-service"},
+		},
+		{
+			name:   "new config and service with group",
+			path:   "testdata/generate/single",
+			config: "edward.json",
+			group:  "newgroup",
+			input:  "Y\n",
+			expectedOutput: `The following will be generated:
+Services:
+	edward-test-service
+Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
+`,
+			expectedServices: []string{"edward-test-service"},
+			expectedGroups:   []string{"newgroup"},
+		},
+		{
+			name:   "new config and service with existing group",
+			path:   "testdata/generate/groupwithconfig",
+			config: "edward.json",
+			group:  "group1",
+			input:  "Y\n",
+			expectedOutput: `The following will be generated:
+Services:
+	edward-test-service2
+Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
+`,
+			expectedServices: []string{"edward-test-service", "edward-test-service2"},
+			expectedGroups:   []string{"group1"},
 		},
 	}
 	for _, test := range tests {
@@ -116,7 +146,7 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 				ioWg.Done()
 			}()
 
-			err = client.Generate(test.services, test.force, test.targets)
+			err = client.Generate(test.services, test.force, test.group, test.targets)
 
 			inputWriter.Close()
 			outputWriter.Close()
@@ -140,9 +170,11 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 				for _, service := range cfg.ServiceMap {
 					services = append(services, service.Name)
 				}
+				sort.Strings(services)
 				for _, group := range cfg.GroupMap {
 					groups = append(groups, group.Name)
 				}
+				sort.Strings(groups)
 
 				must.BeEqual(t, test.expectedServices, services)
 				must.BeEqual(t, test.expectedGroups, groups)

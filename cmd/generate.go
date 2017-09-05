@@ -14,6 +14,7 @@ var generateCmd = &cobra.Command{
 			edwardClient.Generate(
 				args,
 				*generateFlags.force || *generateFlags.noPrompt,
+				*generateFlags.group,
 				*generateFlags.targets,
 			),
 		)
@@ -23,6 +24,7 @@ var generateCmd = &cobra.Command{
 var generateFlags struct {
 	force    *bool
 	noPrompt *bool
+	group    *string
 	targets  *[]string
 }
 
@@ -33,6 +35,8 @@ func init() {
 
 	generateFlags.noPrompt = generateCmd.Flags().BoolP("no_prompt", "n", false, "Skip confirmation prompt")
 	generateCmd.Flags().MarkDeprecated("no_prompt", "Please use --force/-f instead.")
+
+	generateFlags.group = generateCmd.Flags().StringP("group", "g", "", "Add newly generated services to a new or existing group.")
 
 	generateFlags.targets = generateCmd.Flags().StringArray("target", nil, "Explicitly specify a target for this generation. If no targets are given, all targets will be used.")
 }

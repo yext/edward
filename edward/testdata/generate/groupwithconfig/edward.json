@@ -1,0 +1,18 @@
+{
+    "groups": [
+        {
+            "name": "group1",
+            "children": ["edward-test-service"]
+        }
+    ],
+    "services": [
+        {
+            "name": "edward-test-service",
+            "path": "edward-test-service",
+            "commands": {
+                "build": "go build",
+                "launch": "./edward-test-service"
+            }
+        }
+    ]
+}

@@ -14,7 +14,7 @@ import (
 	"github.com/yext/edward/services"
 )
 
-func (c *Client) Generate(names []string, force bool, targets []string) error {
+func (c *Client) Generate(names []string, force bool, group string, targets []string) error {
 	var cfg config.Config
 	configPath := c.Config
 	if configPath == "" {
@@ -99,6 +99,29 @@ func (c *Client) Generate(names []string, force bool, targets []string) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
+	// Put all discovered services into the specified group
+	if len(group) > 0 {
+		var newGroup *services.ServiceGroupConfig
+		if g, ok := cfg.GroupMap[group]; ok {
+			newGroup = g
+		} else {
+			newGroup = &services.ServiceGroupConfig{
+				Name: group,
+			}
+			err = cfg.AppendGroups([]*services.ServiceGroupConfig{
+				newGroup,
+			})
+			if err != nil {
+				return errors.WithStack(err)
+			}
+		}
+		for _, serviceName := range filteredServices {
+			newGroup.Services = append(newGroup.Services, cfg.ServiceMap[serviceName])
+		}
+
+	}
+
 	cfg.Imports = append(cfg.Imports, foundImports...)
 
 	f, err := os.Create(configPath)
