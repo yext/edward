@@ -53,6 +53,18 @@ func TestGenerate(t *testing.T) {
 			expectedServices: []string{"edward-test-service"},
 		},
 		{
+			name:   "existing empty config file",
+			path:   "testdata/generate/emptyconfig",
+			config: "edward.json",
+			input:  "Y\n",
+			expectedOutput: `The following will be generated:
+Services:
+	edward-test-service
+Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
+`,
+			expectedServices: []string{"edward-test-service"},
+		},
+		{
 			name:   "duplicates",
 			path:   "testdata/generate/duplicatenames",
 			config: "edward.json",
