@@ -11,17 +11,13 @@ import (
 	"time"
 )
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello: %s!", r.URL.Path[1:])
-}
-
 func main() {
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello: %s!", r.URL.Path[1:])
+	})
 
-	port := os.Args[1]
-	fmt.Printf("Starting to listen on %v\n", port)
 	go func() {
-		log.Fatal(http.ListenAndServe(":"+port, nil))
+		log.Fatal(http.ListenAndServe(":0", nil))
 	}()
 
 	timer := time.NewTimer(5 * time.Second)
