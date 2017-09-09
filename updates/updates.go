@@ -1,28 +1,20 @@
 package updates
 
 import (
-	"bufio"
-	"bytes"
-	"io"
+	"context"
 	"io/ioutil"
 	"os"
-	"os/exec"
-	"regexp"
 	"strings"
 	"time"
 
+	"github.com/google/go-github/github"
 	"github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
 	"github.com/yext/edward/common"
 )
 
 // UpdateAvailable determines if a newer version is available given a repo
-func UpdateAvailable(repo, currentVersion, cachePath string, logger common.Logger) (bool, string, error) {
-	output, err := exec.Command("git", "ls-remote", "-t", "git://"+repo).CombinedOutput()
-	if err != nil {
-		return false, "", errors.WithStack(err)
-	}
-
+func UpdateAvailable(owner, repo, currentVersion, cachePath string, logger common.Logger) (bool, string, error) {
 	printf(logger, "Checking for cached version at %v", cachePath)
 	isCached, latestVersion, err := getCachedVersion(cachePath)
 	if err != nil {
@@ -31,10 +23,20 @@ func UpdateAvailable(repo, currentVersion, cachePath string, logger common.Logge
 
 	if !isCached {
 		printf(logger, "No cached version, requesting from Git\n")
-		latestVersion, err = findLatestVersionTag(output)
+		client := github.NewClient(nil)
+
+		release, _, err := client.Repositories.GetLatestRelease(context.Background(), owner, repo)
 		if err != nil {
+			// Log, but don't return rate limit errors
+			if _, ok := err.(*github.RateLimitError); ok {
+				printf(logger, "Rate limit error when requesting latest version %v", err)
+				return false, "", nil
+			}
 			return false, "", errors.WithStack(err)
 		}
+
+		latestVersion = *release.TagName
+		latestVersion = strings.Replace(latestVersion, "v", "", 1)
 		printf(logger, "Caching version: %v", latestVersion)
 		err = cacheVersion(cachePath, latestVersion)
 		if err != nil {
@@ -57,41 +59,6 @@ func UpdateAvailable(repo, currentVersion, cachePath string, logger common.Logge
 	}
 
 	return cv.LessThan(lv), latestVersion, nil
-}
-
-func findLatestVersionTag(refs []byte) (string, error) {
-	r := bytes.NewReader(refs)
-	reader := bufio.NewReader(r)
-	line, _, err := reader.ReadLine()
-
-	var greatestVersion string
-
-	var validID = regexp.MustCompile(`[vV]?([0-9]+\.[0-9]+\.[0-9]+)?$`)
-	for err != io.EOF {
-		match := validID.FindString(string(line))
-		match = strings.Replace(match, "v", "", 1)
-		match = strings.Replace(match, "V", "", 1)
-
-		if len(greatestVersion) == 0 {
-			greatestVersion = match
-		}
-
-		if len(match) > 0 {
-			m, err1 := version.NewVersion(match)
-			g, err2 := version.NewVersion(greatestVersion)
-			if err1 != nil {
-				return "", errors.WithStack(err1)
-			}
-			if err2 != nil {
-				return "", errors.WithStack(err2)
-			}
-			if m.GreaterThan(g) {
-				greatestVersion = match
-			}
-		}
-		line, _, err = reader.ReadLine()
-	}
-	return greatestVersion, nil
 }
 
 func getCachedVersion(cachePath string) (wasCached bool, cachedVersion string, err error) {

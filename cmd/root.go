@@ -196,7 +196,7 @@ func getConfigPath(wd string) string {
 
 func checkUpdateAvailable(checkUpdateChan chan interface{}) {
 	defer close(checkUpdateChan)
-	updateAvailable, latestVersion, err := updates.UpdateAvailable("github.com/yext/edward", common.EdwardVersion, filepath.Join(home.EdwardConfig.Dir, ".updatecache"), logger)
+	updateAvailable, latestVersion, err := updates.UpdateAvailable("yext", "edward", common.EdwardVersion, filepath.Join(home.EdwardConfig.Dir, ".updatecache"), logger)
 	if err != nil {
 		logger.Println("Error checking for updates:", err)
 		return
