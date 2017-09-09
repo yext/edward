@@ -2,6 +2,7 @@ package edward_test
 
 import (
 	"errors"
+	"path"
 	"testing"
 
 	"github.com/theothertomelliott/must"
@@ -207,20 +208,22 @@ func TestStart(t *testing.T) {
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
-			cleanup := createWorkingDir(t, test.name, test.path)
+			wd, cleanup := createWorkingDir(t, test.name, test.path)
 			defer cleanup()
 
-			err = config.LoadSharedConfig(test.config, common.EdwardVersion, nil)
+			err = config.LoadSharedConfig(path.Join(wd, test.config), common.EdwardVersion, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			client := edward.NewClient()
+			client.WorkingDir = wd
 			client.Config = test.config
-			tf := newTestFollower()
-			client.Follower = tf
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
+
+			tf := newTestFollower()
+			client.Follower = tf
 
 			err = client.Start(test.services, test.skipBuild, false, test.noWatch, test.exclude)
 			must.BeEqual(t, test.expectedStates, tf.states)
@@ -301,15 +304,16 @@ func TestStartOrder(t *testing.T) {
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
-			cleanup := createWorkingDir(t, test.name, test.path)
+			wd, cleanup := createWorkingDir(t, test.name, test.path)
 			defer cleanup()
 
-			err = config.LoadSharedConfig(test.config, common.EdwardVersion, nil)
+			err = config.LoadSharedConfig(path.Join(wd, test.config), common.EdwardVersion, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			client := edward.NewClient()
+			client.WorkingDir = wd
 			client.Config = test.config
 			tf := newTestFollower()
 			client.Follower = tf

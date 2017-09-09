@@ -202,6 +202,11 @@ func (r *Runner) restartService() error {
 }
 
 func (r *Runner) stopService() error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	command, err := r.service.GetCommand(services.ContextOverride{})
 	if err != nil {
 		r.Messagef("Could not get service command: %v\n", err)
@@ -211,7 +216,7 @@ func (r *Runner) stopService() error {
 	var scriptOutput []byte
 	if r.service.Commands.Stop != "" {
 		r.Messagef("Running stop script for %v.\n", r.service.Name)
-		scriptOutput, scriptErr = command.RunStopScript()
+		scriptOutput, scriptErr = command.RunStopScript(wd)
 		if scriptErr != nil {
 			r.Messagef("%v\n", string(scriptOutput))
 			r.Messagef("Stop script failed: %v\n", scriptErr)

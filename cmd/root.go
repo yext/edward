@@ -46,7 +46,11 @@ Build, start and manage service instances with a single command.`,
 		if configPath != "" {
 			edwardClient.Config = configPath
 		} else {
-			edwardClient.Config = getConfigPath()
+			wd, err := os.Getwd()
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			edwardClient.Config = getConfigPath(wd)
 		}
 		// Set service checks to restart the client on sudo as needed
 		edwardClient.ServiceChecks = func(sgs []services.ServiceOrGroup) error {
@@ -161,17 +165,14 @@ func initConfig() {
 }
 
 // getConfigPath identifies the location of edward.json, if any exists
-func getConfigPath() string {
+func getConfigPath(wd string) string {
 	var pathOptions []string
 
 	// Config file in Edward Config dir
 	pathOptions = append(pathOptions, filepath.Join(home.EdwardConfig.Dir, "edward.json"))
 
 	// Config file in current working directory
-	wd, err := os.Getwd()
-	if err == nil {
-		pathOptions = append(pathOptions, filepath.Join(wd, "edward.json"))
-	}
+	pathOptions = append(pathOptions, filepath.Join(wd, "edward.json"))
 	for path.Dir(wd) != wd {
 		wd = path.Dir(wd)
 		pathOptions = append(pathOptions, filepath.Join(wd, "edward.json"))

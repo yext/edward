@@ -1,7 +1,6 @@
 package config
 
 import (
-	"os"
 	"path/filepath"
 	"sort"
 
@@ -31,9 +30,7 @@ func LoadSharedConfig(configPath string, edwardVersion string, logger common.Log
 		basePath = filepath.Dir(configPath)
 		cfg, err := LoadConfig(configPath, edwardVersion, logger)
 		if err != nil {
-			workingDir, _ := os.Getwd()
-			configRel, _ := filepath.Rel(workingDir, configPath)
-			return errors.WithMessage(err, configRel)
+			return errors.WithMessage(err, configPath)
 		}
 
 		serviceMap = cfg.ServiceMap

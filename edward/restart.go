@@ -66,6 +66,7 @@ func (c *Client) restartOneOrMoreServices(serviceNames []string, skipBuild bool,
 	}
 
 	cfg := services.OperationConfig{
+		WorkingDir:       c.WorkingDir,
 		EdwardExecutable: c.EdwardExecutable,
 		Exclusions:       exclude,
 		SkipBuild:        skipBuild,

@@ -174,15 +174,15 @@ func (c *ServiceCommand) deleteScript(scriptType string) error {
 
 // BuildSync will buid the service synchronously.
 // If force is false, the build will be skipped if the service is already running.
-func (c *ServiceCommand) BuildSync(force bool, task tracker.Task) error {
+func (c *ServiceCommand) BuildSync(workingDir string, force bool, task tracker.Task) error {
 	name := c.Service.GetName()
 	t := task.Child(name)
-	return errors.WithStack(c.BuildWithTracker(force, t))
+	return errors.WithStack(c.BuildWithTracker(workingDir, force, t))
 }
 
 // BuildWithTracker builds a service.
 // If force is false, the build will be skipped if the service is already running.
-func (c *ServiceCommand) BuildWithTracker(force bool, task tracker.Task) error {
+func (c *ServiceCommand) BuildWithTracker(workingDir string, force bool, task tracker.Task) error {
 	if c.Service.Commands.Build == "" {
 		return nil
 	}
@@ -197,7 +197,7 @@ func (c *ServiceCommand) BuildWithTracker(force bool, task tracker.Task) error {
 		return nil
 	}
 
-	cmd, err := c.constructCommand(c.Service.Commands.Build)
+	cmd, err := c.constructCommand(workingDir, c.Service.Commands.Build)
 	if err != nil {
 		job.SetState(tracker.TaskStateFailed, err.Error())
 		return errors.WithStack(err)
@@ -206,22 +206,21 @@ func (c *ServiceCommand) BuildWithTracker(force bool, task tracker.Task) error {
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		job.SetState(tracker.TaskStateFailed, err.Error(), string(out))
-		return errors.WithStack(err)
+		return errors.WithMessage(err, "running build command")
 	}
 
 	job.SetState(tracker.TaskStateSuccess)
 	return nil
 }
 
-func (c *ServiceCommand) constructCommand(command string) (*exec.Cmd, error) {
+func (c *ServiceCommand) constructCommand(workingDir string, command string) (*exec.Cmd, error) {
 	command, cmdArgs, err := commandline.ParseCommand(os.Expand(command, c.Getenv))
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+
 	cmd := exec.Command(command, cmdArgs...)
-	if c.Service.Path != nil {
-		cmd.Dir = os.Expand(*c.Service.Path, c.Getenv)
-	}
+	cmd.Dir = buildAbsPath(workingDir, c.Service.Path)
 	return cmd, nil
 }
 
@@ -524,13 +523,10 @@ func (c *ServiceCommand) getLaunchCommand(cfg OperationConfig) (*exec.Cmd, error
 	if cfg.NoWatch {
 		cmdArgs = append(cmdArgs, "--no-watch")
 	}
-	workingDir, err := os.Getwd()
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	cmdArgs = append(cmdArgs, "--directory", workingDir, c.Service.Name)
+	cmdArgs = append(cmdArgs, c.Service.Name)
 
 	cmd := exec.Command(command, cmdArgs...)
+	cmd.Dir = buildAbsPath(cfg.WorkingDir, c.Service.Path)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	return cmd, nil
 }
@@ -538,9 +534,9 @@ func (c *ServiceCommand) getLaunchCommand(cfg OperationConfig) (*exec.Cmd, error
 // RunStopScript will execute the stop script for this command, returning full output
 // from running the script.
 // Assumes the service has a stop script configured.
-func (c *ServiceCommand) RunStopScript() ([]byte, error) {
+func (c *ServiceCommand) RunStopScript(workingDir string) ([]byte, error) {
 	c.printf("Running stop script for %v\n", c.Service.Name)
-	cmd, err := c.constructCommand(c.Service.Commands.Stop)
+	cmd, err := c.constructCommand(workingDir, c.Service.Commands.Stop)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -622,4 +618,16 @@ func logToStringSlice(path string) ([]string, error) {
 		return nil, errors.WithStack(err)
 	}
 	return lines, nil
+}
+
+// buildAbsPath will ensure the targetPath is absolute, joining to workingDir
+// if necessary.
+func buildAbsPath(workingDir string, targetPath *string) string {
+	if targetPath != nil {
+		if !path.IsAbs(*targetPath) {
+			return path.Join(workingDir, *targetPath)
+		}
+		return *targetPath
+	}
+	return workingDir
 }

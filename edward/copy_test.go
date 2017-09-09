@@ -10,25 +10,13 @@ import (
 
 // createWorkingDir creates a directory to work in and changes into that directory.
 // Returns a cleanup function.
-func createWorkingDir(t *testing.T, testName, testPath string) func() {
+func createWorkingDir(t *testing.T, testName, testPath string) (string, func()) {
 	workingDir, err := ioutil.TempDir("", testName)
 	if err != nil {
 		t.Fatal(err)
 	}
 	copy_folder(testPath, workingDir)
-	oldDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = os.Chdir(workingDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return func() {
-		err = os.Chdir(oldDir)
-		if err != nil {
-			t.Fatal(err)
-		}
+	return workingDir, func() {
 		os.RemoveAll(workingDir)
 	}
 }
@@ -87,13 +75,5 @@ func copy_file(source string, dest string) (err error) {
 	defer destfile.Close()
 
 	_, err = io.Copy(destfile, sourcefile)
-	if err == nil {
-		sourceinfo, err := os.Stat(source)
-		if err != nil {
-			err = os.Chmod(dest, sourceinfo.Mode())
-		}
-
-	}
-
 	return
 }

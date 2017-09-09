@@ -44,6 +44,7 @@ func (c *Client) Stop(names []string, force bool, exclude []string) error {
 	}
 
 	cfg := services.OperationConfig{
+		WorkingDir:       c.WorkingDir,
 		EdwardExecutable: c.EdwardExecutable,
 		Exclusions:       exclude,
 	}

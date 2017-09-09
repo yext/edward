@@ -244,9 +244,9 @@ func (c *ServiceConfig) Build(cfg OperationConfig, overrides ContextOverride, ta
 
 	command, err := c.GetCommand(overrides)
 	if err != nil {
-		return errors.WithStack(err)
+		return errors.WithMessage(err, "getting command")
 	}
-	return errors.WithStack(command.BuildSync(false, task))
+	return errors.WithStack(command.BuildSync(cfg.WorkingDir, false, task))
 }
 
 // Launch launches this service
@@ -282,10 +282,10 @@ func (c *ServiceConfig) Start(cfg OperationConfig, overrides ContextOverride, ta
 
 	err := c.Build(cfg, overrides, task)
 	if err != nil {
-		return errors.WithStack(err)
+		return errors.WithMessage(err, "build")
 	}
 	err = c.Launch(cfg, overrides, task, pool)
-	return errors.WithStack(err)
+	return errors.WithMessage(err, "launch")
 }
 
 // Stop stops this service

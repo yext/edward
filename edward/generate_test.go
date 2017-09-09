@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -132,12 +132,13 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
-			cleanup := createWorkingDir(t, test.name, test.path)
+			wd, cleanup := createWorkingDir(t, test.name, test.path)
 			defer cleanup()
 
 			client := edward.NewClient()
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
+			client.WorkingDir = wd
 
 			// Set up input and output for the client
 			var outputReader, inputReader *io.PipeReader
@@ -167,11 +168,6 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 				ioWg.Done()
 			}()
 
-			cwd, err := os.Getwd()
-			if err != nil {
-				t.Fatal(err)
-			}
-
 			err = client.Generate(test.services, test.force, test.group, test.targets)
 			inputWriter.Close()
 			outputWriter.Close()
@@ -182,10 +178,10 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 
 			ioWg.Wait()
 
-			expectedOutput := strings.Replace(test.expectedOutput, "${TMP_PATH}", cwd, 1)
+			expectedOutput := strings.Replace(test.expectedOutput, "${TMP_PATH}", wd, 1)
 			must.BeEqual(t, expectedOutput, output)
 
-			cfg, err := config.LoadConfig(test.config, common.EdwardVersion, client.Logger)
+			cfg, err := config.LoadConfig(filepath.Join(client.WorkingDir, test.config), common.EdwardVersion, client.Logger)
 			if err != nil {
 				t.Error(err)
 				return

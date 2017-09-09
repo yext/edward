@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/yext/edward/common"
@@ -12,7 +13,13 @@ import (
 func autocompleteServicesAndGroups(logger *log.Logger) {
 	printCommandChildren(RootCmd)
 
-	err := config.LoadSharedConfig(getConfigPath(), common.EdwardVersion, logger)
+	wd, err := os.Getwd()
+	if err != nil {
+		logger.Println("Autocomplete> Error getting working dir:", err)
+		return
+	}
+
+	err = config.LoadSharedConfig(getConfigPath(wd), common.EdwardVersion, logger)
 	if err != nil {
 		logger.Println("Autocomplete> Error loading config:", err)
 	}

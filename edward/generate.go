@@ -18,11 +18,9 @@ func (c *Client) Generate(names []string, force bool, group string, targets []st
 	var cfg config.Config
 	configPath := c.Config
 	if configPath == "" {
-		wd, err := os.Getwd()
-		if err == nil {
-			configPath = filepath.Join(wd, "edward.json")
-		}
+		configPath = "edward.json"
 	}
+	configPath = filepath.Join(c.WorkingDir, configPath)
 
 	if f, err := os.Stat(configPath); err == nil && f.Size() != 0 {
 		cfg, err = config.LoadConfig(configPath, common.EdwardVersion, c.Logger)
@@ -33,11 +31,6 @@ func (c *Client) Generate(names []string, force bool, group string, targets []st
 		cfg = config.EmptyConfig(filepath.Dir(configPath), c.Logger)
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
 	targetedGenerators, err := generatorsMatchingTargets(targets)
 	if err != nil {
 		return errors.WithStack(err)
@@ -45,7 +38,7 @@ func (c *Client) Generate(names []string, force bool, group string, targets []st
 
 	generators := &generators.GeneratorCollection{
 		Generators: targetedGenerators,
-		Path:       wd,
+		Path:       c.WorkingDir,
 		Targets:    names,
 	}
 	err = generators.Generate()
@@ -93,7 +86,7 @@ func (c *Client) Generate(names []string, force bool, group string, targets []st
 		}
 	}
 
-	foundServices, err = cfg.NormalizeServicePaths(wd, foundServices)
+	foundServices, err = cfg.NormalizeServicePaths(c.WorkingDir, foundServices)
 	if err != nil {
 		return errors.WithStack(err)
 	}

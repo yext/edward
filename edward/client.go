@@ -32,6 +32,8 @@ type Client struct {
 
 	// Prevent build, launch and stop phases from running concurrently
 	DisableConcurrentPhases bool
+
+	WorkingDir string
 }
 
 type TaskFollower interface {
@@ -40,16 +42,23 @@ type TaskFollower interface {
 }
 
 func NewClient() *Client {
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
 	return &Client{
-		Input:    os.Stdin,
-		Output:   os.Stdout,
-		Follower: output.NewFollower(),
-		Logger:   log.New(ioutil.Discard, "", 0), // Default to a logger that discards output
+		Input:      os.Stdin,
+		Output:     os.Stdout,
+		Follower:   output.NewFollower(),
+		Logger:     log.New(ioutil.Discard, "", 0), // Default to a logger that discards output
+		WorkingDir: wd,
 	}
 }
 
 func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, tail bool, noWatch bool, exclude []string, edwardExecutable string) error {
 	cfg := services.OperationConfig{
+		WorkingDir:       c.WorkingDir,
 		EdwardExecutable: edwardExecutable,
 		Exclusions:       exclude,
 		SkipBuild:        skipBuild,
@@ -73,11 +82,14 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, ta
 	for _, s := range sgs {
 		if skipBuild {
 			err = s.Launch(cfg, services.ContextOverride{}, task, p)
+			if err != nil {
+				return errors.WithMessage(err, "Error launching "+s.GetName())
+			}
 		} else {
 			err = s.Start(cfg, services.ContextOverride{}, task, p)
-		}
-		if err != nil {
-			return errors.New("Error launching " + s.GetName() + ": " + err.Error())
+			if err != nil {
+				return errors.WithMessage(err, "Error starting "+s.GetName())
+			}
 		}
 	}
 	return nil
