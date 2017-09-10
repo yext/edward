@@ -50,7 +50,7 @@
                 "launch": "./edward-test-expectenv ${PORT}"
             },
             "env": [
-                "APPLIED=NO"
+                "APPLIED=YES"
             ]
         },
         {
