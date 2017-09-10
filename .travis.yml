@@ -11,6 +11,7 @@ before_install:
 
 go:
   - 1.8
+  - 1.9
 deploy:
   skip_cleanup: true
   provider: releases
