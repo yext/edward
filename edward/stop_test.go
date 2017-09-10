@@ -8,7 +8,6 @@ import (
 
 	"github.com/theothertomelliott/must"
 	"github.com/yext/edward/common"
-	"github.com/yext/edward/config"
 	"github.com/yext/edward/edward"
 	"github.com/yext/edward/home"
 )
@@ -86,20 +85,20 @@ func TestStopAll(t *testing.T) {
 			wd, cleanup := createWorkingDir(t, test.name, test.path)
 			defer cleanup()
 
-			err = config.LoadSharedConfig(path.Join(wd, test.config), common.EdwardVersion, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-
 			client := edward.NewClient()
 
 			client.WorkingDir = wd
-			client.Config = test.config
+			client.Config = path.Join(wd, test.config)
 			tf := newTestFollower()
 			client.Follower = tf
 
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
+
+			err = client.LoadConfig(common.EdwardVersion)
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			err = client.Start(test.servicesStart, test.skipBuild, false, test.noWatch, test.exclude)
 			if err != nil {

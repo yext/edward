@@ -34,6 +34,10 @@ type Client struct {
 	DisableConcurrentPhases bool
 
 	WorkingDir string
+
+	basePath   string
+	groupMap   map[string]*services.ServiceGroupConfig
+	serviceMap map[string]*services.ServiceConfig
 }
 
 type TaskFollower interface {
@@ -54,6 +58,14 @@ func NewClient() *Client {
 		Logger:     log.New(ioutil.Discard, "", 0), // Default to a logger that discards output
 		WorkingDir: wd,
 	}
+}
+
+func (c *Client) BasePath() string {
+	return c.basePath
+}
+
+func (c *Client) ServiceMap() map[string]*services.ServiceConfig {
+	return c.serviceMap
 }
 
 func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, tail bool, noWatch bool, exclude []string, edwardExecutable string) error {

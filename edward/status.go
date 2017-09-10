@@ -7,7 +7,6 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
-	"github.com/yext/edward/config"
 	"github.com/yext/edward/services"
 )
 
@@ -15,7 +14,7 @@ func (c *Client) Status(names []string) (string, error) {
 	var sgs []services.ServiceOrGroup
 	var err error
 	if len(names) == 0 {
-		for _, service := range config.GetAllServicesSorted() {
+		for _, service := range c.getAllServicesSorted() {
 			var s []services.ServiceStatus
 			s, err = service.Status()
 			if err != nil {
@@ -32,7 +31,7 @@ func (c *Client) Status(names []string) (string, error) {
 		}
 	} else {
 
-		sgs, err = config.GetServicesOrGroups(names)
+		sgs, err = c.getServicesOrGroups(names)
 		if err != nil {
 			return "", errors.WithStack(err)
 		}

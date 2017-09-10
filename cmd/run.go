@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/yext/edward/common"
+	"github.com/yext/edward/config"
 	"github.com/yext/edward/runner"
 )
 
@@ -10,7 +13,18 @@ var runCmd = &cobra.Command{
 	Use:    "run",
 	Hidden: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		r := &runner.Runner{}
+		configPath, err := config.GetConfigPathFromWorkingDirectory()
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		cfg, err := config.LoadConfig(configPath, common.EdwardVersion, logger)
+		if err != nil {
+			return errors.WithMessage(err, configPath)
+		}
+
+		r := &runner.Runner{
+			Service: cfg.ServiceMap[args[0]],
+		}
 		r.NoWatch = *runFlags.noWatch
 		r.WorkingDir = *runFlags.directory
 		r.Logger = logger

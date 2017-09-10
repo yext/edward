@@ -2,13 +2,11 @@ package edward
 
 import (
 	"fmt"
-
-	"github.com/yext/edward/config"
 )
 
 func (c *Client) List() error {
-	groups := config.GetAllGroupsSorted()
-	services := config.GetAllServicesSorted()
+	groups := c.getAllGroupsSorted()
+	services := c.getAllServicesSorted()
 
 	fmt.Fprintln(c.Output, "Services and groups")
 	fmt.Fprintln(c.Output, "Groups:")

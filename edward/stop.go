@@ -2,7 +2,6 @@ package edward
 
 import (
 	"github.com/pkg/errors"
-	"github.com/yext/edward/config"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/worker"
@@ -16,7 +15,7 @@ func (c *Client) Stop(names []string, force bool, exclude []string) error {
 		if !force && !c.askForConfirmation("Are you sure you want to stop all services?") {
 			return nil
 		}
-		allSrv := config.GetAllServicesSorted()
+		allSrv := c.getAllServicesSorted()
 		for _, service := range allSrv {
 			var s []services.ServiceStatus
 			s, err = service.Status()
@@ -30,7 +29,7 @@ func (c *Client) Stop(names []string, force bool, exclude []string) error {
 			}
 		}
 	} else {
-		sgs, err = config.GetServicesOrGroups(names)
+		sgs, err = c.getServicesOrGroups(names)
 		if err != nil {
 			return errors.WithStack(err)
 		}

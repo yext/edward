@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
@@ -46,11 +45,11 @@ Build, start and manage service instances with a single command.`,
 		if configPath != "" {
 			edwardClient.Config = configPath
 		} else {
-			wd, err := os.Getwd()
+			var err error
+			edwardClient.Config, err = config.GetConfigPathFromWorkingDirectory()
 			if err != nil {
 				return errors.WithStack(err)
 			}
-			edwardClient.Config = getConfigPath(wd)
 		}
 		// Set service checks to restart the client on sudo as needed
 		edwardClient.ServiceChecks = func(sgs []services.ServiceOrGroup) error {
@@ -63,21 +62,21 @@ Build, start and manage service instances with a single command.`,
 		command := cmd.Use
 
 		if command != "generate" {
-			err := config.LoadSharedConfig(edwardClient.Config, common.EdwardVersion, logger)
+			err := edwardClient.LoadConfig(common.EdwardVersion)
 			if err != nil {
 				return errors.WithStack(err)
 			}
-			err = os.Chdir(config.GetBasePath())
+			err = os.Chdir(edwardClient.BasePath())
 			if err != nil {
 				return errors.WithStack(err)
 			}
 		} else {
-			config.InitEmptyConfig()
+			edwardClient.InitEmptyConfig()
 		}
 
 		if command != "stop" {
 			// Check for legacy pidfiles and error out if any are found
-			for _, service := range config.GetServiceMap() {
+			for _, service := range edwardClient.ServiceMap() {
 				if _, err := os.Stat(service.GetPidPathLegacy()); !os.IsNotExist(err) {
 					return errors.New("one or more services were started with an older version of Edward. Please run `edward stop` to stop these instances")
 				}
@@ -162,36 +161,6 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
-}
-
-// getConfigPath identifies the location of edward.json, if any exists
-func getConfigPath(wd string) string {
-	var pathOptions []string
-
-	// Config file in Edward Config dir
-	pathOptions = append(pathOptions, filepath.Join(home.EdwardConfig.Dir, "edward.json"))
-
-	// Config file in current working directory
-	pathOptions = append(pathOptions, filepath.Join(wd, "edward.json"))
-	for path.Dir(wd) != wd {
-		wd = path.Dir(wd)
-		pathOptions = append(pathOptions, filepath.Join(wd, "edward.json"))
-	}
-
-	for _, path := range pathOptions {
-		_, err := os.Stat(path)
-		if err != nil {
-			continue
-		}
-		absfp, absErr := filepath.Abs(path)
-		if absErr != nil {
-			fmt.Println("Error getting config file: ", absErr)
-			return ""
-		}
-		return absfp
-	}
-
-	return ""
 }
 
 func checkUpdateAvailable(checkUpdateChan chan interface{}) {

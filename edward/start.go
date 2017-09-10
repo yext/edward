@@ -2,7 +2,6 @@ package edward
 
 import (
 	"github.com/pkg/errors"
-	"github.com/yext/edward/config"
 )
 
 func (c *Client) Start(names []string, skipBuild bool, tail bool, noWatch bool, exclude []string) error {
@@ -10,7 +9,7 @@ func (c *Client) Start(names []string, skipBuild bool, tail bool, noWatch bool, 
 		return errors.New("At least one service or group must be specified")
 	}
 
-	sgs, err := config.GetServicesOrGroups(names)
+	sgs, err := c.getServicesOrGroups(names)
 	if err != nil {
 		return errors.WithStack(err)
 	}

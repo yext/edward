@@ -4,7 +4,6 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
-	"github.com/yext/edward/config"
 	"github.com/yext/edward/runner"
 	"github.com/yext/edward/services"
 )
@@ -13,7 +12,7 @@ func (c *Client) Log(names []string) error {
 	if len(names) == 0 {
 		return errors.New("At least one service or group must be specified")
 	}
-	sgs, err := config.GetServicesOrGroups(names)
+	sgs, err := c.getServicesOrGroups(names)
 	if err != nil {
 		return errors.WithStack(err)
 	}
