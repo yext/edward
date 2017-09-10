@@ -9,15 +9,8 @@ import (
 	"github.com/yext/edward/services"
 )
 
-// InitEmptyConfig initializes the shared maps in an empty state
-func (c *Client) InitEmptyConfig() {
-	c.groupMap = make(map[string]*services.ServiceGroupConfig)
-	c.serviceMap = make(map[string]*services.ServiceConfig)
-}
-
-// loadConfig loads an Edward project config into the shared maps for this client
+// LoadConfig loads an Edward project config into the shared maps for this client
 func (c *Client) LoadConfig(edwardVersion string) error {
-	c.InitEmptyConfig()
 	if c.Config != "" {
 		c.basePath = filepath.Dir(c.Config)
 		cfg, err := config.LoadConfig(c.Config, edwardVersion, c.Logger)

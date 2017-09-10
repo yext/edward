@@ -15,7 +15,6 @@ import (
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/edward"
-	"github.com/yext/edward/home"
 )
 
 func TestGenerate(t *testing.T) {
@@ -126,18 +125,16 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Set up edward home directory
-			if err := home.EdwardConfig.Initialize(); err != nil {
-				t.Fatal(err)
-			}
-
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
 			wd, cleanup := createWorkingDir(t, test.name, test.path)
 			defer cleanup()
 
-			client := edward.NewClient()
+			client, err := edward.NewClient()
+			if err != nil {
+				t.Fatal(err)
+			}
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
 			client.WorkingDir = wd

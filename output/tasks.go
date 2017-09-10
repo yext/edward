@@ -13,7 +13,6 @@ type Follower struct {
 }
 
 func NewFollower() *Follower {
-	uilive.RefreshInterval = time.Hour
 	f := &Follower{
 		inProgress: NewInProgressRenderer(),
 	}
@@ -26,6 +25,7 @@ func (f *Follower) Reset() {
 		panic("Follower not stopped correctly")
 	}
 	f.writer = uilive.New()
+	f.writer.RefreshInterval = time.Hour
 	f.writer.Start()
 }
 

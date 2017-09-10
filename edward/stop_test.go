@@ -9,7 +9,6 @@ import (
 	"github.com/theothertomelliott/must"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/edward"
-	"github.com/yext/edward/home"
 )
 
 func TestStopAll(t *testing.T) {
@@ -74,31 +73,22 @@ func TestStopAll(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// Set up edward home directory
-			if err := home.EdwardConfig.Initialize(); err != nil {
-				t.Fatal(err)
-			}
-
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
 			wd, cleanup := createWorkingDir(t, test.name, test.path)
 			defer cleanup()
 
-			client := edward.NewClient()
-
+			client, err := edward.NewClientWithConfig(path.Join(wd, test.config), common.EdwardVersion)
+			if err != nil {
+				t.Fatal(err)
+			}
 			client.WorkingDir = wd
-			client.Config = path.Join(wd, test.config)
 			tf := newTestFollower()
 			client.Follower = tf
 
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
-
-			err = client.LoadConfig(common.EdwardVersion)
-			if err != nil {
-				t.Fatal(err)
-			}
 
 			err = client.Start(test.servicesStart, test.skipBuild, false, test.noWatch, test.exclude)
 			if err != nil {

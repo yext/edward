@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
+	"github.com/yext/edward/home"
 	"github.com/yext/edward/tracker"
 )
 
@@ -31,6 +32,11 @@ func TestMain(m *testing.M) {
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Set up edward home directory
+	if err := home.EdwardConfig.Initialize(); err != nil {
 		log.Fatal(err)
 	}
 

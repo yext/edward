@@ -45,10 +45,11 @@ type TaskFollower interface {
 	Done()
 }
 
-func NewClient() *Client {
+// NewClient creates an edward client an empty configuration
+func NewClient() (*Client, error) {
 	wd, err := os.Getwd()
 	if err != nil {
-		panic(err)
+		return nil, errors.WithStack(err)
 	}
 
 	return &Client{
@@ -57,7 +58,30 @@ func NewClient() *Client {
 		Follower:   output.NewFollower(),
 		Logger:     log.New(ioutil.Discard, "", 0), // Default to a logger that discards output
 		WorkingDir: wd,
+		groupMap:   make(map[string]*services.ServiceGroupConfig),
+		serviceMap: make(map[string]*services.ServiceConfig),
+	}, nil
+}
+
+// NewClientWithConfig creates an Edward client and loads the config from the given path
+func NewClientWithConfig(configPath, version string) (*Client, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
+
+	client := &Client{
+		Input:      os.Stdin,
+		Output:     os.Stdout,
+		Follower:   output.NewFollower(),
+		Logger:     log.New(ioutil.Discard, "", 0), // Default to a logger that discards output
+		WorkingDir: wd,
+		Config:     configPath,
+		groupMap:   make(map[string]*services.ServiceGroupConfig),
+		serviceMap: make(map[string]*services.ServiceConfig),
+	}
+	err = client.LoadConfig(version)
+	return client, errors.WithStack(err)
 }
 
 func (c *Client) BasePath() string {

@@ -483,9 +483,6 @@ func (c *ServiceConfig) Status() ([]ServiceStatus, error) {
 	}, nil
 }
 
-// Connection list cache, created once per session.
-var connectionsCache []net.ConnectionStat
-
 func (c *ServiceConfig) getPorts(proc *process.Process) ([]string, error) {
 	ports, err := c.doGetPorts(proc)
 	if err != nil {
@@ -526,12 +523,9 @@ func (c *ServiceConfig) getLogCounts() (int, int) {
 }
 
 func (c *ServiceConfig) doGetPorts(proc *process.Process) ([]string, error) {
-	var err error
-	if len(connectionsCache) == 0 {
-		connectionsCache, err = net.Connections("all")
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
+	connectionsCache, err := net.Connections("all")
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
 
 	var ports []string

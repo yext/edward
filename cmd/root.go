@@ -40,29 +40,20 @@ Build, start and manage service instances with a single command.`,
 		logger.Printf("=== Edward v%v ===\n", common.EdwardVersion)
 		logger.Printf("Args: %v\n", os.Args)
 
-		edwardClient = edward.NewClient()
 		// Set the default config path
-		if configPath != "" {
-			edwardClient.Config = configPath
-		} else {
+		if configPath == "" {
 			var err error
-			edwardClient.Config, err = config.GetConfigPathFromWorkingDirectory()
+			configPath, err = config.GetConfigPathFromWorkingDirectory()
 			if err != nil {
 				return errors.WithStack(err)
 			}
 		}
-		// Set service checks to restart the client on sudo as needed
-		edwardClient.ServiceChecks = func(sgs []services.ServiceOrGroup) error {
-			return errors.WithStack(sudoIfNeeded(sgs))
-		}
-		edwardClient.Logger = logger
-		// Populate the Edward executable with this binary
-		edwardClient.EdwardExecutable = os.Args[0]
 
 		command := cmd.Use
 
+		var err error
 		if command != "generate" {
-			err := edwardClient.LoadConfig(common.EdwardVersion)
+			edwardClient, err = edward.NewClientWithConfig(configPath, common.EdwardVersion)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -71,8 +62,19 @@ Build, start and manage service instances with a single command.`,
 				return errors.WithStack(err)
 			}
 		} else {
-			edwardClient.InitEmptyConfig()
+			edwardClient, err = edward.NewClient()
+			if err != nil {
+				return errors.WithStack(err)
+			}
 		}
+
+		// Set service checks to restart the client on sudo as needed
+		edwardClient.ServiceChecks = func(sgs []services.ServiceOrGroup) error {
+			return errors.WithStack(sudoIfNeeded(sgs))
+		}
+		edwardClient.Logger = logger
+		// Populate the Edward executable with this binary
+		edwardClient.EdwardExecutable = os.Args[0]
 
 		if command != "stop" {
 			// Check for legacy pidfiles and error out if any are found
