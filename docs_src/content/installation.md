@@ -7,7 +7,7 @@ weight: 10
 ## Requirements
 
 * macOS or Linux
-* Go 1.6 or higher
+* Go 1.7 or higher
 * Git
 
 ## Installing Edward

@@ -18,7 +18,7 @@
       <pubDate>Wed, 09 Mar 2016 00:11:02 +0100</pubDate>
       
       <guid>http://engblog.yext.com/edward/installation/</guid>
-      <description>Requirements  macOS or Linux Go 1.6 or higher Git  Installing Edward Install or update with go get:
+      <description>Requirements  macOS or Linux Go 1.7 or higher Git  Installing Edward Install or update with go get:
 go get -u github.com/yext/edward  Updates Edward will notify you whenever a newer version is available. If there is an update available, the next time you run an Edward command, you will see a message advising you to update.
 As above, you can update with go get.</description>
     </item>
