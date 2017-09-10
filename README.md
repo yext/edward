@@ -68,7 +68,7 @@ service that can be built and started from the command line.
 
 ## Installation
 
-Edward uses the vendor folder, and as such, Go 1.6 is required.
+Edward requires Mac OS or Linux and Go 1.7 or higher.
 
     go get github.com/yext/edward
 
