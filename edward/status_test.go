@@ -62,6 +62,8 @@ func TestStatus(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Set up edward home directory
 			if err := home.EdwardConfig.Initialize(); err != nil {
 				t.Fatal(err)

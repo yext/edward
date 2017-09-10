@@ -124,6 +124,8 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Set up edward home directory
 			if err := home.EdwardConfig.Initialize(); err != nil {
 				t.Fatal(err)
