@@ -116,9 +116,12 @@ func verifyAndStopRunners(t *testing.T, serviceCount int) {
 			if err != nil {
 				t.Errorf("Error getting cmdline: %v", err)
 			}
+			if cmdline == "" {
+				cmdline = "[No command]"
+			}
 			childNames = append(childNames, cmdline)
 		}
-		t.Fatalf("Expected %d children, got %s", serviceCount, strings.Join(childNames, ", "))
+		t.Fatalf("Expected %d children, got %d [%s]", serviceCount, len(children), strings.Join(childNames, ", "))
 	}
 	for _, child := range children {
 		err = verifyAndStopRunner(t, child)
