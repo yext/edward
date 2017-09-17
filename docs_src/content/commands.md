@@ -68,6 +68,8 @@ For example, to stop *mygroup* and *myservice*:
 If any of the specified services are not running, Edward will ignore them and move on to the next
 service. If Edward fails to stop a service, it will continue to stop the rest of the services specified.
 
+The `stop` command by default will only stop services that are managed by the current config file. If you want to stop other services that are managed by Edward, you can use the `-a` flag.
+
 ## Restart
 
 The `restart` command will rebuild and relaunch the specified groups/services.  It takes service

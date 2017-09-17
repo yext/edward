@@ -7,32 +7,12 @@ import (
 	"github.com/yext/edward/worker"
 )
 
-func (c *Client) Stop(names []string, force bool, exclude []string) error {
-	var sgs []services.ServiceOrGroup
-	var err error
-	if len(names) == 0 {
-		// Prompt user to confirm
-		if !force && !c.askForConfirmation("Are you sure you want to stop all services?") {
-			return nil
-		}
-		allSrv := c.getAllServicesSorted()
-		for _, service := range allSrv {
-			var s []services.ServiceStatus
-			s, err = service.Status()
-			if err != nil {
-				return errors.WithStack(err)
-			}
-			for _, status := range s {
-				if status.Status != services.StatusStopped {
-					sgs = append(sgs, service)
-				}
-			}
-		}
-	} else {
-		sgs, err = c.getServicesOrGroups(names)
-		if err != nil {
-			return errors.WithStack(err)
-		}
+func (c *Client) Stop(names []string, force bool, exclude []string, all bool) error {
+	sgs, err := c.getServiceList(names, all)
+
+	// Prompt user to confirm as needed
+	if len(names) == 0 && !force && !c.askForConfirmation("Are you sure you want to stop all services?") {
+		return nil
 	}
 
 	// Perform required checks and actions for services

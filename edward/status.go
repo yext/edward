@@ -13,7 +13,7 @@ import (
 )
 
 func (c *Client) Status(names []string, all bool) (string, error) {
-	sgs, err := c.getServiceListForStatus(names, all)
+	sgs, err := c.getServiceList(names, all)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
@@ -73,7 +73,7 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 	return buf.String(), nil
 }
 
-func (c *Client) getServiceListForStatus(names []string, all bool) ([]services.ServiceOrGroup, error) {
+func (c *Client) getServiceList(names []string, all bool) ([]services.ServiceOrGroup, error) {
 	var sgs []services.ServiceOrGroup
 	var err error
 
@@ -82,13 +82,12 @@ func (c *Client) getServiceListForStatus(names []string, all bool) ([]services.S
 		if err != nil {
 			return nil, err
 		}
+		if len(names) == 0 {
+			return runningServices, nil
+		}
 		for _, service := range runningServices {
-			if len(names) == 0 {
-				sgs = append(sgs, service)
-				continue
-			}
 			for _, name := range names {
-				if name == service.Name {
+				if name == service.GetName() {
 					sgs = append(sgs, service)
 				}
 			}

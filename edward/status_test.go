@@ -91,7 +91,7 @@ func TestStatus(t *testing.T) {
 			}
 			must.BeEqualErrors(t, test.err, err)
 
-			err = client.Stop(test.runningServices, true, nil)
+			err = client.Stop(test.runningServices, true, nil, false)
 			if err != nil {
 				t.Fatal(err)
 			}
