@@ -82,6 +82,21 @@ service, the operation will end, as with `start`.
 
 The `restart` commands also supports the `--tail` and `--no-watch` flags as with `start`.
 
+## Status
+
+The `status` command will display the status of one or more groups and/or services. It takes service
+and group names are arguments in the same manner as `start`.
+
+For example, to get the status of *myservice*:
+
+    $ edward status myservice
+
+To see the status for all services:
+
+    $ edward status
+
+This will only show running services that are managed by the current config file. If you want to see all service that are managed by Edward, including those from other config files, you can use the `-a` flag.
+
 ## Log/Tail
 
 The `log` or `tail` command will output and then follow the console logs for the specified groups/services.

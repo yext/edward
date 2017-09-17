@@ -456,6 +456,23 @@ service, the operation will end, as with <code>start</code>.</p>
 
 <p>The <code>restart</code> commands also supports the <code>--tail</code> and <code>--no-watch</code> flags as with <code>start</code>.</p>
 
+<h2 id="status">Status</h2>
+
+<p>The <code>status</code> command will display the status of one or more groups and/or services. It takes service
+and group names are arguments in the same manner as <code>start</code>.</p>
+
+<p>For example, to get the status of <em>myservice</em>:</p>
+
+<pre><code>$ edward status myservice
+</code></pre>
+
+<p>To see the status for all services:</p>
+
+<pre><code>$ edward status
+</code></pre>
+
+<p>This will only show running services that are managed by the current config file. If you want to see all service that are managed by Edward, including those from other config files, you can use the <code>-a</code> flag.</p>
+
 <h2 id="log-tail">Log/Tail</h2>
 
 <p>The <code>log</code> or <code>tail</code> command will output and then follow the console logs for the specified groups/services.</p>
