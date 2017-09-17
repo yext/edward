@@ -2,6 +2,7 @@ package edward
 
 import (
 	"sort"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/yext/edward/runner"
@@ -36,15 +37,53 @@ func (c *Client) Log(names []string) error {
 		}
 	}
 
+	var stopChannel = make(chan runner.LogLine)
+	statusTicker := time.NewTicker(time.Second * 5)
+	go func() {
+		for _ = range statusTicker.C {
+			running, err := checkAllRunning(sgs)
+			if err != nil {
+				c.Logger.Printf("Error checking service state for tailing: %v", err)
+				continue
+			}
+			// All services stopped, notify the log process
+			if !running {
+				statusTicker.Stop()
+				close(stopChannel)
+			}
+		}
+	}()
+
 	// Sort initial lines
 	sort.Sort(byTime(lines))
 	for _, line := range lines {
 		printMessage(line, services.CountServices(sgs) > 1)
 	}
 
-	for logMessage := range logChannel {
-		printMessage(logMessage, services.CountServices(sgs) > 1)
+	var running = true
+	for running {
+		select {
+		case logMessage := <-logChannel:
+			printMessage(logMessage, services.CountServices(sgs) > 1)
+		case <-stopChannel:
+			running = false
+		}
 	}
 
 	return nil
+}
+
+func checkAllRunning(sgs []services.ServiceOrGroup) (bool, error) {
+	for _, sg := range sgs {
+		stats, err := sg.Status()
+		if err != nil {
+			return false, errors.WithStack(err)
+		}
+		for _, status := range stats {
+			if status.Status != services.StatusStopped {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }
