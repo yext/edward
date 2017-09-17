@@ -61,24 +61,6 @@ func (c *Client) getServiceOrGroup(name string) (services.ServiceOrGroup, error)
 	return nil, errors.New("Service or group not found")
 }
 
-// getAllServiceNames returns a slice of the names of all services
-func (c *Client) getAllServiceNames() []string {
-	var serviceNames []string
-	for name := range c.serviceMap {
-		serviceNames = append(serviceNames, name)
-	}
-	return serviceNames
-}
-
-// GetAllGroupNames returns a slice of the names of all groups
-func (c *Client) getAllGroupNames() []string {
-	var groupNames []string
-	for name := range c.groupMap {
-		groupNames = append(groupNames, name)
-	}
-	return groupNames
-}
-
 // getAllGroupsSorted returns a slice of all groups, sorted by name
 func (c *Client) getAllGroupsSorted() []services.ServiceOrGroup {
 	var as []services.ServiceOrGroup
