@@ -83,7 +83,7 @@ func TestStatus(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			output, err := client.Status(test.inServices)
+			output, err := client.Status(test.inServices, false)
 			for _, service := range test.expectedServices {
 				if !strings.Contains(output, service) {
 					t.Error("No status entry found for: ", service)

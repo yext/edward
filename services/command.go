@@ -550,8 +550,12 @@ func (c *ServiceCommand) RunStopScript(workingDir string) ([]byte, error) {
 
 func (c *ServiceCommand) clearPid() {
 	c.Pid = 0
-	os.Remove(c.Service.GetPidPathLegacy())
-	os.Remove(c.Service.getStatePath())
+	var err error
+	_ = os.Remove(c.Service.GetPidPathLegacy())
+	err = os.Remove(c.Service.getStatePath())
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (c *ServiceCommand) clearState() {
@@ -559,6 +563,22 @@ func (c *ServiceCommand) clearState() {
 	c.deleteScript("Stop")
 	c.deleteScript("Launch")
 	c.deleteScript("Build")
+}
+
+func (c *ServiceCommand) validateState() (bool, error) {
+	if c.Pid == 0 {
+		c.clearPid()
+		return false, nil
+	}
+	exists, err := process.PidExists(int32(c.Pid))
+	if err != nil {
+		return false, errors.WithStack(err)
+	}
+	if !exists {
+		c.clearPid()
+		return false, nil
+	}
+	return true, nil
 }
 
 // InterruptGroup sends an interrupt signal to a process group.
