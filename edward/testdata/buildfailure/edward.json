@@ -1,0 +1,32 @@
+{
+    "groups": [
+        {
+            "name": "fail-last",
+            "children": ["working","broken"]
+        }
+    ],
+    "groups": [
+        {
+            "name": "fail-first",
+            "children": ["broken","working"]
+        }
+    ],
+    "services": [
+        {
+            "name": "working",
+            "path": "edward-test-service-working",
+            "commands": {
+                "build": "go build",
+                "launch": "./edward-test-service-working 51936"
+            }
+        },
+        {
+            "name": "broken",
+            "path": "edward-test-service-broken",
+            "commands": {
+                "build": "go build -o edward-test-service-broken",
+                "launch": "./edward-test-service2 51937"
+            }
+        }
+    ]
+}

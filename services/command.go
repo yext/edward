@@ -489,9 +489,9 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) erro
 		return nil
 	}
 
-	log, err := logToStringSlice(c.Service.GetRunLog())
-	if err != nil {
-		startTask.SetState(tracker.TaskStateFailed, "Could not read log", err.Error())
+	log, readingErr := logToStringSlice(c.Service.GetRunLog())
+	if readingErr != nil {
+		startTask.SetState(tracker.TaskStateFailed, "Could not read log", readingErr.Error(), "Original error:", err.Error())
 	} else {
 		startTask.SetState(tracker.TaskStateFailed, log...)
 	}
