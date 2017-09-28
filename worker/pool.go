@@ -59,13 +59,13 @@ func (p *Pool) Start() {
 
 // Enqueue adds a job to the pool.
 func (p *Pool) Enqueue(job func() error) error {
+	if p.Err() != nil {
+		return errors.New("aborted")
+	}
+
 	// Execute the job synchronously if no workers are provided
 	if p.workers == 0 {
 		return errors.WithStack(job())
-	}
-
-	if p.Err() != nil {
-		return errors.WithStack(p.Err())
 	}
 
 	p.jobs <- job
