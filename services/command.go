@@ -644,10 +644,13 @@ func logToStringSlice(path string) ([]string, error) {
 // if necessary.
 func buildAbsPath(workingDir string, targetPath *string) string {
 	if targetPath != nil {
-		if !path.IsAbs(*targetPath) {
-			return path.Join(workingDir, *targetPath)
+		expandedPath := os.ExpandEnv(*targetPath)
+		if !path.IsAbs(expandedPath) {
+			return path.Join(workingDir, expandedPath)
 		}
+		*targetPath = expandedPath
 		return *targetPath
 	}
 	return workingDir
 }
+
