@@ -2,13 +2,12 @@ package edward_test
 
 import (
 	"errors"
+	"path"
 	"testing"
 
 	"github.com/theothertomelliott/must"
 	"github.com/yext/edward/common"
-	"github.com/yext/edward/config"
 	"github.com/yext/edward/edward"
-	"github.com/yext/edward/home"
 )
 
 func TestStart(t *testing.T) {
@@ -199,28 +198,22 @@ func TestStart(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// Set up edward home directory
-			if err := home.EdwardConfig.Initialize(); err != nil {
-				t.Fatal(err)
-			}
-
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
-			cleanup := createWorkingDir(t, test.name, test.path)
+			wd, cleanup := createWorkingDir(t, test.name, test.path)
 			defer cleanup()
 
-			err = config.LoadSharedConfig(test.config, common.EdwardVersion, nil)
+			client, err := edward.NewClientWithConfig(path.Join(wd, test.config), common.EdwardVersion)
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			client := edward.NewClient()
-			client.Config = test.config
-			tf := newTestFollower()
-			client.Follower = tf
+			client.WorkingDir = wd
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
+
+			tf := newTestFollower()
+			client.Follower = tf
 
 			err = client.Start(test.services, test.skipBuild, false, test.noWatch, test.exclude)
 			must.BeEqual(t, test.expectedStates, tf.states)
@@ -290,27 +283,78 @@ func TestStartOrder(t *testing.T) {
 			},
 			expectedServices: 3,
 		},
+		{
+			name:     "build failure stops other services",
+			path:     "testdata/buildfailure",
+			config:   "edward.json",
+			services: []string{"broken", "working"},
+			expectedStateOrder: []string{
+				"broken",
+				"broken > Build",
+			},
+			expectedServices: 0,
+			err:              errors.New("Error starting broken: build: running build command: exit status 2"),
+		},
+		{
+			name:     "launch failure stops other services",
+			path:     "testdata/launchfailure",
+			config:   "edward.json",
+			services: []string{"broken", "working"},
+			expectedStateOrder: []string{
+				"broken",
+				"broken > Build",
+				"broken > Start",
+				"Cleanup",
+				"Cleanup > broken",
+				"Cleanup > broken > Stop",
+			},
+			expectedServices: 0,
+			err:              errors.New("Error starting broken: launch: service terminated prematurely"),
+		},
+		{
+			name:     "build failure in group stops other services",
+			path:     "testdata/buildfailure",
+			config:   "edward.json",
+			services: []string{"fail-first"},
+			expectedStateOrder: []string{
+				"fail-first",
+				"fail-first > broken",
+				"fail-first > broken > Build",
+			},
+			expectedServices: 0,
+			err:              errors.New("Error starting fail-first: build: running build command: exit status 2"),
+		},
+		{
+			name:     "launch failure in group stops other services",
+			path:     "testdata/launchfailure",
+			config:   "edward.json",
+			services: []string{"fail-first"},
+			expectedStateOrder: []string{
+				"fail-first",
+				"fail-first > broken",
+				"fail-first > broken > Build",
+				"fail-first > broken > Start",
+				"fail-first > Cleanup",
+				"fail-first > Cleanup > broken",
+				"fail-first > Cleanup > broken > Stop",
+			},
+			expectedServices: 0,
+			err:              errors.New("Error starting fail-first: launch: service terminated prematurely"),
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// Set up edward home directory
-			if err := home.EdwardConfig.Initialize(); err != nil {
-				t.Fatal(err)
-			}
-
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
-			cleanup := createWorkingDir(t, test.name, test.path)
+			wd, cleanup := createWorkingDir(t, test.name, test.path)
 			defer cleanup()
 
-			err = config.LoadSharedConfig(test.config, common.EdwardVersion, nil)
+			client, err := edward.NewClientWithConfig(path.Join(wd, test.config), common.EdwardVersion)
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			client := edward.NewClient()
-			client.Config = test.config
+			client.WorkingDir = wd
 			tf := newTestFollower()
 			client.Follower = tf
 			client.EdwardExecutable = edwardExecutable

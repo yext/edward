@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -15,7 +15,6 @@ import (
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/edward"
-	"github.com/yext/edward/home"
 )
 
 func TestGenerate(t *testing.T) {
@@ -124,20 +123,21 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			// Set up edward home directory
-			if err := home.EdwardConfig.Initialize(); err != nil {
-				t.Fatal(err)
-			}
+			t.Parallel()
 
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
-			cleanup := createWorkingDir(t, test.name, test.path)
+			wd, cleanup := createWorkingDir(t, test.name, test.path)
 			defer cleanup()
 
-			client := edward.NewClient()
+			client, err := edward.NewClient()
+			if err != nil {
+				t.Fatal(err)
+			}
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
+			client.WorkingDir = wd
 
 			// Set up input and output for the client
 			var outputReader, inputReader *io.PipeReader
@@ -167,11 +167,6 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 				ioWg.Done()
 			}()
 
-			cwd, err := os.Getwd()
-			if err != nil {
-				t.Fatal(err)
-			}
-
 			err = client.Generate(test.services, test.force, test.group, test.targets)
 			inputWriter.Close()
 			outputWriter.Close()
@@ -182,10 +177,10 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 
 			ioWg.Wait()
 
-			expectedOutput := strings.Replace(test.expectedOutput, "${TMP_PATH}", cwd, 1)
+			expectedOutput := strings.Replace(test.expectedOutput, "${TMP_PATH}", wd, 1)
 			must.BeEqual(t, expectedOutput, output)
 
-			cfg, err := config.LoadConfig(test.config, common.EdwardVersion, client.Logger)
+			cfg, err := config.LoadConfig(filepath.Join(client.WorkingDir, test.config), common.EdwardVersion, client.Logger)
 			if err != nil {
 				t.Error(err)
 				return

@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=10" />
     <title>Commands - Edward Docs</title>
-    <meta name="generator" content="Hugo 0.21" />
+    <meta name="generator" content="Hugo 0.26" />
 
     
     <meta name="description" content="A command line tool for managing local instances of microservices.">
@@ -134,7 +134,7 @@
     <div class="banner">
       
       <div class="name">
-        <strong>Edward Docs <span class="version">1.8.4</span></strong>
+        <strong>Edward Docs <span class="version">1.8.5</span></strong>
         
           <br>
           yext/edward
@@ -441,6 +441,8 @@ and group names are arguments in the same manner as <code>start</code>.</p>
 <p>If any of the specified services are not running, Edward will ignore them and move on to the next
 service. If Edward fails to stop a service, it will continue to stop the rest of the services specified.</p>
 
+<p>The <code>stop</code> command by default will only stop services that are managed by the current config file. If you want to stop other services that are managed by Edward, you can use the <code>-a</code> flag.</p>
+
 <h2 id="restart">Restart</h2>
 
 <p>The <code>restart</code> command will rebuild and relaunch the specified groups/services.  It takes service
@@ -455,6 +457,23 @@ and group names are arguments in the same manner as <code>start</code>.</p>
 service, the operation will end, as with <code>start</code>.</p>
 
 <p>The <code>restart</code> commands also supports the <code>--tail</code> and <code>--no-watch</code> flags as with <code>start</code>.</p>
+
+<h2 id="status">Status</h2>
+
+<p>The <code>status</code> command will display the status of one or more groups and/or services. It takes service
+and group names are arguments in the same manner as <code>start</code>.</p>
+
+<p>For example, to get the status of <em>myservice</em>:</p>
+
+<pre><code>$ edward status myservice
+</code></pre>
+
+<p>To see the status for all services:</p>
+
+<pre><code>$ edward status
+</code></pre>
+
+<p>This will only show running services that are managed by the current config file. If you want to see all service that are managed by Edward, including those from other config files, you can use the <code>-a</code> flag.</p>
 
 <h2 id="log-tail">Log/Tail</h2>
 

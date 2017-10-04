@@ -12,11 +12,31 @@ import (
 func autocompleteServicesAndGroups(logger *log.Logger) {
 	printCommandChildren(RootCmd)
 
-	err := config.LoadSharedConfig(getConfigPath(), common.EdwardVersion, logger)
+	configPath, err := config.GetConfigPathFromWorkingDirectory()
+	if err != nil {
+		logger.Println("Autocomplete> Error getting config path:", err)
+		return
+	}
+	if configPath == "" {
+		logger.Println("Autocomplete> Config file not found")
+		return
+	}
+	cfg, err := config.LoadConfig(configPath, common.EdwardVersion, logger)
 	if err != nil {
 		logger.Println("Autocomplete> Error loading config:", err)
+		return
 	}
-	names := append(config.GetAllGroupNames(), config.GetAllServiceNames()...)
+
+	var names []string
+	for _, service := range cfg.ServiceMap {
+		names = append(names, service.Name)
+		names = append(names, service.Aliases...)
+	}
+	for _, group := range cfg.GroupMap {
+		names = append(names, group.Name)
+		names = append(names, group.Aliases...)
+	}
+
 	for _, name := range names {
 		fmt.Println(name)
 	}

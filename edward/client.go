@@ -32,6 +32,12 @@ type Client struct {
 
 	// Prevent build, launch and stop phases from running concurrently
 	DisableConcurrentPhases bool
+
+	WorkingDir string
+
+	basePath   string
+	groupMap   map[string]*services.ServiceGroupConfig
+	serviceMap map[string]*services.ServiceConfig
 }
 
 type TaskFollower interface {
@@ -39,17 +45,56 @@ type TaskFollower interface {
 	Done()
 }
 
-func NewClient() *Client {
-	return &Client{
-		Input:    os.Stdin,
-		Output:   os.Stdout,
-		Follower: output.NewFollower(),
-		Logger:   log.New(ioutil.Discard, "", 0), // Default to a logger that discards output
+// NewClient creates an edward client an empty configuration
+func NewClient() (*Client, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
+
+	return &Client{
+		Input:      os.Stdin,
+		Output:     os.Stdout,
+		Follower:   output.NewFollower(),
+		Logger:     log.New(ioutil.Discard, "", 0), // Default to a logger that discards output
+		WorkingDir: wd,
+		groupMap:   make(map[string]*services.ServiceGroupConfig),
+		serviceMap: make(map[string]*services.ServiceConfig),
+	}, nil
+}
+
+// NewClientWithConfig creates an Edward client and loads the config from the given path
+func NewClientWithConfig(configPath, version string) (*Client, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	client := &Client{
+		Input:      os.Stdin,
+		Output:     os.Stdout,
+		Follower:   output.NewFollower(),
+		Logger:     log.New(ioutil.Discard, "", 0), // Default to a logger that discards output
+		WorkingDir: wd,
+		Config:     configPath,
+		groupMap:   make(map[string]*services.ServiceGroupConfig),
+		serviceMap: make(map[string]*services.ServiceConfig),
+	}
+	err = client.LoadConfig(version)
+	return client, errors.WithStack(err)
+}
+
+func (c *Client) BasePath() string {
+	return c.basePath
+}
+
+func (c *Client) ServiceMap() map[string]*services.ServiceConfig {
+	return c.serviceMap
 }
 
 func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, tail bool, noWatch bool, exclude []string, edwardExecutable string) error {
 	cfg := services.OperationConfig{
+		WorkingDir:       c.WorkingDir,
 		EdwardExecutable: edwardExecutable,
 		Exclusions:       exclude,
 		SkipBuild:        skipBuild,
@@ -73,11 +118,14 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, ta
 	for _, s := range sgs {
 		if skipBuild {
 			err = s.Launch(cfg, services.ContextOverride{}, task, p)
+			if err != nil {
+				return errors.WithMessage(err, "Error launching "+s.GetName())
+			}
 		} else {
 			err = s.Start(cfg, services.ContextOverride{}, task, p)
-		}
-		if err != nil {
-			return errors.New("Error launching " + s.GetName() + ": " + err.Error())
+			if err != nil {
+				return errors.WithMessage(err, "Error starting "+s.GetName())
+			}
 		}
 	}
 	return nil

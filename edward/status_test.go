@@ -1,14 +1,13 @@
 package edward_test
 
 import (
+	"path"
 	"strings"
 	"testing"
 
 	"github.com/theothertomelliott/must"
 	"github.com/yext/edward/common"
-	"github.com/yext/edward/config"
 	"github.com/yext/edward/edward"
-	"github.com/yext/edward/home"
 )
 
 func TestStatus(t *testing.T) {
@@ -62,25 +61,17 @@ func TestStatus(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// Set up edward home directory
-			if err := home.EdwardConfig.Initialize(); err != nil {
-				t.Fatal(err)
-			}
-
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
-			cleanup := createWorkingDir(t, test.name, test.path)
+			wd, cleanup := createWorkingDir(t, test.name, test.path)
 			defer cleanup()
 
-			err = config.LoadSharedConfig(test.config, common.EdwardVersion, nil)
+			client, err := edward.NewClientWithConfig(path.Join(wd, test.config), common.EdwardVersion)
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			client := edward.NewClient()
-
-			client.Config = test.config
+			client.WorkingDir = wd
 			tf := newTestFollower()
 			client.Follower = tf
 
@@ -92,7 +83,7 @@ func TestStatus(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			output, err := client.Status(test.inServices)
+			output, err := client.Status(test.inServices, false)
 			for _, service := range test.expectedServices {
 				if !strings.Contains(output, service) {
 					t.Error("No status entry found for: ", service)
@@ -100,7 +91,7 @@ func TestStatus(t *testing.T) {
 			}
 			must.BeEqualErrors(t, test.err, err)
 
-			err = client.Stop(test.runningServices, true, nil)
+			err = client.Stop(test.runningServices, true, nil, false)
 			if err != nil {
 				t.Fatal(err)
 			}

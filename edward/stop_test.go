@@ -2,14 +2,13 @@ package edward_test
 
 import (
 	"os"
+	"path"
 	"syscall"
 	"testing"
 
 	"github.com/theothertomelliott/must"
 	"github.com/yext/edward/common"
-	"github.com/yext/edward/config"
 	"github.com/yext/edward/edward"
-	"github.com/yext/edward/home"
 )
 
 func TestStopAll(t *testing.T) {
@@ -74,25 +73,17 @@ func TestStopAll(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// Set up edward home directory
-			if err := home.EdwardConfig.Initialize(); err != nil {
-				t.Fatal(err)
-			}
-
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
-			cleanup := createWorkingDir(t, test.name, test.path)
+			wd, cleanup := createWorkingDir(t, test.name, test.path)
 			defer cleanup()
 
-			err = config.LoadSharedConfig(test.config, common.EdwardVersion, nil)
+			client, err := edward.NewClientWithConfig(path.Join(wd, test.config), common.EdwardVersion)
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			client := edward.NewClient()
-
-			client.Config = test.config
+			client.WorkingDir = wd
 			tf := newTestFollower()
 			client.Follower = tf
 
@@ -110,7 +101,7 @@ func TestStopAll(t *testing.T) {
 			tf = newTestFollower()
 			client.Follower = tf
 
-			err = client.Stop(test.servicesStop, true, test.exclude)
+			err = client.Stop(test.servicesStop, true, test.exclude, false)
 			must.BeEqualErrors(t, test.err, err)
 			must.BeEqual(t, test.expectedStates, tf.states)
 			must.BeEqual(t, test.expectedMessages, tf.messages)

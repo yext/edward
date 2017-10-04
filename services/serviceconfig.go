@@ -244,9 +244,9 @@ func (c *ServiceConfig) Build(cfg OperationConfig, overrides ContextOverride, ta
 
 	command, err := c.GetCommand(overrides)
 	if err != nil {
-		return errors.WithStack(err)
+		return errors.WithMessage(err, "getting command")
 	}
-	return errors.WithStack(command.BuildSync(false, task))
+	return errors.WithStack(command.BuildSync(cfg.WorkingDir, false, task))
 }
 
 // Launch launches this service
@@ -282,10 +282,10 @@ func (c *ServiceConfig) Start(cfg OperationConfig, overrides ContextOverride, ta
 
 	err := c.Build(cfg, overrides, task)
 	if err != nil {
-		return errors.WithStack(err)
+		return errors.WithMessage(err, "build")
 	}
 	err = c.Launch(cfg, overrides, task, pool)
-	return errors.WithStack(err)
+	return errors.WithMessage(err, "launch")
 }
 
 // Stop stops this service
@@ -483,9 +483,6 @@ func (c *ServiceConfig) Status() ([]ServiceStatus, error) {
 	}, nil
 }
 
-// Connection list cache, created once per session.
-var connectionsCache []net.ConnectionStat
-
 func (c *ServiceConfig) getPorts(proc *process.Process) ([]string, error) {
 	ports, err := c.doGetPorts(proc)
 	if err != nil {
@@ -526,12 +523,9 @@ func (c *ServiceConfig) getLogCounts() (int, int) {
 }
 
 func (c *ServiceConfig) doGetPorts(proc *process.Process) ([]string, error) {
-	var err error
-	if len(connectionsCache) == 0 {
-		connectionsCache, err = net.Connections("all")
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
+	connectionsCache, err := net.Connections("all")
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
 
 	var ports []string

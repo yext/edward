@@ -68,6 +68,8 @@ For example, to stop *mygroup* and *myservice*:
 If any of the specified services are not running, Edward will ignore them and move on to the next
 service. If Edward fails to stop a service, it will continue to stop the rest of the services specified.
 
+The `stop` command by default will only stop services that are managed by the current config file. If you want to stop other services that are managed by Edward, you can use the `-a` flag.
+
 ## Restart
 
 The `restart` command will rebuild and relaunch the specified groups/services.  It takes service
@@ -81,6 +83,21 @@ Each service will be stopped, rebuilt and relaunched sequentially. If Edward fai
 service, the operation will end, as with `start`.
 
 The `restart` commands also supports the `--tail` and `--no-watch` flags as with `start`.
+
+## Status
+
+The `status` command will display the status of one or more groups and/or services. It takes service
+and group names are arguments in the same manner as `start`.
+
+For example, to get the status of *myservice*:
+
+    $ edward status myservice
+
+To see the status for all services:
+
+    $ edward status
+
+This will only show running services that are managed by the current config file. If you want to see all service that are managed by Edward, including those from other config files, you can use the `-a` flag.
 
 ## Log/Tail
 

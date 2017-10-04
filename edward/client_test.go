@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
+	"github.com/yext/edward/home"
 	"github.com/yext/edward/tracker"
 )
 
@@ -31,6 +32,11 @@ func TestMain(m *testing.M) {
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Set up edward home directory
+	if err := home.EdwardConfig.Initialize(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -110,9 +116,12 @@ func verifyAndStopRunners(t *testing.T, serviceCount int) {
 			if err != nil {
 				t.Errorf("Error getting cmdline: %v", err)
 			}
+			if cmdline == "" {
+				cmdline = "[No command]"
+			}
 			childNames = append(childNames, cmdline)
 		}
-		t.Fatalf("Expected %d children, got %s", serviceCount, strings.Join(childNames, ", "))
+		t.Fatalf("Expected %d children, got %d [%s]", serviceCount, len(children), strings.Join(childNames, ", "))
 	}
 	for _, child := range children {
 		err = verifyAndStopRunner(t, child)

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
@@ -41,13 +40,34 @@ Build, start and manage service instances with a single command.`,
 		logger.Printf("=== Edward v%v ===\n", common.EdwardVersion)
 		logger.Printf("Args: %v\n", os.Args)
 
-		edwardClient = edward.NewClient()
 		// Set the default config path
-		if configPath != "" {
-			edwardClient.Config = configPath
-		} else {
-			edwardClient.Config = getConfigPath()
+		if configPath == "" {
+			var err error
+			configPath, err = config.GetConfigPathFromWorkingDirectory()
+			if err != nil {
+				return errors.WithStack(err)
+			}
 		}
+
+		command := cmd.Use
+
+		var err error
+		if command != "generate" {
+			edwardClient, err = edward.NewClientWithConfig(configPath, common.EdwardVersion)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			err = os.Chdir(edwardClient.BasePath())
+			if err != nil {
+				return errors.WithStack(err)
+			}
+		} else {
+			edwardClient, err = edward.NewClient()
+			if err != nil {
+				return errors.WithStack(err)
+			}
+		}
+
 		// Set service checks to restart the client on sudo as needed
 		edwardClient.ServiceChecks = func(sgs []services.ServiceOrGroup) error {
 			return errors.WithStack(sudoIfNeeded(sgs))
@@ -56,24 +76,9 @@ Build, start and manage service instances with a single command.`,
 		// Populate the Edward executable with this binary
 		edwardClient.EdwardExecutable = os.Args[0]
 
-		command := cmd.Use
-
-		if command != "generate" {
-			err := config.LoadSharedConfig(edwardClient.Config, common.EdwardVersion, logger)
-			if err != nil {
-				return errors.WithStack(err)
-			}
-			err = os.Chdir(config.GetBasePath())
-			if err != nil {
-				return errors.WithStack(err)
-			}
-		} else {
-			config.InitEmptyConfig()
-		}
-
 		if command != "stop" {
 			// Check for legacy pidfiles and error out if any are found
-			for _, service := range config.GetServiceMap() {
+			for _, service := range edwardClient.ServiceMap() {
 				if _, err := os.Stat(service.GetPidPathLegacy()); !os.IsNotExist(err) {
 					return errors.New("one or more services were started with an older version of Edward. Please run `edward stop` to stop these instances")
 				}
@@ -160,42 +165,9 @@ func initConfig() {
 	}
 }
 
-// getConfigPath identifies the location of edward.json, if any exists
-func getConfigPath() string {
-	var pathOptions []string
-
-	// Config file in Edward Config dir
-	pathOptions = append(pathOptions, filepath.Join(home.EdwardConfig.Dir, "edward.json"))
-
-	// Config file in current working directory
-	wd, err := os.Getwd()
-	if err == nil {
-		pathOptions = append(pathOptions, filepath.Join(wd, "edward.json"))
-	}
-	for path.Dir(wd) != wd {
-		wd = path.Dir(wd)
-		pathOptions = append(pathOptions, filepath.Join(wd, "edward.json"))
-	}
-
-	for _, path := range pathOptions {
-		_, err := os.Stat(path)
-		if err != nil {
-			continue
-		}
-		absfp, absErr := filepath.Abs(path)
-		if absErr != nil {
-			fmt.Println("Error getting config file: ", absErr)
-			return ""
-		}
-		return absfp
-	}
-
-	return ""
-}
-
 func checkUpdateAvailable(checkUpdateChan chan interface{}) {
 	defer close(checkUpdateChan)
-	updateAvailable, latestVersion, err := updates.UpdateAvailable("github.com/yext/edward", common.EdwardVersion, filepath.Join(home.EdwardConfig.Dir, ".updatecache"), logger)
+	updateAvailable, latestVersion, err := updates.UpdateAvailable("yext", "edward", common.EdwardVersion, filepath.Join(home.EdwardConfig.Dir, ".updatecache"), logger)
 	if err != nil {
 		logger.Println("Error checking for updates:", err)
 		return

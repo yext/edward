@@ -2,6 +2,7 @@ package runner
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -88,7 +89,11 @@ func rebuildService(service *services.ServiceConfig, restart func() error, logge
 		return errors.WithStack(err)
 	}
 	logger.Printf("Build starting\n")
-	err = command.BuildWithTracker(true, tracker.NewTask(func(updatedTask tracker.Task) {}))
+	wd, err := os.Getwd()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	err = command.BuildWithTracker(wd, true, tracker.NewTask(func(updatedTask tracker.Task) {}))
 	if err != nil {
 		return fmt.Errorf("build failed: %v", err)
 	}

@@ -10,13 +10,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/yext/edward/commandline"
-	"github.com/yext/edward/config"
 	"github.com/yext/edward/services"
 )
 
 // Runner provides state and functions for running a given service
 type Runner struct {
-	service    *services.ServiceConfig
+	Service    *services.ServiceConfig
 	command    *RunningCommand
 	logFile    *os.File
 	messageLog *Log
@@ -33,60 +32,6 @@ func (r *Runner) Messagef(format string, a ...interface{}) {
 	r.Logger.Printf(format, a...)
 }
 
-// NewRunningCommand creates a RunningCommand for a given service and exec.Cmd
-func NewRunningCommand(service *services.ServiceConfig, cmd *exec.Cmd, commandWait *sync.WaitGroup) *RunningCommand {
-	return &RunningCommand{
-		service:     service,
-		command:     cmd,
-		done:        make(chan struct{}),
-		commandWait: commandWait,
-	}
-}
-
-// RunningCommand provides state and functions for running a service
-type RunningCommand struct {
-	service     *services.ServiceConfig
-	command     *exec.Cmd
-	done        chan struct{}
-	commandWait *sync.WaitGroup
-}
-
-// Start starts a command running in a goroutine
-func (c *RunningCommand) Start(errorLog Logger) {
-	go func() {
-		err := c.command.Run()
-		if err != nil {
-			errorLog.Printf("%v", err)
-		}
-		c.commandWait.Done()
-		close(c.done)
-	}()
-}
-
-// Interrupt sends an interrupt to a running command
-func (c *RunningCommand) Interrupt() error {
-	return errors.WithStack(
-		services.InterruptGroup(services.OperationConfig{}, c.command.Process.Pid, c.service),
-	)
-}
-
-// Kill sends a kill signal to a running command
-func (c *RunningCommand) Kill() error {
-	return errors.WithStack(
-		services.KillGroup(services.OperationConfig{}, c.command.Process.Pid, c.service),
-	)
-}
-
-// Wait blocks until this command has exited
-func (c *RunningCommand) Wait() {
-	<-c.done
-}
-
-// Logger provides a simple interface for logging
-type Logger interface {
-	Printf(format string, a ...interface{})
-}
-
 func (r *Runner) Run(args []string) error {
 	if r.WorkingDir != "" {
 		err := os.Chdir(r.WorkingDir)
@@ -97,12 +42,6 @@ func (r *Runner) Run(args []string) error {
 
 	if len(args) < 1 {
 		return errors.New("a service name is required")
-	}
-
-	var ok bool
-	r.service, ok = config.GetServiceMap()[args[0]]
-	if !ok {
-		return errors.New("service not found")
 	}
 
 	err := r.configureLogs()
@@ -128,7 +67,7 @@ func (r *Runner) Run(args []string) error {
 }
 
 func (r *Runner) configureLogs() error {
-	logLocation := r.service.GetRunLog()
+	logLocation := r.Service.GetRunLog()
 	os.Remove(logLocation)
 
 	var err error
@@ -139,7 +78,7 @@ func (r *Runner) configureLogs() error {
 
 	r.messageLog = &Log{
 		file:   r.logFile,
-		name:   r.service.Name,
+		name:   r.Service.Name,
 		stream: "messages",
 	}
 	return nil
@@ -161,7 +100,7 @@ func (r *Runner) configureSignals() {
 
 func (r *Runner) configureWatch() func() {
 	if !r.NoWatch {
-		closeWatchers, err := BeginWatch(r.service, r.restartService, r.messageLog)
+		closeWatchers, err := BeginWatch(r.Service, r.restartService, r.messageLog)
 		if err != nil {
 			r.Messagef("Could not enable auto-restart: %v\n", err)
 			return nil
@@ -179,15 +118,15 @@ func (r *Runner) restartService() error {
 
 	// Increment the counter to prevent exiting unexpectedly
 	r.commandWait.Add(1)
-	lockedService, done, err := r.service.ObtainLock("autorestart")
+	lockedService, done, err := r.Service.ObtainLock("autorestart")
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	oldService := r.service
-	r.service = lockedService
+	oldService := r.Service
+	r.Service = lockedService
 	defer func() {
 		done()
-		r.service = oldService
+		r.Service = oldService
 	}()
 
 	err = r.stopService()
@@ -202,16 +141,21 @@ func (r *Runner) restartService() error {
 }
 
 func (r *Runner) stopService() error {
-	command, err := r.service.GetCommand(services.ContextOverride{})
+	wd, err := os.Getwd()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	command, err := r.Service.GetCommand(services.ContextOverride{})
 	if err != nil {
 		r.Messagef("Could not get service command: %v\n", err)
 	}
 
 	var scriptErr error
 	var scriptOutput []byte
-	if r.service.Commands.Stop != "" {
-		r.Messagef("Running stop script for %v.\n", r.service.Name)
-		scriptOutput, scriptErr = command.RunStopScript()
+	if r.Service.Commands.Stop != "" {
+		r.Messagef("Running stop script for %v.\n", r.Service.Name)
+		scriptOutput, scriptErr = command.RunStopScript(wd)
 		if scriptErr != nil {
 			r.Messagef("%v\n", string(scriptOutput))
 			r.Messagef("Stop script failed: %v\n", scriptErr)
@@ -267,28 +211,28 @@ func (r *Runner) startService() error {
 
 	standardLog := &Log{
 		file:   r.logFile,
-		name:   r.service.Name,
+		name:   r.Service.Name,
 		stream: "stdout",
 	}
 	errorLog := &Log{
 		file:   r.logFile,
-		name:   r.service.Name,
+		name:   r.Service.Name,
 		stream: "stderr",
 	}
 
-	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(r.service.Commands.Launch))
+	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(r.Service.Commands.Launch))
 	if err != nil {
 		return errors.WithStack(err)
 	}
 	cmd := exec.Command(command, cmdArgs...)
-	if r.service.Path != nil {
-		cmd.Dir = os.ExpandEnv(*r.service.Path)
+	if r.Service.Path != nil {
+		cmd.Dir = os.ExpandEnv(*r.Service.Path)
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Stdout = standardLog
 	cmd.Stderr = errorLog
 
-	r.command = NewRunningCommand(r.service, cmd, &r.commandWait)
+	r.command = NewRunningCommand(r.Service, cmd, &r.commandWait)
 	r.command.Start(errorLog)
 
 	return nil

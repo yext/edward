@@ -15,14 +15,19 @@
     "services": [
         {
             "name": "warmup",
-            "path": "edward-test-service",
+            "path": "edward-test-expectenv",
             "commands": {
                 "build": "go build",
-                "launch": "./edward-test-service 51936"
+                "launch": "./edward-test-expectenv 51936"
             },
             "warmup": {
                 "url": "http://127.0.0.1:51936"
-            }
+            },
+            "env": [
+                "BUILD=build",
+                "PORT=51937",
+                "APPLIED=YES"
+            ]
         },
         {
             "name": "env",
@@ -45,7 +50,7 @@
                 "launch": "./edward-test-expectenv ${PORT}"
             },
             "env": [
-                "APPLIED=NO"
+                "APPLIED=YES"
             ]
         },
         {
