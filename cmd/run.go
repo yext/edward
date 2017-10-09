@@ -43,4 +43,5 @@ func init() {
 
 	runFlags.noWatch = runCmd.Flags().Bool("no-watch", false, "Disable autorestart")
 	runFlags.directory = runCmd.Flags().StringP("directory", "d", "", "Working directory")
+	_ = runCmd.Flags().StringArrayP("tag", "t", nil, "Tags to distinguish this instance of Edward")
 }

@@ -2,8 +2,10 @@ package edward_test
 
 import (
 	"errors"
+	"fmt"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/theothertomelliott/must"
 	"github.com/yext/edward/common"
@@ -211,6 +213,7 @@ func TestStart(t *testing.T) {
 			client.WorkingDir = wd
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
+			client.Tags = []string{fmt.Sprintf("test.start.%d", time.Now().UnixNano())}
 
 			tf := newTestFollower()
 			client.Follower = tf
@@ -221,7 +224,7 @@ func TestStart(t *testing.T) {
 			must.BeEqualErrors(t, test.err, err)
 
 			// Verify that the process actually started
-			verifyAndStopRunners(t, test.expectedServices)
+			verifyAndStopRunners(t, client, test.expectedServices)
 		})
 	}
 }
@@ -359,13 +362,14 @@ func TestStartOrder(t *testing.T) {
 			client.Follower = tf
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
+			client.Tags = []string{fmt.Sprintf("test.start_order.%d", time.Now().UnixNano())}
 
 			err = client.Start(test.services, test.skipBuild, false, test.noWatch, test.exclude)
 			must.BeEqual(t, test.expectedStateOrder, tf.stateOrder)
 			must.BeEqualErrors(t, test.err, err)
 
 			// Verify that the process actually started
-			verifyAndStopRunners(t, test.expectedServices)
+			verifyAndStopRunners(t, client, test.expectedServices)
 		})
 	}
 }

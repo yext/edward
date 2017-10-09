@@ -1,10 +1,12 @@
 package edward_test
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/theothertomelliott/must"
 	"github.com/yext/edward/common"
@@ -89,6 +91,7 @@ func TestStopAll(t *testing.T) {
 
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
+			client.Tags = []string{fmt.Sprintf("test.stop.%d", time.Now().UnixNano())}
 
 			err = client.Start(test.servicesStart, test.skipBuild, false, test.noWatch, test.exclude)
 			if err != nil {

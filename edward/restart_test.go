@@ -2,10 +2,12 @@ package edward_test
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/theothertomelliott/must"
 	"github.com/yext/edward/common"
@@ -94,6 +96,7 @@ func TestRestart(t *testing.T) {
 			client.Follower = tf
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
+			client.Tags = []string{fmt.Sprintf("test.restart.%d", time.Now().UnixNano())}
 
 			err = client.Start(test.servicesStart, test.skipBuild, false, test.noWatch, test.exclude)
 			if err != nil {
@@ -126,7 +129,7 @@ func TestRestart(t *testing.T) {
 			}
 
 			// Verify that the process actually started
-			verifyAndStopRunners(t, test.expectedServices)
+			verifyAndStopRunners(t, client, test.expectedServices)
 		})
 	}
 }

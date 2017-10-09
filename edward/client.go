@@ -38,6 +38,8 @@ type Client struct {
 	basePath   string
 	groupMap   map[string]*services.ServiceGroupConfig
 	serviceMap map[string]*services.ServiceConfig
+
+	Tags []string // Tags to distinguish runners started by this instance of edward
 }
 
 type TaskFollower interface {
@@ -99,6 +101,7 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, ta
 		Exclusions:       exclude,
 		SkipBuild:        skipBuild,
 		NoWatch:          noWatch,
+		Tags:             c.Tags,
 	}
 
 	task := tracker.NewTask(c.Follower.Handle)

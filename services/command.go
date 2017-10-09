@@ -523,6 +523,9 @@ func (c *ServiceCommand) getLaunchCommand(cfg OperationConfig) (*exec.Cmd, error
 	if cfg.NoWatch {
 		cmdArgs = append(cmdArgs, "--no-watch")
 	}
+	for _, tag := range cfg.Tags {
+		cmdArgs = append(cmdArgs, "--tag", tag)
+	}
 	cmdArgs = append(cmdArgs, c.Service.Name)
 
 	cmd := exec.Command(command, cmdArgs...)
@@ -653,4 +656,3 @@ func buildAbsPath(workingDir string, targetPath *string) string {
 	}
 	return workingDir
 }
-

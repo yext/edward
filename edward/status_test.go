@@ -1,9 +1,11 @@
 package edward_test
 
 import (
+	"fmt"
 	"path"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/theothertomelliott/must"
 	"github.com/yext/edward/common"
@@ -77,6 +79,7 @@ func TestStatus(t *testing.T) {
 
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
+			client.Tags = []string{fmt.Sprintf("test.status.%d", time.Now().UnixNano())}
 
 			err = client.Start(test.runningServices, false, false, false, nil)
 			if err != nil {
