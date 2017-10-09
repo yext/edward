@@ -200,6 +200,7 @@ func TestStart(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion

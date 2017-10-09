@@ -128,25 +128,16 @@ func verifyAndStopRunners(t *testing.T, client *edward.Client, serviceCount int)
 // verifyAndStopRunner will check that a runner process has exactly one child service,
 // and then kill the service, expecting the runner to die.
 func verifyAndStopRunner(t *testing.T, client *edward.Client, runner *process.Process) (bool, error) {
-	defer func() {
-		if running, _ := runner.IsRunning(); running {
-			return
-		}
-		t.Error("Expected stopping children to kill runner process")
-		err := runner.Kill()
-		if err != nil {
-			t.Fatal("Could not kill runner:", err)
-		}
-	}()
-
 	cmdline, err := runner.CmdlineSlice()
 	if err != nil {
-		return false, errors.WithStack(err)
+		t.Logf("error getting command line, ignoring: %v", err)
+		return false, nil
 	}
 	if strings.HasSuffix(cmdline[0], "edward") && cmdline[1] == "run" {
 		services, err := runner.Children()
 		if err != nil {
-			return false, errors.WithStack(err)
+			t.Logf("error getting children, ignoring: %v", err)
+			return false, nil
 		}
 		if len(services) != 1 {
 			t.Errorf("Expected 1 child of runner (%s), got %v", cmdline, len(services))
@@ -157,16 +148,21 @@ func verifyAndStopRunner(t *testing.T, client *edward.Client, runner *process.Pr
 				return false, nil
 			}
 		}
-
 		for _, service := range services {
 			err = service.Kill()
 			if err != nil {
 				return false, errors.WithStack(err)
 			}
 		}
+		if running, _ := runner.IsRunning(); running {
+			return true, nil
+		}
+		t.Error("Expected stopping children to kill runner process")
+		err = runner.Kill()
+		if err != nil {
+			t.Fatal("Could not kill runner:", err)
+		}
 		return true, nil
-	} else {
-		t.Errorf("Expected an edward run command, got: %v", cmdline)
 	}
 	return false, nil
 }
