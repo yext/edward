@@ -133,7 +133,7 @@ func verifyAndStopRunner(t *testing.T, client *edward.Client, runner *process.Pr
 		t.Logf("error getting command line, ignoring: %v", err)
 		return false, nil
 	}
-	if strings.HasSuffix(cmdline[0], "edward") && cmdline[1] == "run" {
+	if len(cmdline) > 2 && strings.HasSuffix(cmdline[0], "edward") && cmdline[1] == "run" {
 		services, err := runner.Children()
 		if err != nil {
 			t.Logf("error getting children, ignoring: %v", err)
