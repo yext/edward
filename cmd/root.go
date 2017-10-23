@@ -16,6 +16,7 @@ import (
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/edward"
 	"github.com/yext/edward/home"
+	"github.com/yext/edward/output"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/updates"
 )
@@ -36,6 +37,9 @@ var RootCmd = &cobra.Command{
 Build, start and manage service instances with a single command.`,
 	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if redirectLogs {
+			logger = log.New(os.Stdout, fmt.Sprintf("%v >", os.Args), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+		}
 		// Begin logging
 		logger.Printf("=== Edward v%v ===\n", common.EdwardVersion)
 		logger.Printf("Args: %v\n", os.Args)
@@ -75,6 +79,10 @@ Build, start and manage service instances with a single command.`,
 		edwardClient.Logger = logger
 		// Populate the Edward executable with this binary
 		edwardClient.EdwardExecutable = os.Args[0]
+
+		if redirectLogs {
+			edwardClient.Follower = output.NewNonLiveFollower()
+		}
 
 		if command != "stop" {
 			// Check for legacy pidfiles and error out if any are found
@@ -132,11 +140,17 @@ func Execute() {
 }
 
 var configPath string
+var redirectLogs bool
 
 func init() {
 	cobra.OnInitialize(initConfig)
 
 	RootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "Use service configuration file at `PATH`")
+	RootCmd.PersistentFlags().BoolVar(&redirectLogs, "redirect_logs", false, "Redirect edward logs to the console")
+	err := RootCmd.PersistentFlags().MarkHidden("redirect_logs")
+	if err != nil {
+		panic(err)
+	}
 }
 
 // initConfig reads in config file and ENV variables if set.
