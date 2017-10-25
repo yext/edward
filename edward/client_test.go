@@ -134,6 +134,12 @@ func verifyAndStopRunner(t *testing.T, client *edward.Client, runner *process.Pr
 		return false, nil
 	}
 	if len(cmdline) > 2 && strings.HasSuffix(cmdline[0], "edward") && cmdline[1] == "run" {
+		fullCmd := strings.Join(cmdline, " ")
+		for _, tag := range client.Tags {
+			if !strings.Contains(fullCmd, fmt.Sprintf("--tag %s", tag)) {
+				return false, nil
+			}
+		}
 		services, err := runner.Children()
 		if err != nil {
 			t.Logf("error getting children, ignoring: %v", err)
@@ -142,16 +148,12 @@ func verifyAndStopRunner(t *testing.T, client *edward.Client, runner *process.Pr
 		if len(services) != 1 {
 			t.Errorf("Expected 1 child of runner (%s), got %v", cmdline, len(services))
 		}
-		fullCmd := strings.Join(cmdline, " ")
-		for _, tag := range client.Tags {
-			if !strings.Contains(fullCmd, fmt.Sprintf("--tag %s", tag)) {
-				return false, nil
-			}
-		}
 		for _, service := range services {
-			err = service.Kill()
-			if err != nil {
-				return false, errors.WithStack(err)
+			if running, _ := service.IsRunning(); running {
+				err = service.Kill()
+				if err != nil {
+					return false, errors.WithMessage(err, "killing service")
+				}
 			}
 		}
 		if running, _ := runner.IsRunning(); running {
