@@ -583,6 +583,17 @@ func (c *ServiceConfig) GetCommand(overrides ContextOverride) (*ServiceCommand, 
 	return command, errors.WithStack(err)
 }
 
+// IdentifyingFilename returns a filename that can be used to identify this service uniquely among all services
+// that may be configured on a machine.
+// The filename will be based on the service name and the path to its Edward config. It does not include an extension.
+func (c *ServiceConfig) IdentifyingFilename() string {
+	name := c.Name
+	hasher := sha1.New()
+	hasher.Write([]byte(c.ConfigFile))
+	sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+	return fmt.Sprintf("%v.%v", sha, name)
+}
+
 func (c *ServiceConfig) getPid(command *ServiceCommand, pidFile string) (int, error) {
 	dat, err := ioutil.ReadFile(pidFile)
 	if err != nil {
@@ -597,11 +608,7 @@ func (c *ServiceConfig) getPid(command *ServiceCommand, pidFile string) (int, er
 
 func (c *ServiceConfig) getStateBase() string {
 	dir := home.EdwardConfig.StateDir
-	name := c.Name
-	hasher := sha1.New()
-	hasher.Write([]byte(c.ConfigFile))
-	sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
-	return path.Join(dir, fmt.Sprintf("%v.%v", sha, name))
+	return path.Join(dir, c.IdentifyingFilename())
 }
 
 func (c *ServiceConfig) getStatePath() string {

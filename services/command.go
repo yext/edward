@@ -13,6 +13,7 @@ import (
 	"syscall"
 
 	"github.com/pkg/errors"
+	uuid "github.com/satori/go.uuid"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/commandline"
 	"github.com/yext/edward/common"
@@ -37,6 +38,8 @@ type ServiceCommand struct {
 	EdwardVersion string `json:"edwardVersion"`
 	// Overrides applied by the group under which this service was started
 	Overrides ContextOverride `json:"overrides,omitempty"`
+	// Identifier for this instance of the service
+	InstanceId string
 
 	Logger common.Logger `json:"-"`
 }
@@ -46,6 +49,7 @@ func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (comm
 	command = &ServiceCommand{
 		Service:    service,
 		ConfigFile: service.ConfigFile,
+		InstanceId: uuid.NewV4().String(),
 	}
 	defer func() {
 		command.Service = service
