@@ -67,6 +67,7 @@ func (r *Runner) Run(args []string) error {
 	defer func() {
 		// TODO: Handle the "Died state"
 		r.updateServiceState(instance.StateStopped)
+		r.removeServiceState()
 		r.Messagef("Service stopped\n")
 	}()
 
@@ -94,6 +95,14 @@ func (r *Runner) updateServiceState(newState instance.State) {
 	err := instance.SaveStatusForService(r.Service, r.instanceId, r.status, dir)
 	if err != nil {
 		r.Messagef("could not save state:", err)
+	}
+}
+
+func (r *Runner) removeServiceState() {
+	dir := home.EdwardConfig.StateDir
+	err := instance.DeleteStatusForService(r.Service, r.instanceId, dir)
+	if err != nil {
+		r.Messagef("could not delete state:", err)
 	}
 }
 

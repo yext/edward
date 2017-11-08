@@ -2,6 +2,7 @@ package edward
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
+	"github.com/yext/edward/home"
+	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
 )
 
@@ -41,22 +44,22 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 
 	for _, s := range sgs {
-		statuses, err := s.Status()
+		statuses, err := c.getStates(s)
 		if err != nil {
 			return "", errors.WithStack(err)
 		}
 		for _, status := range statuses {
 			row := []string{
-				status.Service.Name,
-				status.Status,
-				strconv.Itoa(status.Pid),
-				strings.Join(status.Ports, ", "),
-				strconv.Itoa(status.StdoutCount) + " lines",
-				strconv.Itoa(status.StderrCount) + " lines",
-				status.StartTime.Format("2006-01-02 15:04:05"),
+				status.command.Service.Name,
+				string(status.status.State),
+				strconv.Itoa(status.command.Pid),
+				fmt.Sprintf(strings.Trim(fmt.Sprintf("%v", status.status.Ports), "[]")),
+				strconv.Itoa(status.status.StdoutLines) + " lines",
+				strconv.Itoa(status.status.StderrLines) + " lines",
+				status.status.StartTime.Format("2006-01-02 15:04:05"),
 			}
 			if all {
-				configPath := status.Service.ConfigFile
+				configPath := status.command.Service.ConfigFile
 				wd, err := os.Getwd()
 				if err == nil {
 					relativePath, err := filepath.Rel(wd, configPath)
@@ -71,6 +74,41 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 	}
 	table.Render()
 	return buf.String(), nil
+}
+
+type statusCommandTuple struct {
+	status  instance.Status
+	command *services.ServiceCommand
+}
+
+func (c *Client) getStates(s services.ServiceOrGroup) ([]statusCommandTuple, error) {
+	if service, ok := s.(*services.ServiceConfig); ok {
+		command, err := service.GetCommand(services.ContextOverride{})
+		if err != nil {
+			return nil, errors.WithMessage(err, "could not get service command")
+		}
+		statuses, err := instance.LoadStatusForService(service, home.EdwardConfig.StateDir)
+		if status, ok := statuses[command.InstanceId]; ok {
+			return []statusCommandTuple{
+				statusCommandTuple{
+					status:  status,
+					command: command,
+				},
+			}, nil
+		}
+		return nil, errors.New("no status for current instance")
+	}
+	var stateList []statusCommandTuple
+	if group, ok := s.(*services.ServiceGroupConfig); ok {
+		for _, service := range group.Services {
+			serviceStates, err := c.getStates(service)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+			stateList = append(stateList, serviceStates...)
+		}
+	}
+	return stateList, nil
 }
 
 func (c *Client) getServiceList(names []string, all bool) ([]services.ServiceOrGroup, error) {

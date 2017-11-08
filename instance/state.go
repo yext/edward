@@ -56,13 +56,9 @@ func LoadStatusForService(service *services.ServiceConfig, baseDir string) (map[
 }
 
 func SaveStatusForService(service *services.ServiceConfig, instanceId string, status Status, baseDir string) error {
-	// Create status dir as required
-	statusDir := statusDir(service, baseDir)
-	if _, err := os.Stat(statusDir); os.IsNotExist(err) {
-		err := os.Mkdir(statusDir, os.ModePerm)
-		if err != nil {
-			return errors.WithMessage(err, "create status directory")
-		}
+	err := createStatusDirIfNeeded(service, baseDir)
+	if err != nil {
+		return errors.WithStack(err)
 	}
 
 	// Save status file
@@ -74,6 +70,28 @@ func SaveStatusForService(service *services.ServiceConfig, instanceId string, st
 	err = ioutil.WriteFile(statusFile, bytes, os.ModePerm)
 	if err != nil {
 		return errors.WithMessage(err, "save status")
+	}
+	return nil
+}
+
+func DeleteStatusForService(service *services.ServiceConfig, instanceId, baseDir string) error {
+	err := createStatusDirIfNeeded(service, baseDir)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	statusFile := statusFile(service, baseDir, instanceId)
+	err = os.Remove(statusFile)
+	return errors.WithStack(err)
+}
+
+func createStatusDirIfNeeded(service *services.ServiceConfig, baseDir string) error {
+	// Create status dir as required
+	statusDir := statusDir(service, baseDir)
+	if _, err := os.Stat(statusDir); os.IsNotExist(err) {
+		err := os.Mkdir(statusDir, os.ModePerm)
+		if err != nil {
+			return errors.WithMessage(err, "create status directory")
+		}
 	}
 	return nil
 }
