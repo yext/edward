@@ -2,11 +2,9 @@ package edward
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
@@ -53,7 +51,7 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 				status.command.Service.Name,
 				string(status.status.State),
 				strconv.Itoa(status.command.Pid),
-				fmt.Sprintf(strings.Trim(fmt.Sprintf("%v", status.status.Ports), "[]")),
+				"Not implemented", //fmt.Sprintf(strings.Trim(fmt.Sprintf("%v", status.status.Ports), "[]")),
 				strconv.Itoa(status.status.StdoutLines) + " lines",
 				strconv.Itoa(status.status.StderrLines) + " lines",
 				status.status.StartTime.Format("2006-01-02 15:04:05"),

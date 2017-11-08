@@ -31,6 +31,9 @@ type Runner struct {
 	status instance.Status
 
 	instanceId string
+
+	standardLog *Log
+	errorLog    *Log
 }
 
 func (r *Runner) Messagef(format string, a ...interface{}) {
@@ -71,6 +74,14 @@ func (r *Runner) Run(args []string) error {
 		r.Messagef("Service stopped\n")
 	}()
 
+	lineTick := time.NewTicker(time.Second)
+	defer lineTick.Stop()
+	go func() {
+		for _ = range lineTick.C {
+			r.updateLogCounts()
+		}
+	}()
+
 	r.commandWait.Add(1)
 	err = r.startService()
 	if err != nil {
@@ -91,6 +102,16 @@ func (r *Runner) Run(args []string) error {
 
 func (r *Runner) updateServiceState(newState instance.State) {
 	r.status.State = newState
+	dir := home.EdwardConfig.StateDir
+	err := instance.SaveStatusForService(r.Service, r.instanceId, r.status, dir)
+	if err != nil {
+		r.Messagef("could not save state:", err)
+	}
+}
+
+func (r *Runner) updateLogCounts() {
+	r.status.StdoutLines = r.standardLog.Len()
+	r.status.StderrLines = r.errorLog.Len()
 	dir := home.EdwardConfig.StateDir
 	err := instance.SaveStatusForService(r.Service, r.instanceId, r.status, dir)
 	if err != nil {
@@ -249,12 +270,12 @@ func (r *Runner) waitForCompletionWithTimeout(timeout time.Duration) bool {
 func (r *Runner) startService() error {
 	r.Messagef("Service starting\n")
 
-	standardLog := &Log{
+	r.standardLog = &Log{
 		file:   r.logFile,
 		name:   r.Service.Name,
 		stream: "stdout",
 	}
-	errorLog := &Log{
+	r.errorLog = &Log{
 		file:   r.logFile,
 		name:   r.Service.Name,
 		stream: "stderr",
@@ -269,11 +290,11 @@ func (r *Runner) startService() error {
 		cmd.Dir = os.ExpandEnv(*r.Service.Path)
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Stdout = standardLog
-	cmd.Stderr = errorLog
+	cmd.Stdout = r.standardLog
+	cmd.Stderr = r.errorLog
 
 	r.command = NewRunningCommand(r.Service, cmd, &r.commandWait)
-	r.command.Start(errorLog)
+	r.command.Start(r.errorLog)
 
 	return nil
 }
