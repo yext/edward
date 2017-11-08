@@ -10,6 +10,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/yext/edward/commandline"
+	"github.com/yext/edward/home"
+	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
 )
 
@@ -25,6 +27,10 @@ type Runner struct {
 	WorkingDir  string
 
 	Logger Logger
+
+	status instance.Status
+
+	instanceId string
 }
 
 func (r *Runner) Messagef(format string, a ...interface{}) {
@@ -33,6 +39,11 @@ func (r *Runner) Messagef(format string, a ...interface{}) {
 }
 
 func (r *Runner) Run(args []string) error {
+
+	r.status = instance.Status{
+		StartTime: time.Now(),
+	}
+
 	if r.WorkingDir != "" {
 		err := os.Chdir(r.WorkingDir)
 		if err != nil {
@@ -40,21 +51,32 @@ func (r *Runner) Run(args []string) error {
 		}
 	}
 
-	if len(args) < 1 {
-		return errors.New("a service name is required")
+	// Set the instance id
+	command, err := r.Service.GetCommand(services.ContextOverride{})
+	if err != nil {
+		r.Messagef("Could not get service command: %v\n", err)
 	}
+	r.instanceId = command.InstanceId
 
-	err := r.configureLogs()
+	r.updateServiceState(instance.StateStarting)
+
+	err = r.configureLogs()
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	defer r.Messagef("Service stopped\n")
+	defer func() {
+		// TODO: Handle the "Died state"
+		r.updateServiceState(instance.StateStopped)
+		r.Messagef("Service stopped\n")
+	}()
 
 	r.commandWait.Add(1)
 	err = r.startService()
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
+	r.updateServiceState(instance.StateRunning)
 
 	closeWatchers := r.configureWatch()
 	if closeWatchers != nil {
@@ -64,6 +86,15 @@ func (r *Runner) Run(args []string) error {
 
 	r.commandWait.Wait()
 	return nil
+}
+
+func (r *Runner) updateServiceState(newState instance.State) {
+	r.status.State = newState
+	dir := home.EdwardConfig.StateDir
+	err := instance.SaveStatusForService(r.Service, r.instanceId, r.status, dir)
+	if err != nil {
+		r.Messagef("could not save state:", err)
+	}
 }
 
 func (r *Runner) configureLogs() error {

@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/yext/edward/common"
@@ -22,8 +24,12 @@ var runCmd = &cobra.Command{
 			return errors.WithMessage(err, configPath)
 		}
 
+		service := cfg.ServiceMap[args[0]]
+		if service == nil {
+			return fmt.Errorf("service not found: %s", args[0])
+		}
 		r := &runner.Runner{
-			Service: cfg.ServiceMap[args[0]],
+			Service: service,
 		}
 		r.NoWatch = *runFlags.noWatch
 		r.WorkingDir = *runFlags.directory
