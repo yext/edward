@@ -23,7 +23,7 @@ const (
 
 type Status struct {
 	State       State     `json:"status"`
-	Ports       []int     `json:"ports"` // Ports opened by this instance
+	Ports       []string  `json:"ports"` // Ports opened by this instance
 	StdoutLines int       `json:"stdoutLines"`
 	StderrLines int       `json:"stderrLines"`
 	StartTime   time.Time `json:"startTime"`

@@ -1,14 +1,18 @@
 package runner
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/theothertomelliott/gopsutil-nocgo/net"
+	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/commandline"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/instance"
@@ -74,11 +78,11 @@ func (r *Runner) Run(args []string) error {
 		r.Messagef("Service stopped\n")
 	}()
 
-	lineTick := time.NewTicker(time.Second)
-	defer lineTick.Stop()
+	statusTick := time.NewTicker(time.Second)
+	defer statusTick.Stop()
 	go func() {
-		for _ = range lineTick.C {
-			r.updateLogCounts()
+		for _ = range statusTick.C {
+			r.updateStatusDetail()
 		}
 	}()
 
@@ -109,14 +113,58 @@ func (r *Runner) updateServiceState(newState instance.State) {
 	}
 }
 
-func (r *Runner) updateLogCounts() {
+func (r *Runner) updateStatusDetail() {
 	r.status.StdoutLines = r.standardLog.Len()
 	r.status.StderrLines = r.errorLog.Len()
+
+	pid := r.command.Pid()
+	if pid != 0 {
+		proc, err := process.NewProcess(int32(pid))
+		if err != nil {
+			r.Messagef("could not get process:", err)
+			return
+		}
+		fmt.Println("Getting ports for PID: ", pid)
+		ports, err := doGetPorts(proc)
+		if err != nil {
+			r.Messagef("could not get ports:", err)
+			return
+		}
+		r.status.Ports = ports
+	}
+
 	dir := home.EdwardConfig.StateDir
 	err := instance.SaveStatusForService(r.Service, r.instanceId, r.status, dir)
 	if err != nil {
 		r.Messagef("could not save state:", err)
 	}
+}
+
+func doGetPorts(proc *process.Process) ([]string, error) {
+	connections, err := net.Connections("all")
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var ports []string
+	for _, connection := range connections {
+		if connection.Status == "LISTEN" && connection.Pid == proc.Pid {
+			ports = append(ports, strconv.Itoa(int(connection.Laddr.Port)))
+		}
+	}
+
+	children, err := proc.Children()
+	// This will error out if the process has finished or has no children
+	if err != nil {
+		return ports, nil
+	}
+	for _, child := range children {
+		childPorts, err := doGetPorts(child)
+		if err == nil {
+			ports = append(ports, childPorts...)
+		}
+	}
+	return ports, nil
 }
 
 func (r *Runner) removeServiceState() {

@@ -56,3 +56,11 @@ func (c *RunningCommand) Kill() error {
 func (c *RunningCommand) Wait() {
 	<-c.done
 }
+
+// Pid returns the process id for the running command
+func (c *RunningCommand) Pid() int {
+	if c.command == nil || c.command.Process == nil {
+		return 0
+	}
+	return c.command.Process.Pid
+}
