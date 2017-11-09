@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"testing"
 )
@@ -11,7 +12,11 @@ import (
 // createWorkingDir creates a directory to work in and changes into that directory.
 // Returns a cleanup function.
 func createWorkingDir(t *testing.T, testName, testPath string) (string, func()) {
-	workingDir, err := ioutil.TempDir(".", testName)
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	workingDir, err := ioutil.TempDir(wd, testName)
 	if err != nil {
 		t.Fatal(err)
 	}

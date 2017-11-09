@@ -99,10 +99,8 @@ func (c *Client) getStates(s services.ServiceOrGroup) ([]statusCommandTuple, err
 	var stateList []statusCommandTuple
 	if group, ok := s.(*services.ServiceGroupConfig); ok {
 		for _, service := range group.Services {
-			serviceStates, err := c.getStates(service)
-			if err != nil {
-				return nil, errors.WithStack(err)
-			}
+			// TODO: Create a specific error type for no status file and handle appropriately
+			serviceStates, _ := c.getStates(service)
 			stateList = append(stateList, serviceStates...)
 		}
 	}
