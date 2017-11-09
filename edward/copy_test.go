@@ -11,7 +11,7 @@ import (
 // createWorkingDir creates a directory to work in and changes into that directory.
 // Returns a cleanup function.
 func createWorkingDir(t *testing.T, testName, testPath string) (string, func()) {
-	workingDir, err := ioutil.TempDir("", testName)
+	workingDir, err := ioutil.TempDir(".", testName)
 	if err != nil {
 		t.Fatal(err)
 	}
