@@ -227,18 +227,8 @@ func (r *Runner) restartService() error {
 
 	// Increment the counter to prevent exiting unexpectedly
 	r.commandWait.Add(1)
-	lockedService, done, err := r.Service.ObtainLock("autorestart")
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	oldService := r.Service
-	r.Service = lockedService
-	defer func() {
-		done()
-		r.Service = oldService
-	}()
 
-	err = r.stopService()
+	err := r.stopService()
 	if err != nil {
 		return errors.WithStack(err)
 	}
