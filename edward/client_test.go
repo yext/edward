@@ -121,7 +121,15 @@ func verifyAndStopRunners(t *testing.T, client *edward.Client, serviceCount int)
 		}
 	}
 	if len(verifiedChildren) != serviceCount {
-		t.Errorf("Expected %d tagged runners, got %+v", serviceCount, verifiedChildren)
+		var cmdLines []string
+		for _, p := range verifiedChildren {
+			cmd, err := p.Cmdline()
+			if err != nil {
+				cmd = err.Error()
+			}
+			cmdLines = append(cmdLines, cmd)
+		}
+		t.Errorf("Expected %d tagged runners, got %+v", serviceCount, strings.Join(cmdLines, ", "))
 	}
 }
 
