@@ -110,18 +110,18 @@ func verifyAndStopRunners(t *testing.T, client *edward.Client, serviceCount int)
 			t.Fatalf("No processes found, expected %d", serviceCount)
 		}
 	}
-	var verifiedCount int
+	var verifiedChildren []*process.Process
 	for _, child := range children {
 		verified, err := verifyAndStopRunner(t, client, child)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if verified {
-			verifiedCount++
+			verifiedChildren = append(verifiedChildren, child)
 		}
 	}
-	if verifiedCount != serviceCount {
-		t.Errorf("Expected %d tagged runners, got %d", serviceCount, verifiedCount)
+	if len(verifiedChildren) != serviceCount {
+		t.Errorf("Expected %d tagged runners, got %+v", serviceCount, verifiedChildren)
 	}
 }
 
@@ -144,9 +144,6 @@ func verifyAndStopRunner(t *testing.T, client *edward.Client, runner *process.Pr
 		if err != nil {
 			t.Logf("error getting children, ignoring: %v", err)
 			return false, nil
-		}
-		if len(services) != 1 {
-			t.Errorf("Expected 1 child of runner (%s), got %v", cmdline, len(services))
 		}
 		for _, service := range services {
 			if running, _ := service.IsRunning(); running {
