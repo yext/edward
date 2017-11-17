@@ -47,6 +47,18 @@ func TestStart(t *testing.T) {
 			expectedServices: 1,
 		},
 		{
+			name:     "single service - alternate",
+			path:     "testdata/single",
+			config:   "alternate.json",
+			services: []string{"alternate"},
+			expectedStates: map[string]string{
+				"alternate":         "Pending", // This isn't technically right
+				"alternate > Build": "Success",
+				"alternate > Start": "Success",
+			},
+			expectedServices: 1,
+		},
+		{
 			name:     "two services",
 			path:     "testdata/multiple",
 			config:   "edward.json",
