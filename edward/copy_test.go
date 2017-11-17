@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"testing"
 )
 
@@ -16,7 +17,11 @@ func createWorkingDir(t *testing.T, testName, testPath string) (string, func()) 
 	if err != nil {
 		log.Fatal(err)
 	}
-	workingDir, err := ioutil.TempDir(wd, testName)
+	workingPath := path.Join(wd, "testdata", ".working")
+	if _, err := os.Stat(workingPath); os.IsNotExist(err) {
+		os.Mkdir(workingPath, os.ModePerm)
+	}
+	workingDir, err := ioutil.TempDir(workingPath, testName)
 	if err != nil {
 		t.Fatal(err)
 	}
