@@ -57,7 +57,7 @@ Build, start and manage service instances with a single command.`,
 
 		var err error
 		if command != "generate" {
-			edwardClient, err = edward.NewClientWithConfig(configPath, common.EdwardVersion)
+			edwardClient, err = edward.NewClientWithConfig(configPath, common.EdwardVersion, logger)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -120,12 +120,16 @@ func Execute() {
 		fmt.Printf("%+v", err)
 	}
 
+	logPrefix := "edward"
+	if len(os.Args) > 1 {
+		logPrefix = fmt.Sprintf("edward %v >", os.Args[1:])
+	}
 	logger = log.New(&lumberjack.Logger{
 		Filename:   filepath.Join(home.EdwardConfig.EdwardLogDir, "edward.log"),
 		MaxSize:    50, // megabytes
 		MaxBackups: 30,
 		MaxAge:     1, //days
-	}, fmt.Sprintf("%v >", os.Args), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+	}, logPrefix, log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 
 	for _, arg := range os.Args {
 		if arg == "--generate-bash-completion" {

@@ -66,7 +66,7 @@ func NewClient() (*Client, error) {
 }
 
 // NewClientWithConfig creates an Edward client and loads the config from the given path
-func NewClientWithConfig(configPath, version string) (*Client, error) {
+func NewClientWithConfig(configPath, version string, logger *log.Logger) (*Client, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -76,7 +76,7 @@ func NewClientWithConfig(configPath, version string) (*Client, error) {
 		Input:      os.Stdin,
 		Output:     os.Stdout,
 		Follower:   output.NewFollower(),
-		Logger:     log.New(ioutil.Discard, "", 0), // Default to a logger that discards output
+		Logger:     logger,
 		WorkingDir: wd,
 		Config:     configPath,
 		groupMap:   make(map[string]*services.ServiceGroupConfig),
@@ -120,6 +120,7 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, ta
 	var err error
 	for _, s := range sgs {
 		if skipBuild {
+			c.Logger.Println("skipping build phase")
 			err = s.Launch(cfg, services.ContextOverride{}, task, p)
 			if err != nil {
 				return errors.WithMessage(err, "Error launching "+s.GetName())
