@@ -267,10 +267,12 @@ func (c *ServiceConfig) Start(cfg OperationConfig, overrides ContextOverride, ta
 		return nil
 	}
 
+	c.printf("Building: %s", c.Name)
 	err := c.Build(cfg, overrides, task)
 	if err != nil {
 		return errors.WithMessage(err, "build")
 	}
+	c.printf("Launching: %s", c.Name)
 	err = c.Launch(cfg, overrides, task, pool)
 	return errors.WithMessage(err, "launch")
 }
@@ -554,7 +556,6 @@ func (c *ServiceConfig) GetRunLog() string {
 
 // GetCommand returns the ServiceCommand for this service
 func (c *ServiceConfig) GetCommand(overrides ContextOverride) (*ServiceCommand, error) {
-	c.printf("Building control command for: %v\n", c.Name)
 	command, err := LoadServiceCommand(c, overrides)
 	return command, errors.WithStack(err)
 }

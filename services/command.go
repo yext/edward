@@ -58,10 +58,8 @@ func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (comm
 		command.Overrides = command.Overrides.Merge(overrides)
 		err = command.checkPid()
 	}()
-	defer service.printf("Got command: %v\n", command)
 
 	legacyPidFile := service.GetPidPathLegacy()
-	service.printf("Checking pidfile for %v", service.Name)
 	if _, err := os.Stat(legacyPidFile); err == nil {
 		command.Pid, err = service.getPid(command, legacyPidFile)
 		if err != nil {
@@ -289,7 +287,7 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) erro
 
 	log, readingErr := logToStringSlice(c.Service.GetRunLog())
 	if readingErr != nil {
-		startTask.SetState(tracker.TaskStateFailed, "Could not read log", readingErr.Error(), "Original error:", err.Error())
+		startTask.SetState(tracker.TaskStateFailed, "Could not read log", readingErr.Error(), fmt.Sprint("Original error: ", err.Error()))
 	} else {
 		startTask.SetState(tracker.TaskStateFailed, log...)
 	}

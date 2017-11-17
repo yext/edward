@@ -19,18 +19,21 @@ func WaitUntilLive(command *exec.Cmd, service *ServiceConfig) error {
 
 	var startCheck func(cancel <-chan struct{}) error
 	if service.LaunchChecks != nil && len(service.LaunchChecks.LogText) > 0 {
+		service.printf("Waiting for log text: %v", service.LaunchChecks.LogText)
 		startCheck = func(cancel <-chan struct{}) error {
 			return errors.WithStack(
 				waitForLogText(service.LaunchChecks.LogText, cancel, service),
 			)
 		}
 	} else if service.LaunchChecks != nil && len(service.LaunchChecks.Ports) > 0 {
+		service.printf("Waiting for ports: %v", service.LaunchChecks.Ports)
 		startCheck = func(cancel <-chan struct{}) error {
 			return errors.WithStack(
 				waitForListeningPorts(service.LaunchChecks.Ports, cancel, command),
 			)
 		}
 	} else if service.LaunchChecks != nil && service.LaunchChecks.Wait != 0 {
+		service.printf("Waiting for: %dms", service.LaunchChecks.Wait)
 		startCheck = func(cancel <-chan struct{}) error {
 			delay := time.NewTimer(time.Duration(service.LaunchChecks.Wait) * time.Millisecond)
 			defer delay.Stop()
@@ -42,6 +45,7 @@ func WaitUntilLive(command *exec.Cmd, service *ServiceConfig) error {
 			}
 		}
 	} else {
+		service.printf("Waiting for any port")
 		startCheck = func(cancel <-chan struct{}) error {
 			return errors.WithStack(
 				waitForAnyPort(cancel, command),
@@ -68,10 +72,13 @@ func WaitUntilLive(command *exec.Cmd, service *ServiceConfig) error {
 
 	select {
 	case result := <-cancelableWait(done, startCheck):
+		service.printf("Process started")
 		return errors.WithStack(result.error)
 	case result := <-cancelableWait(done, processFinished):
+		service.printf("Process exited")
 		return errors.WithStack(result.error)
 	case <-timeout.C:
+		service.printf("Process start timed out")
 		return errors.New("Waiting for service timed out")
 	}
 
