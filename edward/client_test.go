@@ -129,7 +129,7 @@ func verifyAndStopRunners(t *testing.T, client *edward.Client, serviceCount int)
 			}
 			cmdLines = append(cmdLines, cmd)
 		}
-		t.Errorf("Expected %d tagged runners, got %+v", serviceCount, strings.Join(cmdLines, ", "))
+		t.Errorf("Expected %d tagged runners, got [%s]", serviceCount, strings.Join(cmdLines, ", "))
 	}
 }
 
