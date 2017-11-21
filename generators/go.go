@@ -108,7 +108,7 @@ func (v *GoGenerator) getImportList(service *services.ServiceConfig) []string {
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		fmt.Println(errBuf.String())
+		fmt.Println("Error getting import list:", errBuf.String())
 		return []string{*service.Path}
 	}
 	imports = append(imports, strings.Split(out.String(), ":")...)
@@ -121,7 +121,7 @@ func (v *GoGenerator) getImportList(service *services.ServiceConfig) []string {
 			rel, err := filepath.Rel(v.basePath, path)
 			if err != nil {
 				// TODO: Handle this error more effectively
-				fmt.Println(err)
+				fmt.Println("Could not get relative path:", err)
 				continue
 			}
 			checkedImports = append(checkedImports, rel)

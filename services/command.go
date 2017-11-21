@@ -403,7 +403,7 @@ func signalGroup(cfg OperationConfig, pgid int, service *ServiceConfig, flag str
 	cmd := exec.Command(cmdName, cmdArgs...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	err := cmd.Run()
-	return errors.WithStack(err)
+	return errors.WithMessage(err, "signalGroup:")
 }
 
 type logLine struct {

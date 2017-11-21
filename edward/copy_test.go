@@ -56,12 +56,12 @@ func copy_folder(source string, dest string) (err error) {
 		if obj.IsDir() {
 			err = copy_folder(sourcefilepointer, destinationfilepointer)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Println("Copying folder:",err)
 			}
 		} else {
 			err = copy_file(sourcefilepointer, destinationfilepointer)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Println("Copying file:",err)
 			}
 		}
 
