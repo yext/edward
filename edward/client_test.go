@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/edward"
 	"github.com/yext/edward/home"
@@ -155,10 +154,7 @@ func verifyAndStopRunner(t *testing.T, client *edward.Client, runner *process.Pr
 		}
 		for _, service := range services {
 			if running, _ := service.IsRunning(); running {
-				err = service.Kill()
-				if err != nil {
-					return false, errors.WithMessage(err, "killing service")
-				}
+				_ = service.Kill()
 			}
 		}
 		if running, _ := runner.IsRunning(); running {
@@ -172,4 +168,15 @@ func verifyAndStopRunner(t *testing.T, client *edward.Client, runner *process.Pr
 		return true, nil
 	}
 	return false, nil
+}
+
+func showLogsIfFailed(t *testing.T, name string, wd string, client *edward.Client) {
+	if !t.Failed() {
+		return
+	}
+	// b, err := ioutil.ReadFile(filepath.Join(wd, "edward.log"))
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// fmt.Printf("=== Log (%s) ===\n%s=== /Log ===\n", name, string(b))
 }

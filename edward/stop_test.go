@@ -50,6 +50,18 @@ func TestStopAll(t *testing.T) {
 			},
 			expectedServices: 1,
 		},
+		// {
+		// 	name:          "single service - alternate",
+		// 	path:          "testdata/single",
+		// 	config:        "alternate.json",
+		// 	servicesStart: []string{"alternate"},
+		// 	servicesStop:  []string{"alternate"},
+		// 	expectedStates: map[string]string{
+		// 		"alternate":        "Pending", // This isn't technically right
+		// 		"alternate > Stop": "Success",
+		// 	},
+		// 	expectedServices: 1,
+		// },
 		{
 			name:          "group, stop all",
 			path:          "testdata/group",
