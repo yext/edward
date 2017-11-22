@@ -31,7 +31,7 @@ func (c *RunningCommand) Start(errorLog Logger) {
 	go func() {
 		err := c.command.Run()
 		if err != nil {
-			errorLog.Printf("%v", err)
+			errorLog.Printf("start error: %v", err)
 		}
 		c.commandWait.Done()
 		close(c.done)

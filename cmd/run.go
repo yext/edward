@@ -34,8 +34,8 @@ var runCmd = &cobra.Command{
 		r.NoWatch = *runFlags.noWatch
 		r.WorkingDir = *runFlags.directory
 		r.Logger = logger
-		r.Run(args)
-		return nil
+		err = r.Run(args)
+		return errors.WithStack(err)
 	},
 }
 

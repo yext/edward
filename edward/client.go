@@ -28,6 +28,8 @@ type Client struct {
 
 	EdwardExecutable string
 
+	LogFile string // Path to log file
+
 	Follower TaskFollower
 
 	// Prevent build, launch and stop phases from running concurrently
@@ -102,6 +104,7 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, ta
 		SkipBuild:        skipBuild,
 		NoWatch:          noWatch,
 		Tags:             c.Tags,
+		LogFile:          c.LogFile,
 	}
 
 	task := tracker.NewTask(c.Follower.Handle)

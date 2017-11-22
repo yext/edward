@@ -71,6 +71,7 @@ func (c *Client) restartOneOrMoreServices(serviceNames []string, skipBuild bool,
 		SkipBuild:        skipBuild,
 		NoWatch:          noWatch,
 		Tags:             c.Tags,
+		LogFile:          c.LogFile,
 	}
 
 	task := tracker.NewTask(c.Follower.Handle)

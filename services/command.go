@@ -316,14 +316,18 @@ func (c *ServiceCommand) getLaunchCommand(cfg OperationConfig) (*exec.Cmd, error
 	cmdArgs := []string{
 		"run",
 	}
+	cmdArgs = append(cmdArgs, "-c", c.ConfigFile)
 	if cfg.NoWatch {
 		cmdArgs = append(cmdArgs, "--no-watch")
 	}
 	for _, tag := range cfg.Tags {
 		cmdArgs = append(cmdArgs, "--tag", tag)
 	}
+	if cfg.LogFile != "" {
+		cmdArgs = append(cmdArgs, "--logfile", cfg.LogFile)
+	}
 	cmdArgs = append(cmdArgs, c.Service.Name)
-
+	c.printf("Launching runner with args: %v", cmdArgs)
 	cmd := exec.Command(command, cmdArgs...)
 	cmd.Dir = buildAbsPath(cfg.WorkingDir, c.Service.Path)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

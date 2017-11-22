@@ -46,18 +46,18 @@ func TestStart(t *testing.T) {
 			},
 			expectedServices: 1,
 		},
-		// {
-		// 	name:     "single service - alternate",
-		// 	path:     "testdata/single",
-		// 	config:   "alternate.json",
-		// 	services: []string{"alternate"},
-		// 	expectedStates: map[string]string{
-		// 		"alternate":         "Pending", // This isn't technically right
-		// 		"alternate > Build": "Success",
-		// 		"alternate > Start": "Success",
-		// 	},
-		// 	expectedServices: 1,
-		// },
+		{
+			name:     "single service - alternate",
+			path:     "testdata/single",
+			config:   "alternate.json",
+			services: []string{"alternate"},
+			expectedStates: map[string]string{
+				"alternate":         "Pending", // This isn't technically right
+				"alternate > Build": "Success",
+				"alternate > Start": "Success",
+			},
+			expectedServices: 1,
+		},
 		{
 			name:     "two services",
 			path:     "testdata/multiple",
@@ -221,11 +221,12 @@ func TestStart(t *testing.T) {
 			wd, cleanup := createWorkingDir(t, test.name, test.path)
 			defer cleanup()
 
+			logfile := filepath.Join(wd, "edward.log")
 			client, err := edward.NewClientWithConfig(
 				path.Join(wd, test.config),
 				common.EdwardVersion,
 				log.New(&lumberjack.Logger{
-					Filename:   filepath.Join(wd, "edward.log"),
+					Filename:   logfile,
 					MaxSize:    50, // megabytes
 					MaxBackups: 30,
 					MaxAge:     1, //days
@@ -234,6 +235,7 @@ func TestStart(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			client.LogFile = logfile
 			client.WorkingDir = wd
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
@@ -379,21 +381,23 @@ func TestStartOrder(t *testing.T) {
 			wd, cleanup := createWorkingDir(t, test.name, test.path)
 			defer cleanup()
 
+			logfile := filepath.Join(wd, "edward.log")
 			client, err := edward.NewClientWithConfig(
 				path.Join(wd, test.config),
 				common.EdwardVersion,
 				log.New(&lumberjack.Logger{
-					Filename:   filepath.Join(wd, "edward.log"),
+					Filename:   logfile,
 					MaxSize:    50, // megabytes
 					MaxBackups: 30,
 					MaxAge:     1, //days
 				}, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile),
 			)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatal("error creating client", err)
 			}
 			client.WorkingDir = wd
 			tf := newTestFollower()
+			client.LogFile = logfile
 			client.Follower = tf
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true

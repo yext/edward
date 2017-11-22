@@ -33,6 +33,7 @@ type OperationConfig struct {
 	NoWatch          bool
 	SkipBuild        bool
 	Tags             []string // Tags to pass to `edward run`
+	LogFile          string
 }
 
 // IsExcluded returns true if the given service/group is excluded by this OperationConfig.

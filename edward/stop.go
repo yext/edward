@@ -27,6 +27,7 @@ func (c *Client) Stop(names []string, force bool, exclude []string, all bool) er
 		EdwardExecutable: c.EdwardExecutable,
 		Exclusions:       exclude,
 		Tags:             c.Tags,
+		LogFile:          c.LogFile,
 	}
 
 	task := tracker.NewTask(c.Follower.Handle)

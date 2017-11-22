@@ -40,6 +40,14 @@ Build, start and manage service instances with a single command.`,
 		if redirectLogs {
 			logger = log.New(os.Stdout, fmt.Sprintf("%v >", os.Args), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 		}
+		if logFile != "" {
+			logger = log.New(&lumberjack.Logger{
+				Filename:   logFile,
+				MaxSize:    50, // megabytes
+				MaxBackups: 30,
+				MaxAge:     1, //days
+			}, "run > ", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+		}
 		// Begin logging
 		logger.Printf("=== Edward v%v ===\n", common.EdwardVersion)
 		logger.Printf("Args: %v\n", os.Args)
@@ -79,6 +87,9 @@ Build, start and manage service instances with a single command.`,
 		edwardClient.Logger = logger
 		// Populate the Edward executable with this binary
 		edwardClient.EdwardExecutable = os.Args[0]
+
+		// Let the client know about the log file for starting runners
+		edwardClient.LogFile = logFile
 
 		if redirectLogs {
 			edwardClient.Follower = output.NewNonLiveFollower()
@@ -124,6 +135,7 @@ func Execute() {
 	if len(os.Args) > 1 {
 		logPrefix = fmt.Sprintf("edward %v >", os.Args[1:])
 	}
+
 	logger = log.New(&lumberjack.Logger{
 		Filename:   filepath.Join(home.EdwardConfig.EdwardLogDir, "edward.log"),
 		MaxSize:    50, // megabytes
@@ -139,19 +151,26 @@ func Execute() {
 	}
 
 	if err := RootCmd.Execute(); err != nil {
+		logger.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
 var configPath string
 var redirectLogs bool
+var logFile string
 
 func init() {
 	cobra.OnInitialize(initConfig)
 
+	RootCmd.PersistentFlags().StringVar(&logFile, "logfile", "", "Write logs to `PATH`")
 	RootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "Use service configuration file at `PATH`")
 	RootCmd.PersistentFlags().BoolVar(&redirectLogs, "redirect_logs", false, "Redirect edward logs to the console")
 	err := RootCmd.PersistentFlags().MarkHidden("redirect_logs")
+	if err != nil {
+		panic(err)
+	}
+	err = RootCmd.PersistentFlags().MarkHidden("logfile")
 	if err != nil {
 		panic(err)
 	}
