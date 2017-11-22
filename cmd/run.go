@@ -5,8 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/yext/edward/common"
-	"github.com/yext/edward/config"
 	"github.com/yext/edward/runner"
 )
 
@@ -15,16 +13,7 @@ var runCmd = &cobra.Command{
 	Use:    "run",
 	Hidden: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		configPath, err := config.GetConfigPathFromWorkingDirectory()
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		cfg, err := config.LoadConfig(configPath, common.EdwardVersion, logger)
-		if err != nil {
-			return errors.WithMessage(err, configPath)
-		}
-
-		service := cfg.ServiceMap[args[0]]
+		service := edwardClient.ServiceMap()[args[0]]
 		if service == nil {
 			return fmt.Errorf("service not found: %s", args[0])
 		}
@@ -34,7 +23,7 @@ var runCmd = &cobra.Command{
 		r.NoWatch = *runFlags.noWatch
 		r.WorkingDir = *runFlags.directory
 		r.Logger = logger
-		err = r.Run(args)
+		err := r.Run(args)
 		return errors.WithStack(err)
 	},
 }
