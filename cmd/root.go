@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
@@ -41,12 +42,16 @@ Build, start and manage service instances with a single command.`,
 			logger = log.New(os.Stdout, fmt.Sprintf("%v >", os.Args), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 		}
 		if logFile != "" {
+			prefix := "edward"
+			if len(os.Args) > 1 {
+				prefix = strings.Join(os.Args[1:], " ")
+			}
 			logger = log.New(&lumberjack.Logger{
 				Filename:   logFile,
 				MaxSize:    50, // megabytes
 				MaxBackups: 30,
 				MaxAge:     1, //days
-			}, "run > ", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+			}, fmt.Sprintf("%s > ", prefix), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 		}
 		// Begin logging
 		logger.Printf("=== Edward v%v ===\n", common.EdwardVersion)
