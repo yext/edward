@@ -74,8 +74,6 @@ func LoadConfig(filePath string, edwardVersion string, logger common.Logger) (Co
 	err = config.initMaps()
 
 	config.printf("Config loaded with: %d groups and %d services\n", len(config.GroupMap), len(config.ServiceMap))
-	config.printf("Groups: %+v", config.GroupMap)
-	config.printf("Services: %+v", config.ServiceMap)
 	return config, errors.WithStack(err)
 }
 
