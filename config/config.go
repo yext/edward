@@ -46,7 +46,9 @@ type GroupDef struct {
 
 // LoadConfig loads configuration from an io.Reader with the working directory explicitly specified
 func LoadConfig(filePath string, edwardVersion string, logger common.Logger) (Config, error) {
-	logger.Printf("Loading config from: %s\n", filePath)
+	if logger != nil {
+		logger.Printf("Loading config from: %s\n", filePath)
+	}
 	reader, err := os.Open(filePath)
 	if err != nil {
 		return Config{}, errors.WithStack(err)

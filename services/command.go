@@ -313,7 +313,8 @@ func readAvailableLines(r io.ReadCloser) ([]string, error) {
 
 func (c *ServiceCommand) getLaunchCommand(cfg OperationConfig) (*exec.Cmd, error) {
 	command := cfg.EdwardExecutable
-	cmdArgs := []string{}
+	var cmdArgs []string
+	cmdArgs = append(cmdArgs, "run", c.Service.Name)
 	cmdArgs = append(cmdArgs, "-c", c.ConfigFile)
 	if cfg.NoWatch {
 		cmdArgs = append(cmdArgs, "--no-watch")
@@ -324,7 +325,6 @@ func (c *ServiceCommand) getLaunchCommand(cfg OperationConfig) (*exec.Cmd, error
 	if cfg.LogFile != "" {
 		cmdArgs = append(cmdArgs, "--logfile", cfg.LogFile)
 	}
-	cmdArgs = append(cmdArgs, "run", c.Service.Name)
 	c.printf("Launching runner with args: %v", cmdArgs)
 	cmd := exec.Command(command, cmdArgs...)
 	cmd.Dir = buildAbsPath(cfg.WorkingDir, c.Service.Path)
