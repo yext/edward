@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
@@ -43,8 +42,8 @@ Build, start and manage service instances with a single command.`,
 		}
 		if logFile != "" {
 			prefix := "edward"
-			if len(os.Args) > 1 {
-				prefix = strings.Join(os.Args[1:], " ")
+			if len(args) > 0 {
+				prefix = fmt.Sprintf("%s %s", cmd.Use, args[0])
 			}
 			logger = log.New(&lumberjack.Logger{
 				Filename:   logFile,
