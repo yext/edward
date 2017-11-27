@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -124,7 +123,11 @@ func (r *Runner) updateStatusDetail() {
 			r.Messagef("could not get process:", err)
 			return
 		}
-		fmt.Println("Getting ports for PID: ", pid)
+		r.status.MemoryInfo, err = proc.MemoryInfo()
+		if err != nil {
+			r.Messagef("could not get memory information:", err)
+			return
+		}
 		ports, err := doGetPorts(proc)
 		if err != nil {
 			r.Messagef("could not get ports:", err)

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/services"
 )
 
@@ -22,11 +23,12 @@ const (
 )
 
 type Status struct {
-	State       State     `json:"status"`
-	Ports       []string  `json:"ports"` // Ports opened by this instance
-	StdoutLines int       `json:"stdoutLines"`
-	StderrLines int       `json:"stderrLines"`
-	StartTime   time.Time `json:"startTime"`
+	State       State                   `json:"status"`
+	Ports       []string                `json:"ports"` // Ports opened by this instance
+	StdoutLines int                     `json:"stdoutLines"`
+	StderrLines int                     `json:"stderrLines"`
+	StartTime   time.Time               `json:"startTime"`
+	MemoryInfo  *process.MemoryInfoStat `json:"memoryInfo,omitempty"`
 }
 
 var store = make(map[string]Status)

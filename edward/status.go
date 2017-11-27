@@ -7,8 +7,10 @@ import (
 	"strconv"
 	"strings"
 
+	humanize "github.com/dustin/go-humanize"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
+	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
@@ -34,6 +36,9 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 		"Ports",
 		"Stdout",
 		"Stderr",
+		"RSS",
+		"VMS",
+		"Swap",
 		"Start Time",
 	}
 	if all {
@@ -48,6 +53,9 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 			return "", errors.WithStack(err)
 		}
 		for _, status := range statuses {
+			if status.status.MemoryInfo == nil {
+				status.status.MemoryInfo = &process.MemoryInfoStat{}
+			}
 			row := []string{
 				strconv.Itoa(status.command.Pid),
 				status.command.Service.Name,
@@ -55,6 +63,9 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 				strings.Join(status.status.Ports, ","),
 				strconv.Itoa(status.status.StdoutLines) + " lines",
 				strconv.Itoa(status.status.StderrLines) + " lines",
+				humanize.Bytes(status.status.MemoryInfo.RSS),
+				humanize.Bytes(status.status.MemoryInfo.VMS),
+				humanize.Bytes(status.status.MemoryInfo.Swap),
 				status.status.StartTime.Format("2006-01-02 15:04:05"),
 			}
 			if all {
