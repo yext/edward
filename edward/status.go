@@ -95,12 +95,11 @@ func (c *Client) getStates(s services.ServiceOrGroup) ([]statusCommandTuple, err
 				},
 			}, nil
 		}
-		return nil, errors.New("no status for current instance")
+		return nil, nil
 	}
 	var stateList []statusCommandTuple
 	if group, ok := s.(*services.ServiceGroupConfig); ok {
 		for _, service := range group.Services {
-			// TODO: Create a specific error type for no status file and handle appropriately
 			serviceStates, _ := c.getStates(service)
 			stateList = append(stateList, serviceStates...)
 		}
@@ -131,19 +130,7 @@ func (c *Client) getServiceList(names []string, all bool) ([]services.ServiceOrG
 	}
 
 	if len(names) == 0 {
-		for _, service := range c.getAllServicesSorted() {
-			var s []services.ServiceStatus
-			s, err = service.Status()
-			if err != nil {
-				return nil, errors.WithStack(err)
-			}
-			for _, status := range s {
-				if status.Status != services.StatusStopped {
-					sgs = append(sgs, service)
-				}
-			}
-		}
-		return sgs, nil
+		return c.getAllServicesSorted(), nil
 	}
 
 	sgs, err = c.getServicesOrGroups(names)
