@@ -28,9 +28,9 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 
 	table := tablewriter.NewWriter(buf)
 	headings := []string{
+		"PID",
 		"Name",
 		"Status",
-		"PID",
 		"Ports",
 		"Stdout",
 		"Stderr",
@@ -49,9 +49,9 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 		}
 		for _, status := range statuses {
 			row := []string{
+				strconv.Itoa(status.command.Pid),
 				status.command.Service.Name,
 				string(status.status.State),
-				strconv.Itoa(status.command.Pid),
 				strings.Join(status.status.Ports, ","),
 				strconv.Itoa(status.status.StdoutLines) + " lines",
 				strconv.Itoa(status.status.StderrLines) + " lines",
