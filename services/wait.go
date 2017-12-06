@@ -64,9 +64,6 @@ func WaitUntilLive(command *exec.Cmd, service *ServiceConfig) error {
 		return errors.New("service terminated prematurely")
 	}
 
-	timeout := time.NewTimer(time.Duration(StartupTimeoutSeconds) * time.Second)
-	defer timeout.Stop()
-
 	done := make(chan struct{})
 	defer close(done)
 
@@ -77,9 +74,6 @@ func WaitUntilLive(command *exec.Cmd, service *ServiceConfig) error {
 	case result := <-cancelableWait(done, processFinished):
 		service.printf("Process exited")
 		return errors.WithStack(result.error)
-	case <-timeout.C:
-		service.printf("Process start timed out")
-		return errors.New("Waiting for service timed out")
 	}
 
 }

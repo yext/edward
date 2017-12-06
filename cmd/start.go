@@ -21,7 +21,6 @@ var startFlags struct {
 	noWatch   *bool
 	tail      *bool
 	exclude   *[]string
-	timeout   *int
 }
 
 func init() {
@@ -31,5 +30,4 @@ func init() {
 	startFlags.noWatch = startCmd.Flags().Bool("no-watch", false, "Disable autorestart")
 	startFlags.tail = startCmd.Flags().BoolP("tail", "t", false, "After starting, tail logs for services.")
 	startFlags.exclude = startCmd.Flags().StringArrayP("exclude", "e", nil, "Exclude `SERVICE` from this operation")
-	startFlags.timeout = startCmd.Flags().Int("timeout", 30, "The amount of time in seconds that Edward will wait for a service to launch before timing out. Defaults to 30s")
 }

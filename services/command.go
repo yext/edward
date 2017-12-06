@@ -22,10 +22,6 @@ import (
 	"github.com/yext/edward/warmup"
 )
 
-// StartupTimeoutSeconds is the amount of time in seconds that Edward will wait
-// for a service to start before timing out
-var StartupTimeoutSeconds = 30
-
 // ServiceCommand provides state and functions for managing a service
 type ServiceCommand struct {
 	// Parent service config
