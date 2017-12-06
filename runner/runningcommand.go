@@ -31,7 +31,7 @@ func (c *RunningCommand) Start(errorLog Logger) {
 	go func() {
 		err := c.command.Run()
 		if err != nil {
-			errorLog.Printf("%v", err)
+			errorLog.Printf("start error: %v", err)
 		}
 		c.commandWait.Done()
 		close(c.done)
@@ -55,4 +55,12 @@ func (c *RunningCommand) Kill() error {
 // Wait blocks until this command has exited
 func (c *RunningCommand) Wait() {
 	<-c.done
+}
+
+// Pid returns the process id for the running command
+func (c *RunningCommand) Pid() int {
+	if c.command == nil || c.command.Process == nil {
+		return 0
+	}
+	return c.command.Process.Pid
 }

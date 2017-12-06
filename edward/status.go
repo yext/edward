@@ -7,8 +7,12 @@ import (
 	"strconv"
 	"strings"
 
+	humanize "github.com/dustin/go-humanize"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
+	"github.com/theothertomelliott/gopsutil-nocgo/process"
+	"github.com/yext/edward/home"
+	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
 )
 
@@ -26,12 +30,15 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 
 	table := tablewriter.NewWriter(buf)
 	headings := []string{
+		"PID",
 		"Name",
 		"Status",
-		"PID",
 		"Ports",
 		"Stdout",
 		"Stderr",
+		"RSS",
+		"VMS",
+		"Swap",
 		"Start Time",
 	}
 	if all {
@@ -41,22 +48,28 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 
 	for _, s := range sgs {
-		statuses, err := s.Status()
+		statuses, err := c.getStates(s)
 		if err != nil {
 			return "", errors.WithStack(err)
 		}
 		for _, status := range statuses {
+			if status.status.MemoryInfo == nil {
+				status.status.MemoryInfo = &process.MemoryInfoStat{}
+			}
 			row := []string{
-				status.Service.Name,
-				status.Status,
-				strconv.Itoa(status.Pid),
-				strings.Join(status.Ports, ", "),
-				strconv.Itoa(status.StdoutCount) + " lines",
-				strconv.Itoa(status.StderrCount) + " lines",
-				status.StartTime.Format("2006-01-02 15:04:05"),
+				strconv.Itoa(status.command.Pid),
+				status.command.Service.Name,
+				string(status.status.State),
+				strings.Join(status.status.Ports, ","),
+				strconv.Itoa(status.status.StdoutLines) + " lines",
+				strconv.Itoa(status.status.StderrLines) + " lines",
+				humanize.Bytes(status.status.MemoryInfo.RSS),
+				humanize.Bytes(status.status.MemoryInfo.VMS),
+				humanize.Bytes(status.status.MemoryInfo.Swap),
+				status.status.StartTime.Format("2006-01-02 15:04:05"),
 			}
 			if all {
-				configPath := status.Service.ConfigFile
+				configPath := status.command.Service.ConfigFile
 				wd, err := os.Getwd()
 				if err == nil {
 					relativePath, err := filepath.Rel(wd, configPath)
@@ -71,6 +84,38 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 	}
 	table.Render()
 	return buf.String(), nil
+}
+
+type statusCommandTuple struct {
+	status  instance.Status
+	command *services.ServiceCommand
+}
+
+func (c *Client) getStates(s services.ServiceOrGroup) ([]statusCommandTuple, error) {
+	if service, ok := s.(*services.ServiceConfig); ok {
+		command, err := service.GetCommand(services.ContextOverride{})
+		if err != nil {
+			return nil, errors.WithMessage(err, "could not get service command")
+		}
+		statuses, _ := instance.LoadStatusForService(service, home.EdwardConfig.StateDir)
+		if status, ok := statuses[command.InstanceId]; ok {
+			return []statusCommandTuple{
+				statusCommandTuple{
+					status:  status,
+					command: command,
+				},
+			}, nil
+		}
+		return nil, nil
+	}
+	var stateList []statusCommandTuple
+	if group, ok := s.(*services.ServiceGroupConfig); ok {
+		for _, service := range group.Services {
+			serviceStates, _ := c.getStates(service)
+			stateList = append(stateList, serviceStates...)
+		}
+	}
+	return stateList, nil
 }
 
 func (c *Client) getServiceList(names []string, all bool) ([]services.ServiceOrGroup, error) {
@@ -96,19 +141,7 @@ func (c *Client) getServiceList(names []string, all bool) ([]services.ServiceOrG
 	}
 
 	if len(names) == 0 {
-		for _, service := range c.getAllServicesSorted() {
-			var s []services.ServiceStatus
-			s, err = service.Status()
-			if err != nil {
-				return nil, errors.WithStack(err)
-			}
-			for _, status := range s {
-				if status.Status != services.StatusStopped {
-					sgs = append(sgs, service)
-				}
-			}
-		}
-		return sgs, nil
+		return c.getAllServicesSorted(), nil
 	}
 
 	sgs, err = c.getServicesOrGroups(names)

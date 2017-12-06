@@ -1,14 +1,21 @@
 package edward_test
 
 import (
+	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/theothertomelliott/must"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/edward"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 func TestStopAll(t *testing.T) {
@@ -40,6 +47,18 @@ func TestStopAll(t *testing.T) {
 			expectedStates: map[string]string{
 				"service":        "Pending", // This isn't technically right
 				"service > Stop": "Success",
+			},
+			expectedServices: 1,
+		},
+		{
+			name:          "single service - alternate",
+			path:          "testdata/single",
+			config:        "alternate.json",
+			servicesStart: []string{"alternate"},
+			servicesStop:  []string{"alternate"},
+			expectedStates: map[string]string{
+				"alternate":        "Pending", // This isn't technically right
+				"alternate > Stop": "Success",
 			},
 			expectedServices: 1,
 		},
@@ -79,19 +98,36 @@ func TestStopAll(t *testing.T) {
 			wd, cleanup := createWorkingDir(t, test.name, test.path)
 			defer cleanup()
 
-			client, err := edward.NewClientWithConfig(path.Join(wd, test.config), common.EdwardVersion)
+			client, err := edward.NewClientWithConfig(
+				path.Join(wd, test.config),
+				common.EdwardVersion,
+				log.New(&lumberjack.Logger{
+					Filename:   filepath.Join(wd, "edward.log"),
+					MaxSize:    50, // megabytes
+					MaxBackups: 30,
+					MaxAge:     1, //days
+				}, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile),
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
+			// TODO: Configure the client to set the runner's log file to the same as Logger above.
 			client.WorkingDir = wd
 			tf := newTestFollower()
 			client.Follower = tf
 
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
+			client.Tags = []string{fmt.Sprintf("test.stop.%d", time.Now().UnixNano())}
 
 			err = client.Start(test.servicesStart, test.skipBuild, false, test.noWatch, test.exclude)
 			if err != nil {
+				b, err := ioutil.ReadFile(filepath.Join(wd, "edward.log"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				fmt.Print("=== Log ===\n", string(b), "=== /Log ===\n")
+				fmt.Println("=== Messages ===\n", strings.Join(tf.messages, "\n"), "\n=== /Messages ===")
 				t.Fatal(err)
 			}
 

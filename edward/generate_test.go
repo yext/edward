@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/theothertomelliott/must"
@@ -123,8 +124,6 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
@@ -138,6 +137,7 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
 			client.WorkingDir = wd
+			client.Tags = []string{fmt.Sprintf("test.generate.%d", time.Now().UnixNano())}
 
 			// Set up input and output for the client
 			var outputReader, inputReader *io.PipeReader

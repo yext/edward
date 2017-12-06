@@ -5,6 +5,7 @@ import (
 )
 
 func (c *Client) Start(names []string, skipBuild bool, tail bool, noWatch bool, exclude []string) error {
+	c.Logger.Println("Start:", names, skipBuild, tail, noWatch, exclude)
 	if len(names) == 0 {
 		return errors.New("At least one service or group must be specified")
 	}

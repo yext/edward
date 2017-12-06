@@ -26,6 +26,8 @@ func (c *Client) Stop(names []string, force bool, exclude []string, all bool) er
 		WorkingDir:       c.WorkingDir,
 		EdwardExecutable: c.EdwardExecutable,
 		Exclusions:       exclude,
+		Tags:             c.Tags,
+		LogFile:          c.LogFile,
 	}
 
 	task := tracker.NewTask(c.Follower.Handle)
@@ -42,8 +44,12 @@ func (c *Client) Stop(names []string, force bool, exclude []string, all bool) er
 		p.Stop()
 		_ = <-p.Complete()
 	}()
+
 	for _, s := range sgs {
-		_ = s.Stop(cfg, services.ContextOverride{}, task, p)
+		states, err := c.getStates(s)
+		if len(states) != 0 && err == nil {
+			_ = s.Stop(cfg, services.ContextOverride{}, task, p)
+		}
 	}
 	return nil
 }

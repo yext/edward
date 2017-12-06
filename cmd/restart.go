@@ -28,7 +28,6 @@ var restartFlags struct {
 	noWatch   *bool
 	tail      *bool
 	exclude   *[]string
-	timeout   *int
 	force     *bool
 }
 
@@ -40,5 +39,4 @@ func init() {
 	restartFlags.force = restartCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 	restartFlags.tail = restartCmd.Flags().BoolP("tail", "t", false, "After starting, tail logs for services.")
 	restartFlags.exclude = restartCmd.Flags().StringArrayP("exclude", "e", nil, "Exclude `SERVICE` from this operation")
-	restartFlags.timeout = restartCmd.Flags().Int("timeout", 30, "The amount of time in seconds that Edward will wait for a service to launch before timing out. Defaults to 30s")
 }

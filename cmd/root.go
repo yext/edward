@@ -16,6 +16,7 @@ import (
 	"github.com/yext/edward/config"
 	"github.com/yext/edward/edward"
 	"github.com/yext/edward/home"
+	"github.com/yext/edward/output"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/updates"
 )
@@ -36,6 +37,21 @@ var RootCmd = &cobra.Command{
 Build, start and manage service instances with a single command.`,
 	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if redirectLogs {
+			logger = log.New(os.Stdout, fmt.Sprintf("%v >", os.Args), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+		}
+		if logFile != "" {
+			prefix := "edward"
+			if len(args) > 0 {
+				prefix = fmt.Sprintf("%s %s", cmd.Use, args[0])
+			}
+			logger = log.New(&lumberjack.Logger{
+				Filename:   logFile,
+				MaxSize:    50, // megabytes
+				MaxBackups: 30,
+				MaxAge:     1, //days
+			}, fmt.Sprintf("%s > ", prefix), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+		}
 		// Begin logging
 		logger.Printf("=== Edward v%v ===\n", common.EdwardVersion)
 		logger.Printf("Args: %v\n", os.Args)
@@ -53,7 +69,7 @@ Build, start and manage service instances with a single command.`,
 
 		var err error
 		if command != "generate" {
-			edwardClient, err = edward.NewClientWithConfig(configPath, common.EdwardVersion)
+			edwardClient, err = edward.NewClientWithConfig(configPath, common.EdwardVersion, logger)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -75,6 +91,13 @@ Build, start and manage service instances with a single command.`,
 		edwardClient.Logger = logger
 		// Populate the Edward executable with this binary
 		edwardClient.EdwardExecutable = os.Args[0]
+
+		// Let the client know about the log file for starting runners
+		edwardClient.LogFile = logFile
+
+		if redirectLogs {
+			edwardClient.Follower = output.NewNonLiveFollower()
+		}
 
 		if command != "stop" {
 			// Check for legacy pidfiles and error out if any are found
@@ -112,12 +135,17 @@ func Execute() {
 		fmt.Printf("%+v", err)
 	}
 
+	logPrefix := "edward"
+	if len(os.Args) > 1 {
+		logPrefix = fmt.Sprintf("edward %v >", os.Args[1:])
+	}
+
 	logger = log.New(&lumberjack.Logger{
 		Filename:   filepath.Join(home.EdwardConfig.EdwardLogDir, "edward.log"),
 		MaxSize:    50, // megabytes
 		MaxBackups: 30,
 		MaxAge:     1, //days
-	}, fmt.Sprintf("%v >", os.Args), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+	}, logPrefix, log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 
 	for _, arg := range os.Args {
 		if arg == "--generate-bash-completion" {
@@ -127,16 +155,29 @@ func Execute() {
 	}
 
 	if err := RootCmd.Execute(); err != nil {
+		logger.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
 var configPath string
+var redirectLogs bool
+var logFile string
 
 func init() {
 	cobra.OnInitialize(initConfig)
 
+	RootCmd.PersistentFlags().StringVar(&logFile, "logfile", "", "Write logs to `PATH`")
 	RootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "Use service configuration file at `PATH`")
+	RootCmd.PersistentFlags().BoolVar(&redirectLogs, "redirect_logs", false, "Redirect edward logs to the console")
+	err := RootCmd.PersistentFlags().MarkHidden("redirect_logs")
+	if err != nil {
+		panic(err)
+	}
+	err = RootCmd.PersistentFlags().MarkHidden("logfile")
+	if err != nil {
+		panic(err)
+	}
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -148,7 +189,7 @@ func initConfig() {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("initConfig: error finding home dir:", err)
 			os.Exit(1)
 		}
 
@@ -167,7 +208,7 @@ func initConfig() {
 
 func checkUpdateAvailable(checkUpdateChan chan interface{}) {
 	defer close(checkUpdateChan)
-	updateAvailable, latestVersion, err := updates.UpdateAvailable("yext", "edward", common.EdwardVersion, filepath.Join(home.EdwardConfig.Dir, ".updatecache"), logger)
+	updateAvailable, latestVersion, err := updates.UpdateAvailable("yext", "edward", common.EdwardVersion, filepath.Join(home.EdwardConfig.Dir, ".cache/version"), logger)
 	if err != nil {
 		logger.Println("Error checking for updates:", err)
 		return

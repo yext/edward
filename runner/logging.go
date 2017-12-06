@@ -38,6 +38,11 @@ type Log struct {
 	file   *os.File
 	name   string
 	stream string
+	lines  int
+}
+
+func (r *Log) Len() int {
+	return r.lines
 }
 
 // Printf prints a message to a RunnerLog
@@ -48,6 +53,7 @@ func (r *Log) Printf(format string, a ...interface{}) {
 
 // Write writes a slice of bytes to a RunnerLog
 func (r *Log) Write(p []byte) (int, error) {
+	r.lines++
 	fmt.Println(strings.TrimRight(string(p), "\n"))
 	lineData := LogLine{
 		Name:    r.name,

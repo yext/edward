@@ -4,12 +4,17 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/theothertomelliott/gopsutil-nocgo/net"
+	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/commandline"
+	"github.com/yext/edward/home"
+	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
 )
 
@@ -25,6 +30,13 @@ type Runner struct {
 	WorkingDir  string
 
 	Logger Logger
+
+	status instance.Status
+
+	instanceId string
+
+	standardLog *Log
+	errorLog    *Log
 }
 
 func (r *Runner) Messagef(format string, a ...interface{}) {
@@ -33,6 +45,11 @@ func (r *Runner) Messagef(format string, a ...interface{}) {
 }
 
 func (r *Runner) Run(args []string) error {
+
+	r.status = instance.Status{
+		StartTime: time.Now(),
+	}
+
 	if r.WorkingDir != "" {
 		err := os.Chdir(r.WorkingDir)
 		if err != nil {
@@ -40,21 +57,41 @@ func (r *Runner) Run(args []string) error {
 		}
 	}
 
-	if len(args) < 1 {
-		return errors.New("a service name is required")
+	// Set the instance id
+	command, err := r.Service.GetCommand(services.ContextOverride{})
+	if err != nil {
+		r.Messagef("Could not get service command: %v\n", err)
 	}
+	r.instanceId = command.InstanceId
 
-	err := r.configureLogs()
+	r.updateServiceState(instance.StateStarting)
+
+	err = r.configureLogs()
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	defer r.Messagef("Service stopped\n")
+	defer func() {
+		// TODO: Handle the "Died state"
+		r.updateServiceState(instance.StateStopped)
+		r.removeServiceState()
+		r.Messagef("Service stopped\n")
+	}()
+
+	statusTick := time.NewTicker(time.Second)
+	defer statusTick.Stop()
+	go func() {
+		for _ = range statusTick.C {
+			r.updateStatusDetail()
+		}
+	}()
 
 	r.commandWait.Add(1)
 	err = r.startService()
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
+	r.updateServiceState(instance.StateRunning)
 
 	closeWatchers := r.configureWatch()
 	if closeWatchers != nil {
@@ -64,6 +101,81 @@ func (r *Runner) Run(args []string) error {
 
 	r.commandWait.Wait()
 	return nil
+}
+
+func (r *Runner) updateServiceState(newState instance.State) {
+	r.status.State = newState
+	dir := home.EdwardConfig.StateDir
+	err := instance.SaveStatusForService(r.Service, r.instanceId, r.status, dir)
+	if err != nil {
+		r.Messagef("could not save state:", err)
+	}
+}
+
+func (r *Runner) updateStatusDetail() {
+	r.status.StdoutLines = r.standardLog.Len()
+	r.status.StderrLines = r.errorLog.Len()
+
+	pid := r.command.Pid()
+	if pid != 0 {
+		proc, err := process.NewProcess(int32(pid))
+		if err != nil {
+			r.Messagef("could not get process:", err)
+			return
+		}
+		r.status.MemoryInfo, err = proc.MemoryInfo()
+		if err != nil {
+			r.Messagef("could not get memory information:", err)
+			return
+		}
+		ports, err := doGetPorts(proc)
+		if err != nil {
+			r.Messagef("could not get ports:", err)
+			return
+		}
+		r.status.Ports = ports
+	}
+
+	dir := home.EdwardConfig.StateDir
+	err := instance.SaveStatusForService(r.Service, r.instanceId, r.status, dir)
+	if err != nil {
+		r.Messagef("could not save state:", err)
+	}
+}
+
+func doGetPorts(proc *process.Process) ([]string, error) {
+	connections, err := net.Connections("all")
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var ports []string
+	for _, connection := range connections {
+		if connection.Status == "LISTEN" && connection.Pid == proc.Pid {
+			ports = append(ports, strconv.Itoa(int(connection.Laddr.Port)))
+		}
+	}
+
+	children, err := proc.Children()
+	// This will error out if the process has finished or has no children
+	if err != nil {
+		return ports, nil
+	}
+	for _, child := range children {
+		childPorts, err := doGetPorts(child)
+		if err == nil {
+			ports = append(ports, childPorts...)
+		}
+	}
+	return ports, nil
+}
+
+func (r *Runner) removeServiceState() {
+	dir := home.EdwardConfig.StateDir
+	err := instance.DeleteStatusForService(r.Service, r.instanceId, dir)
+	if err != nil {
+		r.Messagef("could not delete state:", err)
+	}
 }
 
 func (r *Runner) configureLogs() error {
@@ -118,18 +230,8 @@ func (r *Runner) restartService() error {
 
 	// Increment the counter to prevent exiting unexpectedly
 	r.commandWait.Add(1)
-	lockedService, done, err := r.Service.ObtainLock("autorestart")
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	oldService := r.Service
-	r.Service = lockedService
-	defer func() {
-		done()
-		r.Service = oldService
-	}()
 
-	err = r.stopService()
+	err := r.stopService()
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -209,12 +311,12 @@ func (r *Runner) waitForCompletionWithTimeout(timeout time.Duration) bool {
 func (r *Runner) startService() error {
 	r.Messagef("Service starting\n")
 
-	standardLog := &Log{
+	r.standardLog = &Log{
 		file:   r.logFile,
 		name:   r.Service.Name,
 		stream: "stdout",
 	}
-	errorLog := &Log{
+	r.errorLog = &Log{
 		file:   r.logFile,
 		name:   r.Service.Name,
 		stream: "stderr",
@@ -229,11 +331,11 @@ func (r *Runner) startService() error {
 		cmd.Dir = os.ExpandEnv(*r.Service.Path)
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Stdout = standardLog
-	cmd.Stderr = errorLog
+	cmd.Stdout = r.standardLog
+	cmd.Stderr = r.errorLog
 
 	r.command = NewRunningCommand(r.Service, cmd, &r.commandWait)
-	r.command.Start(errorLog)
+	r.command.Start(r.errorLog)
 
 	return nil
 }

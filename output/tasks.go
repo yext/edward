@@ -1,6 +1,7 @@
 package output
 
 import (
+	"os"
 	"time"
 
 	"github.com/theothertomelliott/uilive"
@@ -45,4 +46,27 @@ func (f *Follower) Handle(update tracker.Task) {
 func (f *Follower) Done() {
 	f.writer.Stop()
 	f.writer = nil
+}
+
+type NonLiveFollower struct {
+	inProgress *InProgressRenderer
+}
+
+func NewNonLiveFollower() *NonLiveFollower {
+	f := &NonLiveFollower{
+		inProgress: NewInProgressRenderer(),
+	}
+	return f
+}
+
+func (f *NonLiveFollower) Handle(update tracker.Task) {
+	state := update.State()
+	if state != tracker.TaskStatePending &&
+		state != tracker.TaskStateInProgress {
+		renderer := NewCompletionRenderer(update)
+		renderer.Render(os.Stdout)
+	}
+}
+
+func (f *NonLiveFollower) Done() {
 }

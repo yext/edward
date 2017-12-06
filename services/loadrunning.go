@@ -17,6 +17,11 @@ func LoadRunningServices() ([]ServiceOrGroup, error) {
 	}
 	var services []ServiceOrGroup
 	for _, file := range stateFiles {
+		// Skip directories (these contain instance state)
+		if file.IsDir() {
+			continue
+		}
+
 		command := &ServiceCommand{}
 		raw, err := ioutil.ReadFile(path.Join(dir, file.Name()))
 		if err != nil {

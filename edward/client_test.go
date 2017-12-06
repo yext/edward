@@ -1,16 +1,18 @@
 package edward_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
+	"github.com/yext/edward/edward"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/tracker"
 )
@@ -97,7 +99,7 @@ func getRunnerAndServiceProcesses(t *testing.T) []*process.Process {
 // verifyAndStopRunners expects that there will be the specified number of runners in progress,
 // and that the runners are behaving as expected (exactly one child service, etc).
 // Once verified, it will kill the runners and their child services.
-func verifyAndStopRunners(t *testing.T, serviceCount int) {
+func verifyAndStopRunners(t *testing.T, client *edward.Client, serviceCount int) {
 	testProcess, err := process.NewProcess(int32(os.Getpid()))
 	if err != nil {
 		t.Fatal(err)
@@ -108,63 +110,74 @@ func verifyAndStopRunners(t *testing.T, serviceCount int) {
 			t.Fatalf("No processes found, expected %d", serviceCount)
 		}
 	}
-	if len(children) != serviceCount {
-		// We can't know which test or operation this would be for, so don't try to stop anything
-		var childNames []string
-		for _, child := range children {
-			cmdline, err := child.Cmdline()
-			if err != nil {
-				t.Errorf("Error getting cmdline: %v", err)
-			}
-			if cmdline == "" {
-				cmdline = "[No command]"
-			}
-			childNames = append(childNames, cmdline)
-		}
-		t.Fatalf("Expected %d children, got %d [%s]", serviceCount, len(children), strings.Join(childNames, ", "))
-	}
+	var verifiedChildren []*process.Process
 	for _, child := range children {
-		err = verifyAndStopRunner(t, child)
+		verified, err := verifyAndStopRunner(t, client, child)
 		if err != nil {
 			t.Fatal(err)
 		}
+		if verified {
+			verifiedChildren = append(verifiedChildren, child)
+		}
+	}
+	if len(verifiedChildren) != serviceCount {
+		var cmdLines []string
+		for _, p := range verifiedChildren {
+			cmd, err := p.Cmdline()
+			if err != nil {
+				cmd = err.Error()
+			}
+			cmdLines = append(cmdLines, cmd)
+		}
+		t.Errorf("Expected %d tagged runners, got [%s]", serviceCount, strings.Join(cmdLines, ", "))
 	}
 }
 
 // verifyAndStopRunner will check that a runner process has exactly one child service,
 // and then kill the service, expecting the runner to die.
-func verifyAndStopRunner(t *testing.T, runner *process.Process) error {
-	defer func() {
+func verifyAndStopRunner(t *testing.T, client *edward.Client, runner *process.Process) (bool, error) {
+	cmdline, err := runner.CmdlineSlice()
+	if err != nil {
+		t.Logf("error getting command line, ignoring: %v", err)
+		return false, nil
+	}
+	if len(cmdline) > 2 && strings.HasSuffix(cmdline[0], "edward") && cmdline[1] == "run" {
+		fullCmd := strings.Join(cmdline, " ")
+		for _, tag := range client.Tags {
+			if !strings.Contains(fullCmd, fmt.Sprintf("--tag %s", tag)) {
+				return false, nil
+			}
+		}
+		services, err := runner.Children()
+		if err != nil {
+			t.Logf("error getting children, ignoring: %v", err)
+			return false, nil
+		}
+		for _, service := range services {
+			if running, _ := service.IsRunning(); running {
+				_ = service.Kill()
+			}
+		}
 		if running, _ := runner.IsRunning(); running {
-			return
+			return true, nil
 		}
 		t.Error("Expected stopping children to kill runner process")
-		err := runner.Kill()
+		err = runner.Kill()
 		if err != nil {
 			t.Fatal("Could not kill runner:", err)
 		}
-	}()
+		return true, nil
+	}
+	return false, nil
+}
 
-	cmdline, err := runner.CmdlineSlice()
+func showLogsIfFailed(t *testing.T, name string, wd string, client *edward.Client) {
+	if !t.Failed() {
+		return
+	}
+	b, err := ioutil.ReadFile(filepath.Join(wd, "edward.log"))
 	if err != nil {
-		return errors.WithStack(err)
+		t.Fatal(err)
 	}
-	if cmdline[0] == "edward" || cmdline[1] == "run" {
-		services, err := runner.Children()
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		if len(services) != 1 {
-			t.Errorf("Expected 1 child, got %v", len(services))
-		}
-		for _, service := range services {
-			err = service.Kill()
-			if err != nil {
-				return errors.WithStack(err)
-			}
-		}
-	} else {
-		t.Errorf("Expected an edward run command, got: %v", cmdline)
-	}
-	return nil
+	fmt.Printf("=== Log (%s) ===\n%s=== /Log ===\n", name, string(b))
 }
