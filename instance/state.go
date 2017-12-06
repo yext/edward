@@ -20,6 +20,7 @@ const (
 	StateRunning  State = "RUNNING"
 	StateStopped  State = "STOPPED"
 	StateDied     State = "DIED"
+	StateUnknown  State = "UNKNOWN"
 )
 
 type Status struct {
@@ -44,15 +45,21 @@ func LoadStatusForService(service *services.ServiceConfig, baseDir string) (map[
 	for _, f := range files {
 		raw, err := ioutil.ReadFile(path.Join(statusDir, f.Name()))
 		if err != nil {
-			return nil, errors.WithMessage(err, "read status file")
+			continue
+		}
+
+		if len(raw) == 0 {
+			statuses[f.Name()] = Status{
+				State: StateUnknown,
+			}
+			continue
 		}
 
 		var s Status
 		err = json.Unmarshal(raw, &s)
-		if err != nil {
-			return nil, errors.WithMessage(err, "unmarshal status")
+		if err == nil {
+			statuses[f.Name()] = s
 		}
-		statuses[f.Name()] = s
 	}
 	return statuses, nil
 }

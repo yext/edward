@@ -97,7 +97,7 @@ func (c *Client) getStates(s services.ServiceOrGroup) ([]statusCommandTuple, err
 		if err != nil {
 			return nil, errors.WithMessage(err, "could not get service command")
 		}
-		statuses, err := instance.LoadStatusForService(service, home.EdwardConfig.StateDir)
+		statuses, _ := instance.LoadStatusForService(service, home.EdwardConfig.StateDir)
 		if status, ok := statuses[command.InstanceId]; ok {
 			return []statusCommandTuple{
 				statusCommandTuple{
