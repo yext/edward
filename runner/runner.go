@@ -77,7 +77,7 @@ func (r *Runner) Run(args []string) error {
 		r.Messagef("Service stopped\n")
 	}()
 
-	statusTick := time.NewTicker(time.Second)
+	statusTick := time.NewTicker(10 * time.Second)
 	defer statusTick.Stop()
 	go func() {
 		for _ = range statusTick.C {
