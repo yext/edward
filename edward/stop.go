@@ -45,7 +45,8 @@ func (c *Client) Stop(names []string, force bool, exclude []string, all bool) er
 		_ = <-p.Complete()
 	}()
 
-	for _, s := range sgs {
+	allServices := services.Services(sgs)
+	for _, s := range allServices {
 		states, err := c.getStates(s)
 		if len(states) != 0 && err == nil {
 			_ = s.Stop(cfg, services.ContextOverride{}, task, p)

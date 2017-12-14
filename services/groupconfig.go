@@ -197,26 +197,6 @@ func (c *ServiceGroupConfig) Restart(cfg OperationConfig, overrides ContextOverr
 	return nil
 }
 
-// Status returns the status for all services within this group
-func (c *ServiceGroupConfig) Status() ([]ServiceStatus, error) {
-	var outStatus []ServiceStatus
-	for _, service := range c.Services {
-		statuses, err := service.Status()
-		if err != nil {
-			return outStatus, errors.WithStack(err)
-		}
-		outStatus = append(outStatus, statuses...)
-	}
-	for _, group := range c.Groups {
-		statuses, err := group.Status()
-		if err != nil {
-			return outStatus, errors.WithStack(err)
-		}
-		outStatus = append(outStatus, statuses...)
-	}
-	return outStatus, nil
-}
-
 // IsSudo returns true if any of the services in this group require sudo to run
 func (c *ServiceGroupConfig) IsSudo(cfg OperationConfig) bool {
 	if cfg.IsExcluded(c) {

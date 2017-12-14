@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
+	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/worker"
@@ -33,14 +34,12 @@ func (c *Client) Restart(names []string, force bool, skipBuild bool, tail bool, 
 func (c *Client) restartAll(skipBuild bool, tail bool, noWatch bool, exclude []string) error {
 	var as []*services.ServiceConfig
 	for _, service := range c.serviceMap {
-		s, err := service.Status()
+		running, err := instance.HasRunning(service)
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		for _, status := range s {
-			if status.Status != services.StatusStopped {
-				as = append(as, service)
-			}
+		if running {
+			as = append(as, service)
 		}
 	}
 

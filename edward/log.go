@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/yext/edward/instance"
 	"github.com/yext/edward/runner"
 	"github.com/yext/edward/services"
 )
@@ -74,15 +75,14 @@ func (c *Client) Log(names []string) error {
 }
 
 func checkAllRunning(sgs []services.ServiceOrGroup) (bool, error) {
-	for _, sg := range sgs {
-		stats, err := sg.Status()
+	allServices := services.Services(sgs)
+	for _, s := range allServices {
+		running, err := instance.HasRunning(s)
 		if err != nil {
 			return false, errors.WithStack(err)
 		}
-		for _, status := range stats {
-			if status.Status != services.StatusStopped {
-				return true, nil
-			}
+		if running {
+			return true, nil
 		}
 	}
 	return false, nil

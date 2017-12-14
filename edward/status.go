@@ -47,7 +47,8 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 	table.SetHeader(headings)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 
-	for _, s := range sgs {
+	services := services.Services(sgs)
+	for _, s := range services {
 		statuses, err := c.getStates(s)
 		if err != nil {
 			return "", errors.WithStack(err)
@@ -91,31 +92,21 @@ type statusCommandTuple struct {
 	command *services.ServiceCommand
 }
 
-func (c *Client) getStates(s services.ServiceOrGroup) ([]statusCommandTuple, error) {
-	if service, ok := s.(*services.ServiceConfig); ok {
-		command, err := service.GetCommand(services.ContextOverride{})
-		if err != nil {
-			return nil, errors.WithMessage(err, "could not get service command")
-		}
-		statuses, _ := instance.LoadStatusForService(service, home.EdwardConfig.StateDir)
-		if status, ok := statuses[command.InstanceId]; ok {
-			return []statusCommandTuple{
-				statusCommandTuple{
-					status:  status,
-					command: command,
-				},
-			}, nil
-		}
-		return nil, nil
+func (c *Client) getStates(service *services.ServiceConfig) ([]statusCommandTuple, error) {
+	command, err := service.GetCommand(services.ContextOverride{})
+	if err != nil {
+		return nil, errors.WithMessage(err, "could not get service command")
 	}
-	var stateList []statusCommandTuple
-	if group, ok := s.(*services.ServiceGroupConfig); ok {
-		for _, service := range group.Services {
-			serviceStates, _ := c.getStates(service)
-			stateList = append(stateList, serviceStates...)
-		}
+	statuses, _ := instance.LoadStatusForService(service, home.EdwardConfig.StateDir)
+	if status, ok := statuses[command.InstanceId]; ok {
+		return []statusCommandTuple{
+			statusCommandTuple{
+				status:  status,
+				command: command,
+			},
+		}, nil
 	}
-	return stateList, nil
+	return nil, nil
 }
 
 func (c *Client) getServiceList(names []string, all bool) ([]services.ServiceOrGroup, error) {

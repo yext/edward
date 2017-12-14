@@ -11,7 +11,6 @@ import (
 	"path"
 	"runtime"
 	"strconv"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -421,47 +420,6 @@ func waitForTerm(command *ServiceCommand, timeout time.Duration) (bool, error) {
 		time.Sleep(time.Millisecond * 100)
 	}
 	return false, nil
-}
-
-// Status returns the status for this service
-func (c *ServiceConfig) Status() ([]ServiceStatus, error) {
-	command, err := c.GetCommand(ContextOverride{})
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	status := ServiceStatus{
-		Service: c,
-		Status:  StatusStopped,
-	}
-
-	if command.Pid != 0 {
-		proc, err := process.NewProcess(int32(command.Pid))
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-		epochStart, err := proc.CreateTime()
-		if err != nil {
-			if strings.HasPrefix(err.Error(), "exit status") {
-				return []ServiceStatus{
-					status,
-				}, nil
-			}
-			return nil, errors.WithStack(err)
-		}
-		status.Status = StatusRunning
-		status.Pid = command.Pid
-		status.StartTime = time.Unix(epochStart/1000, 0)
-		status.Ports, err = c.getPorts(proc)
-		status.StdoutCount, status.StderrCount = c.getLogCounts()
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-	}
-
-	return []ServiceStatus{
-		status,
-	}, nil
 }
 
 func (c *ServiceConfig) getPorts(proc *process.Process) ([]string, error) {

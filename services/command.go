@@ -52,7 +52,10 @@ func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (comm
 		command.Logger = service.Logger
 		command.EdwardVersion = common.EdwardVersion
 		command.Overrides = command.Overrides.Merge(overrides)
-		err = command.checkPid()
+		pidCheckErr := command.checkPid()
+		if err == nil {
+			err = pidCheckErr
+		}
 	}()
 
 	legacyPidFile := service.GetPidPathLegacy()

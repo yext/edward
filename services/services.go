@@ -57,7 +57,6 @@ type ServiceOrGroup interface {
 	Launch(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error // Launch this service/group without building
 	Stop(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error
 	Restart(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error
-	Status() ([]ServiceStatus, error)
 	IsSudo(cfg OperationConfig) bool
 	Watch() ([]ServiceWatch, error)
 }
@@ -78,23 +77,28 @@ func (c ContextOverride) Merge(m ContextOverride) ContextOverride {
 
 // CountServices returns the total number of services in the slice of services and groups.
 func CountServices(sgs []ServiceOrGroup) int {
-	var count int
+	return len(Services(sgs))
+}
+
+// Services returns a slice of services from a slice of services or groups.
+func Services(sgs []ServiceOrGroup) []*ServiceConfig {
+	var services []*ServiceConfig
 	for _, sg := range sgs {
 		switch v := sg.(type) {
 		case *ServiceConfig:
-			count++
+			services = append(services, v)
 		case *ServiceGroupConfig:
-			count += countGroupServices(v)
+			services = append(services, getGroupServices(v)...)
 		}
 	}
-	return count
+	return services
 }
 
-func countGroupServices(group *ServiceGroupConfig) int {
-	var count int
+func getGroupServices(group *ServiceGroupConfig) []*ServiceConfig {
+	var services []*ServiceConfig
 	for _, g := range group.Groups {
-		count += countGroupServices(g)
+		services = append(services, getGroupServices(g)...)
 	}
-	count += len(group.Services)
-	return count
+	services = append(services, group.Services...)
+	return services
 }
