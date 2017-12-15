@@ -20,27 +20,15 @@ func NewBuilder(cfg OperationConfig, overrides ContextOverride) *builder {
 
 func (b *builder) Build(task tracker.Task, service ...*ServiceConfig) error {
 	for _, service := range service {
-		err := b.doBuild(task, service)
+		if b.Cfg.IsExcluded(service) {
+			return nil
+		}
+		err := b.BuildWithTracker(task.Child(service.GetName()), service, false)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 	}
 	return nil
-}
-
-func (b *builder) doBuild(task tracker.Task, service *ServiceConfig) error {
-	if b.Cfg.IsExcluded(service) {
-		return nil
-	}
-	return errors.WithStack(b.BuildSync(task, service, false))
-}
-
-// BuildSync will buid the service synchronously.
-// If force is false, the build will be skipped if the service is already running.
-func (b *builder) BuildSync(task tracker.Task, service *ServiceConfig, force bool) error {
-	name := service.GetName()
-	t := task.Child(name)
-	return errors.WithStack(b.BuildWithTracker(t, service, force))
 }
 
 // BuildWithTracker builds a service.
