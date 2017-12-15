@@ -230,19 +230,6 @@ func (c *ServiceConfig) GetDescription() string {
 	return c.Description
 }
 
-// Build builds this service
-func (c *ServiceConfig) Build(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error {
-	if cfg.IsExcluded(c) {
-		return nil
-	}
-
-	command, err := c.GetCommand(overrides)
-	if err != nil {
-		return errors.WithMessage(err, "getting command")
-	}
-	return errors.WithStack(command.BuildSync(cfg.WorkingDir, false, task))
-}
-
 // Launch launches this service
 func (c *ServiceConfig) Launch(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
 	if cfg.IsExcluded(c) {
@@ -267,7 +254,8 @@ func (c *ServiceConfig) Start(cfg OperationConfig, overrides ContextOverride, ta
 	}
 
 	c.printf("Building: %s", c.Name)
-	err := c.Build(cfg, overrides, task)
+	b := NewBuilder(cfg, overrides)
+	err := b.Build(task, c)
 	if err != nil {
 		return errors.WithMessage(err, "build")
 	}
@@ -299,7 +287,8 @@ func (c *ServiceConfig) Restart(cfg OperationConfig, overrides ContextOverride, 
 	}
 
 	if !cfg.SkipBuild {
-		err = c.Build(cfg, overrides, task)
+		b := NewBuilder(cfg, overrides)
+		err := b.Build(task, c)
 		if err != nil {
 			return errors.WithStack(err)
 		}

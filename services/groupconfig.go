@@ -63,28 +63,6 @@ func (c *ServiceGroupConfig) GetDescription() string {
 	return c.Description
 }
 
-// Build builds all services within this group
-func (c *ServiceGroupConfig) Build(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error {
-	if cfg.IsExcluded(c) {
-		return nil
-	}
-	groupTracker := task.Child(c.GetName())
-
-	for _, group := range c.Groups {
-		err := group.Build(cfg, overrides, groupTracker)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	for _, service := range c.Services {
-		err := service.Build(cfg, overrides, groupTracker)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	return nil
-}
-
 func (c *ServiceGroupConfig) getOverrides(o ContextOverride) ContextOverride {
 	override := ContextOverride{
 		Env: c.Env,

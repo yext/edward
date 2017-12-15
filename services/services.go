@@ -33,7 +33,6 @@ func (o *OperationConfig) IsExcluded(sg ServiceOrGroup) bool {
 type ServiceOrGroup interface {
 	GetName() string
 	GetDescription() string
-	Build(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error                     // Build this service/group from source
 	Start(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error  // Build and Launch this service/group
 	Launch(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error // Launch this service/group without building
 	Stop(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error

@@ -170,47 +170,6 @@ func (c *ServiceCommand) deleteScript(scriptType string) error {
 	)
 }
 
-// BuildSync will buid the service synchronously.
-// If force is false, the build will be skipped if the service is already running.
-func (c *ServiceCommand) BuildSync(workingDir string, force bool, task tracker.Task) error {
-	name := c.Service.GetName()
-	t := task.Child(name)
-	return errors.WithStack(c.BuildWithTracker(workingDir, force, t))
-}
-
-// BuildWithTracker builds a service.
-// If force is false, the build will be skipped if the service is already running.
-func (c *ServiceCommand) BuildWithTracker(workingDir string, force bool, task tracker.Task) error {
-	if c.Service.Commands.Build == "" {
-		return nil
-	}
-	if task == nil {
-		return errors.New("task is nil")
-	}
-	job := task.Child("Build")
-	job.SetState(tracker.TaskStateInProgress)
-
-	if !force && c.Pid != 0 {
-		job.SetState(tracker.TaskStateWarning, "Already running")
-		return nil
-	}
-
-	cmd, err := c.constructCommand(workingDir, c.Service.Commands.Build)
-	if err != nil {
-		job.SetState(tracker.TaskStateFailed, err.Error())
-		return errors.WithStack(err)
-	}
-
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		job.SetState(tracker.TaskStateFailed, err.Error(), string(out))
-		return errors.WithMessage(err, "running build command")
-	}
-
-	job.SetState(tracker.TaskStateSuccess)
-	return nil
-}
-
 func (c *ServiceCommand) constructCommand(workingDir string, command string) (*exec.Cmd, error) {
 	command, cmdArgs, err := commandline.ParseCommand(os.Expand(command, c.Getenv))
 	if err != nil {

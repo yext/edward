@@ -2,7 +2,6 @@ package runner
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -84,16 +83,8 @@ func startWatch(watch *services.ServiceWatch, restart func() error, logger Logge
 }
 
 func rebuildService(service *services.ServiceConfig, restart func() error, logger Logger) error {
-	command, err := service.GetCommand(services.ContextOverride{})
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	logger.Printf("Build starting\n")
-	wd, err := os.Getwd()
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	err = command.BuildWithTracker(wd, true, tracker.NewTask(func(updatedTask tracker.Task) {}))
+	b := services.NewBuilder(services.OperationConfig{}, services.ContextOverride{})
+	err := b.BuildWithTracker(tracker.NewTask(func(updatedTask tracker.Task) {}), service, true)
 	if err != nil {
 		return fmt.Errorf("build failed: %v", err)
 	}
