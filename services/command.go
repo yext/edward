@@ -170,17 +170,6 @@ func (c *ServiceCommand) deleteScript(scriptType string) error {
 	)
 }
 
-func (c *ServiceCommand) constructCommand(workingDir string, command string) (*exec.Cmd, error) {
-	command, cmdArgs, err := commandline.ParseCommand(os.Expand(command, c.Getenv))
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	cmd := exec.Command(command, cmdArgs...)
-	cmd.Dir = buildAbsPath(workingDir, c.Service.Path)
-	return cmd, nil
-}
-
 // StartAsync starts the service in the background
 // Will block until the service is known to have started successfully.
 // If the service fails to launch, an error will be returned.
@@ -285,7 +274,7 @@ func (c *ServiceCommand) getLaunchCommand(cfg OperationConfig) (*exec.Cmd, error
 	}
 	c.printf("Launching runner with args: %v", cmdArgs)
 	cmd := exec.Command(command, cmdArgs...)
-	cmd.Dir = buildAbsPath(cfg.WorkingDir, c.Service.Path)
+	cmd.Dir = commandline.BuildAbsPath(cfg.WorkingDir, c.Service.Path)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	return cmd, nil
 }
@@ -295,7 +284,7 @@ func (c *ServiceCommand) getLaunchCommand(cfg OperationConfig) (*exec.Cmd, error
 // Assumes the service has a stop script configured.
 func (c *ServiceCommand) RunStopScript(workingDir string) ([]byte, error) {
 	c.printf("Running stop script for %v\n", c.Service.Name)
-	cmd, err := c.constructCommand(workingDir, c.Service.Commands.Stop)
+	cmd, err := commandline.ConstructCommand(workingDir, c.Service.Path, c.Service.Commands.Stop, c.Getenv)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -397,18 +386,4 @@ func logToStringSlice(path string) ([]string, error) {
 		return nil, errors.WithStack(err)
 	}
 	return lines, nil
-}
-
-// buildAbsPath will ensure the targetPath is absolute, joining to workingDir
-// if necessary.
-func buildAbsPath(workingDir string, targetPath *string) string {
-	if targetPath != nil {
-		expandedPath := os.ExpandEnv(*targetPath)
-		if !path.IsAbs(expandedPath) {
-			return path.Join(workingDir, expandedPath)
-		}
-		*targetPath = expandedPath
-		return *targetPath
-	}
-	return workingDir
 }

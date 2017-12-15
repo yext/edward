@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/pkg/errors"
+	"github.com/yext/edward/commandline"
 	"github.com/yext/edward/tracker"
 )
 
@@ -63,7 +64,7 @@ func (b *builder) BuildWithTracker(task tracker.Task, service *ServiceConfig, fo
 		return nil
 	}
 
-	cmd, err := c.constructCommand(b.Cfg.WorkingDir, service.Commands.Build)
+	cmd, err := commandline.ConstructCommand(b.Cfg.WorkingDir, service.Path, service.Commands.Build, c.Getenv)
 	if err != nil {
 		job.SetState(tracker.TaskStateFailed, err.Error())
 		return errors.WithStack(err)
