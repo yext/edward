@@ -1,28 +1,9 @@
 package services
 
 import (
-	"time"
-
 	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/worker"
 )
-
-// StatusRunning is the status string for a running service
-const StatusRunning = "RUNNING"
-
-// StatusStopped is the status string for a stopped service
-const StatusStopped = "STOPPED"
-
-// ServiceStatus contains the status for a service at a given point in time
-type ServiceStatus struct {
-	Service     *ServiceConfig
-	Status      string
-	Pid         int
-	StartTime   time.Time
-	Ports       []string
-	StderrCount int
-	StdoutCount int
-}
 
 // OperationConfig provides additional configuration for an operation
 // on a service or group
