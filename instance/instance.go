@@ -300,12 +300,8 @@ func (c *Instance) RunStopScript(workingDir string) ([]byte, error) {
 
 func (c *Instance) clearPid() {
 	c.Pid = 0
-	var err error
 	_ = os.Remove(c.Service.GetPidPathLegacy(c.dirConfig.PidDir))
-	err = os.Remove(c.Service.GetStatePath(c.dirConfig.StateDir))
-	if err != nil {
-		panic(err)
-	}
+	_ = os.Remove(c.Service.GetStatePath(c.dirConfig.StateDir))
 }
 
 func (c *Instance) clearState() {
