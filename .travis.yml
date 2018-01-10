@@ -1,7 +1,7 @@
 language: go
 
 before_script:
-  - wget https://github.com/spf13/hugo/releases/download/v0.29/hugo_0.29_Linux-64bit.tar.gz -O /tmp/hugo.tar.gz
+  - wget https://github.com/spf13/hugo/releases/download/v0.32.3/hugo_0.32.3_Linux-64bit.tar.gz -O /tmp/hugo.tar.gz
   - mkdir /tmp/hugo
   - tar -xvf /tmp/hugo.tar.gz -C /tmp/hugo
   - export PATH=$PATH:/tmp/hugo/
@@ -10,7 +10,6 @@ before_install:
   - go get github.com/mitchellh/gox
 
 go:
-  - 1.7
   - 1.8
   - 1.9
 deploy:

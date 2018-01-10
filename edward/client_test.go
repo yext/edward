@@ -71,7 +71,6 @@ func (f *testFollower) Done() {}
 
 // getRunnerAndServiceProcesses returns all processes and children spawned by this test
 func getRunnerAndServiceProcesses(t *testing.T) []*process.Process {
-	t.Helper()
 	var processes []*process.Process
 	testProcess, err := process.NewProcess(int32(os.Getpid()))
 	if err != nil {
