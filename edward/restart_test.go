@@ -1,20 +1,12 @@
 package edward_test
 
 import (
-	"errors"
-	"fmt"
-	"log"
 	"os"
-	"path"
-	"path/filepath"
 	"syscall"
 	"testing"
-	"time"
 
+	"github.com/pkg/errors"
 	"github.com/theothertomelliott/must"
-	"github.com/yext/edward/common"
-	"github.com/yext/edward/edward"
-	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 func TestRestart(t *testing.T) {
@@ -87,28 +79,12 @@ func TestRestart(t *testing.T) {
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
-			wd, cleanup := createWorkingDir(t, test.name, test.path)
+			client, wd, cleanup, err := createClient(test.config, test.name, test.path)
 			defer cleanup()
+			defer showLogsIfFailed(t, test.name, wd, client)
 
-			client, err := edward.NewClientWithConfig(
-				path.Join(wd, test.config),
-				common.EdwardVersion,
-				log.New(&lumberjack.Logger{
-					Filename:   filepath.Join(wd, "edward.log"),
-					MaxSize:    50, // megabytes
-					MaxBackups: 30,
-					MaxAge:     1, //days
-				}, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile),
-			)
-			if err != nil {
-				t.Fatal(err)
-			}
-			client.WorkingDir = wd
 			tf := newTestFollower()
 			client.Follower = tf
-			client.EdwardExecutable = edwardExecutable
-			client.DisableConcurrentPhases = true
-			client.Tags = []string{fmt.Sprintf("test.restart.%d", time.Now().UnixNano())}
 
 			err = client.Start(test.servicesStart, test.skipBuild, false, test.noWatch, test.exclude)
 			if err != nil {

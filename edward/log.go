@@ -4,6 +4,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/yext/edward/home"
+
 	"github.com/pkg/errors"
 	"github.com/yext/edward/instance"
 	"github.com/yext/edward/runner"
@@ -24,13 +26,13 @@ func (c *Client) Log(names []string) error {
 	for _, sg := range sgs {
 		switch v := sg.(type) {
 		case *services.ServiceConfig:
-			newLines, err := followServiceLog(v, logChannel)
+			newLines, err := followServiceLog(c.DirConfig.LogDir, v, logChannel)
 			if err != nil {
 				return err
 			}
 			lines = append(lines, newLines...)
 		case *services.ServiceGroupConfig:
-			newLines, err := followGroupLog(v, logChannel)
+			newLines, err := followGroupLog(c.DirConfig.LogDir, v, logChannel)
 			if err != nil {
 				return err
 			}
@@ -42,7 +44,7 @@ func (c *Client) Log(names []string) error {
 	statusTicker := time.NewTicker(time.Second * 5)
 	go func() {
 		for _ = range statusTicker.C {
-			running, err := checkAllRunning(sgs)
+			running, err := checkAllRunning(c.DirConfig, sgs)
 			if err != nil {
 				c.Logger.Printf("Error checking service state for tailing: %v", err)
 				continue
@@ -74,10 +76,10 @@ func (c *Client) Log(names []string) error {
 	return nil
 }
 
-func checkAllRunning(sgs []services.ServiceOrGroup) (bool, error) {
+func checkAllRunning(dirConfig *home.EdwardConfiguration, sgs []services.ServiceOrGroup) (bool, error) {
 	allServices := services.Services(sgs)
 	for _, s := range allServices {
-		running, err := instance.HasRunning(s)
+		running, err := instance.HasRunning(dirConfig, s)
 		if err != nil {
 			return false, errors.WithStack(err)
 		}

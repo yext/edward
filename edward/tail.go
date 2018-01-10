@@ -49,17 +49,17 @@ func printMessage(logMessage runner.LogLine, multiple bool) {
 	color.Unset()
 }
 
-func followGroupLog(group *services.ServiceGroupConfig, logChannel chan runner.LogLine) ([]runner.LogLine, error) {
+func followGroupLog(logDir string, group *services.ServiceGroupConfig, logChannel chan runner.LogLine) ([]runner.LogLine, error) {
 	var lines []runner.LogLine
 	for _, group := range group.Groups {
-		newLines, err := followGroupLog(group, logChannel)
+		newLines, err := followGroupLog(logDir, group, logChannel)
 		lines = append(lines, newLines...)
 		if err != nil {
 			return nil, err
 		}
 	}
 	for _, service := range group.Services {
-		newLines, err := followServiceLog(service, logChannel)
+		newLines, err := followServiceLog(logDir, service, logChannel)
 		lines = append(lines, newLines...)
 		if err != nil {
 			return nil, err
@@ -68,13 +68,13 @@ func followGroupLog(group *services.ServiceGroupConfig, logChannel chan runner.L
 	return lines, nil
 }
 
-func followServiceLog(service *services.ServiceConfig, logChannel chan runner.LogLine) ([]runner.LogLine, error) {
+func followServiceLog(logDir string, service *services.ServiceConfig, logChannel chan runner.LogLine) ([]runner.LogLine, error) {
 	// Skip services that don't have a launch command
 	if service.Commands.Launch == "" {
 		return nil, nil
 	}
 
-	runLog := service.GetRunLog()
+	runLog := service.GetRunLog(logDir)
 	logFile, err := os.Open(runLog)
 	defer logFile.Close()
 	if err != nil {
@@ -100,12 +100,12 @@ func followServiceLog(service *services.ServiceConfig, logChannel chan runner.Lo
 		return nil, errors.WithStack(err)
 	}
 
-	go doFollowServiceLog(service, lineCount, logChannel)
+	go doFollowServiceLog(logDir, service, lineCount, logChannel)
 	return initialLines, nil
 }
 
-func doFollowServiceLog(service *services.ServiceConfig, skipLines int, logChannel chan runner.LogLine) error {
-	runLog := service.GetRunLog()
+func doFollowServiceLog(logDir string, service *services.ServiceConfig, skipLines int, logChannel chan runner.LogLine) error {
+	runLog := service.GetRunLog(logDir)
 	t, err := tail.TailFile(runLog, tail.Config{
 		Follow: true,
 		Logger: tail.DiscardingLogger,

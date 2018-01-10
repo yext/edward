@@ -21,6 +21,7 @@ import (
 // Runner provides state and functions for running a given service
 type Runner struct {
 	Service    *services.ServiceConfig
+	DirConfig  *home.EdwardConfiguration
 	command    *RunningCommand
 	logFile    *os.File
 	messageLog *Log
@@ -37,14 +38,26 @@ type Runner struct {
 
 	standardLog *Log
 	errorLog    *Log
+
+	shutdownChan chan struct{}
 }
 
 func (r *Runner) Messagef(format string, a ...interface{}) {
-	r.messageLog.Printf(format, a...)
-	r.Logger.Printf(format, a...)
+	if r.messageLog != nil {
+		r.messageLog.Printf(format, a...)
+	}
+	if r.Logger != nil {
+		r.Logger.Printf(format, a...)
+	}
 }
 
 func (r *Runner) Run(args []string) error {
+	// Allow shutdown through signals
+	r.configureSignals()
+
+	r.Messagef("Signals configured")
+
+	r.shutdownChan = make(chan struct{})
 
 	r.status = instance.Status{
 		StartTime: time.Now(),
@@ -58,7 +71,7 @@ func (r *Runner) Run(args []string) error {
 	}
 
 	// Set the instance id
-	command, err := r.Service.GetCommand(services.ContextOverride{})
+	command, err := instance.Load(r.DirConfig, r.Service, services.ContextOverride{})
 	if err != nil {
 		r.Messagef("Could not get service command: %v\n", err)
 	}
@@ -70,15 +83,13 @@ func (r *Runner) Run(args []string) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	defer func() {
-		// TODO: Handle the "Died state"
-		r.updateServiceState(instance.StateStopped)
-		r.removeServiceState()
-		r.Messagef("Service stopped\n")
-	}()
 
 	statusTick := time.NewTicker(10 * time.Second)
-	defer statusTick.Stop()
+	defer func() {
+		if statusTick != nil {
+			statusTick.Stop()
+		}
+	}()
 	go func() {
 		for _ = range statusTick.C {
 			r.updateStatusDetail()
@@ -86,29 +97,54 @@ func (r *Runner) Run(args []string) error {
 	}()
 
 	r.commandWait.Add(1)
+
 	err = r.startService()
 	if err != nil {
 		return errors.WithStack(err)
 	}
+	pid := r.command.Pid()
+	if pid == 0 {
+		return errors.New("no pid")
+	}
 
-	r.updateServiceState(instance.StateRunning)
+	go func() {
+		r.Messagef("Waiting for live")
+		err = WaitUntilLive(r.DirConfig, int32(pid), r.Service)
+		if err != nil {
+			r.Messagef("Startup failed: %v", err)
+			return
+		}
+		r.updateServiceState(instance.StateRunning)
+	}()
 
 	closeWatchers := r.configureWatch()
 	if closeWatchers != nil {
 		defer closeWatchers()
 	}
-	r.configureSignals()
 
 	r.commandWait.Wait()
+
+	// Wait for shutdown.
+	// If the service stopped and an interrupt was not sent, do not set the "DIED" state.
+	select {
+	case <-r.shutdownChan:
+		r.updateServiceState(instance.StateStopped)
+		r.Messagef("Service stopped\n")
+		return nil
+	default:
+		r.updateServiceState(instance.StateDied)
+		statusTick.Stop()
+		statusTick = nil
+	}
+
 	return nil
 }
 
 func (r *Runner) updateServiceState(newState instance.State) {
 	r.status.State = newState
-	dir := home.EdwardConfig.StateDir
-	err := instance.SaveStatusForService(r.Service, r.instanceId, r.status, dir)
+	err := instance.SaveStatusForService(r.Service, r.instanceId, r.status, r.DirConfig.StateDir)
 	if err != nil {
-		r.Messagef("could not save state:", err)
+		r.Messagef("could not save state: %v", err)
 	}
 }
 
@@ -125,7 +161,7 @@ func (r *Runner) updateStatusDetail() {
 		}
 		r.status.MemoryInfo, err = proc.MemoryInfo()
 		if err != nil {
-			r.Messagef("could not get memory information:", err)
+			r.Messagef("could not get memory information: %v", err)
 			return
 		}
 		ports, err := doGetPorts(proc)
@@ -136,10 +172,10 @@ func (r *Runner) updateStatusDetail() {
 		r.status.Ports = ports
 	}
 
-	dir := home.EdwardConfig.StateDir
+	dir := r.DirConfig.StateDir
 	err := instance.SaveStatusForService(r.Service, r.instanceId, r.status, dir)
 	if err != nil {
-		r.Messagef("could not save state:", err)
+		r.Messagef("could not save state: %v", err)
 	}
 }
 
@@ -170,16 +206,8 @@ func doGetPorts(proc *process.Process) ([]string, error) {
 	return ports, nil
 }
 
-func (r *Runner) removeServiceState() {
-	dir := home.EdwardConfig.StateDir
-	err := instance.DeleteStatusForService(r.Service, r.instanceId, dir)
-	if err != nil {
-		r.Messagef("could not delete state:", err)
-	}
-}
-
 func (r *Runner) configureLogs() error {
-	logLocation := r.Service.GetRunLog()
+	logLocation := r.Service.GetRunLog(r.DirConfig.LogDir)
 	os.Remove(logLocation)
 
 	var err error
@@ -206,13 +234,14 @@ func (r *Runner) configureSignals() {
 			if err != nil {
 				r.Messagef("Could not stop service: %v", err)
 			}
+			close(r.shutdownChan)
 		}
 	}()
 }
 
 func (r *Runner) configureWatch() func() {
 	if !r.NoWatch {
-		closeWatchers, err := BeginWatch(r.Service, r.restartService, r.messageLog)
+		closeWatchers, err := BeginWatch(r.DirConfig, r.Service, r.restartService, r.messageLog)
 		if err != nil {
 			r.Messagef("Could not enable auto-restart: %v\n", err)
 			return nil
@@ -248,7 +277,7 @@ func (r *Runner) stopService() error {
 		return errors.WithStack(err)
 	}
 
-	command, err := r.Service.GetCommand(services.ContextOverride{})
+	command, err := instance.Load(r.DirConfig, r.Service, services.ContextOverride{})
 	if err != nil {
 		r.Messagef("Could not get service command: %v\n", err)
 	}

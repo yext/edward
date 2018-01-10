@@ -2,6 +2,7 @@ package edward
 
 import (
 	"github.com/pkg/errors"
+	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/worker"
@@ -45,12 +46,15 @@ func (c *Client) Stop(names []string, force bool, exclude []string, all bool) er
 		_ = <-p.Complete()
 	}()
 
-	allServices := services.Services(sgs)
-	for _, s := range allServices {
+	err = services.DoForServices(sgs, task, func(s *services.ServiceConfig, overrides services.ContextOverride, task tracker.Task) error {
 		states, err := c.getStates(s)
 		if len(states) != 0 && err == nil {
-			_ = s.Stop(cfg, services.ContextOverride{}, task, p)
+			_ = instance.Stop(c.DirConfig, s, cfg, overrides, task, p)
 		}
+		return nil
+	})
+	if err != nil {
+		return errors.WithStack(err)
 	}
 	return nil
 }

@@ -37,11 +37,6 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	// Set up edward home directory
-	if err := home.EdwardConfig.Initialize(); err != nil {
-		log.Fatal(err)
-	}
-
 	os.Exit(m.Run())
 }
 
@@ -76,20 +71,24 @@ func (f *testFollower) Done() {}
 
 // getRunnerAndServiceProcesses returns all processes and children spawned by this test
 func getRunnerAndServiceProcesses(t *testing.T) []*process.Process {
+	t.Helper()
 	var processes []*process.Process
 	testProcess, err := process.NewProcess(int32(os.Getpid()))
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
+		return nil
 	}
 	runners, err := testProcess.Children()
 	if err != nil {
-		t.Fatalf("No processes found")
+		t.Errorf("No processes found: %v", err)
+		return nil
 	}
 	processes = append(processes, runners...)
 	for _, runner := range runners {
 		services, err := runner.Children()
 		if err != nil {
-			t.Fatalf("No processes found")
+			t.Errorf("No processes found: %v", err)
+			return nil
 		}
 		processes = append(processes, services...)
 	}
@@ -145,24 +144,11 @@ func verifyAndStopRunner(t *testing.T, client *edward.Client, runner *process.Pr
 		fullCmd := strings.Join(cmdline, " ")
 		for _, tag := range client.Tags {
 			if !strings.Contains(fullCmd, fmt.Sprintf("--tag %s", tag)) {
+				t.Logf("Missing tag: %v", tag)
 				return false, nil
 			}
 		}
-		services, err := runner.Children()
-		if err != nil {
-			t.Logf("error getting children, ignoring: %v", err)
-			return false, nil
-		}
-		for _, service := range services {
-			if running, _ := service.IsRunning(); running {
-				_ = service.Kill()
-			}
-		}
-		if running, _ := runner.IsRunning(); running {
-			return true, nil
-		}
-		t.Error("Expected stopping children to kill runner process")
-		err = runner.Kill()
+		err := runner.Kill()
 		if err != nil {
 			t.Fatal("Could not kill runner:", err)
 		}
@@ -175,9 +161,15 @@ func showLogsIfFailed(t *testing.T, name string, wd string, client *edward.Clien
 	if !t.Failed() {
 		return
 	}
-	b, err := ioutil.ReadFile(filepath.Join(wd, "edward.log"))
+	dirConfig := &home.EdwardConfiguration{}
+	err := dirConfig.InitializeWithDir(path.Join(wd, "edwardHome"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("=== Log (%s) ===\n%s=== /Log ===\n", name, string(b))
+	logFile := filepath.Join(dirConfig.EdwardLogDir, "edward.log")
+	b, err := ioutil.ReadFile(logFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("=== Log (%s) <%s> ===\n%s=== /Log ===\n", name, logFile, string(b))
 }

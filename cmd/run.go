@@ -18,11 +18,12 @@ var runCmd = &cobra.Command{
 			return fmt.Errorf("service not found: %s", args[0])
 		}
 		r := &runner.Runner{
-			Service: service,
+			Service:   service,
+			DirConfig: edwardClient.DirConfig,
 		}
 		r.NoWatch = *runFlags.noWatch
 		r.WorkingDir = *runFlags.directory
-		r.Logger = logger
+		r.Logger = edwardClient.Logger
 		err := r.Run(args)
 		return errors.WithStack(err)
 	},

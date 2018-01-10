@@ -2,17 +2,9 @@ package edward_test
 
 import (
 	"errors"
-	"fmt"
-	"log"
-	"path"
-	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/theothertomelliott/must"
-	"github.com/yext/edward/common"
-	"github.com/yext/edward/edward"
-	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 func TestStart(t *testing.T) {
@@ -218,28 +210,8 @@ func TestStart(t *testing.T) {
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
-			wd, cleanup := createWorkingDir(t, test.name, test.path)
+			client, wd, cleanup, err := createClient(test.config, test.name, test.path)
 			defer cleanup()
-
-			logfile := filepath.Join(wd, "edward.log")
-			client, err := edward.NewClientWithConfig(
-				path.Join(wd, test.config),
-				common.EdwardVersion,
-				log.New(&lumberjack.Logger{
-					Filename:   logfile,
-					MaxSize:    50, // megabytes
-					MaxBackups: 30,
-					MaxAge:     1, //days
-				}, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile),
-			)
-			if err != nil {
-				t.Fatal(err)
-			}
-			client.LogFile = logfile
-			client.WorkingDir = wd
-			client.EdwardExecutable = edwardExecutable
-			client.DisableConcurrentPhases = true
-			client.Tags = []string{fmt.Sprintf("test.start.%d", time.Now().UnixNano())}
 
 			tf := newTestFollower()
 			client.Follower = tf
@@ -340,7 +312,22 @@ func TestStartOrder(t *testing.T) {
 				"Cleanup > broken > Stop",
 			},
 			expectedServices: 0,
-			err:              errors.New("Error starting broken: launch: service terminated prematurely"),
+			err:              errors.New("Error starting broken: launch: exited with state: DIED"),
+		},
+		{
+			name:     "launch failure stops other services - bad command",
+			path:     "testdata/launchfailure",
+			config:   "edward.json",
+			services: []string{"badcommand", "working"},
+			expectedStateOrder: []string{
+				"badcommand",
+				"badcommand > Start",
+				"Cleanup",
+				"Cleanup > badcommand",
+				"Cleanup > badcommand > Stop",
+			},
+			expectedServices: 0,
+			err:              errors.New("Error starting badcommand: launch: runner process exited"),
 		},
 		{
 			name:     "build failure in group stops other services",
@@ -353,7 +340,7 @@ func TestStartOrder(t *testing.T) {
 				"fail-first > broken > Build",
 			},
 			expectedServices: 0,
-			err:              errors.New("Error starting fail-first: build: running build command: exit status 2"),
+			err:              errors.New("Error starting broken: build: running build command: exit status 2"),
 		},
 		{
 			name:     "launch failure in group stops other services",
@@ -370,7 +357,7 @@ func TestStartOrder(t *testing.T) {
 				"fail-first > Cleanup > broken > Stop",
 			},
 			expectedServices: 0,
-			err:              errors.New("Error starting fail-first: launch: service terminated prematurely"),
+			err:              errors.New("Error starting broken: launch: exited with state: DIED"),
 		},
 	}
 	for _, test := range tests {
@@ -378,30 +365,11 @@ func TestStartOrder(t *testing.T) {
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
-			wd, cleanup := createWorkingDir(t, test.name, test.path)
+			client, wd, cleanup, err := createClient(test.config, test.name, test.path)
 			defer cleanup()
 
-			logfile := filepath.Join(wd, "edward.log")
-			client, err := edward.NewClientWithConfig(
-				path.Join(wd, test.config),
-				common.EdwardVersion,
-				log.New(&lumberjack.Logger{
-					Filename:   logfile,
-					MaxSize:    50, // megabytes
-					MaxBackups: 30,
-					MaxAge:     1, //days
-				}, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile),
-			)
-			if err != nil {
-				t.Fatal("error creating client", err)
-			}
-			client.WorkingDir = wd
 			tf := newTestFollower()
-			client.LogFile = logfile
 			client.Follower = tf
-			client.EdwardExecutable = edwardExecutable
-			client.DisableConcurrentPhases = true
-			client.Tags = []string{fmt.Sprintf("test.start_order.%d", time.Now().UnixNano())}
 
 			defer showLogsIfFailed(t, test.name, wd, client)
 

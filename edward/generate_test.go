@@ -127,12 +127,17 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
-			wd, cleanup := createWorkingDir(t, test.name, test.path)
+			wd, cleanup, err := createWorkingDir(test.name, test.path)
+			if err != nil {
+				t.Errorf("Error building working dir: %v", err)
+				return
+			}
 			defer cleanup()
 
 			client, err := edward.NewClient()
 			if err != nil {
-				t.Fatal(err)
+				t.Errorf("Error building client: %v", err)
+				return
 			}
 			client.EdwardExecutable = edwardExecutable
 			client.DisableConcurrentPhases = true
@@ -168,6 +173,7 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 			}()
 
 			err = client.Generate(test.services, test.force, test.group, test.targets)
+
 			inputWriter.Close()
 			outputWriter.Close()
 			must.BeEqualErrors(t, test.err, err)

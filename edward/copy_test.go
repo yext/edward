@@ -7,12 +7,55 @@ import (
 	"log"
 	"os"
 	"path"
-	"testing"
+	"path/filepath"
+	"time"
+
+	"github.com/yext/edward/common"
+	"github.com/yext/edward/home"
+
+	"github.com/yext/edward/edward"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
+
+func createClient(configFile, testName, testPath string) (*edward.Client, string, func(), error) {
+	// Copy test content into a temp dir on the GOPATH & defer deletion
+	wd, cleanup, err := createWorkingDir(testName, testPath)
+	if err != nil {
+		return nil, "", func() {}, err
+	}
+
+	dirConfig := &home.EdwardConfiguration{}
+	err = dirConfig.InitializeWithDir(path.Join(wd, "edwardHome"))
+	if err != nil {
+		return nil, "", func() {}, err
+	}
+
+	client, err := edward.NewClientWithConfig(
+		path.Join(wd, configFile),
+		common.EdwardVersion,
+		log.New(&lumberjack.Logger{
+			Filename:   filepath.Join(dirConfig.EdwardLogDir, "edward.log"),
+			MaxSize:    50, // megabytes
+			MaxBackups: 30,
+			MaxAge:     1, //days
+		}, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile),
+	)
+	if err != nil {
+		return nil, "", func() {}, err
+	}
+
+	client.DirConfig = dirConfig
+	client.EdwardExecutable = edwardExecutable
+	client.DisableConcurrentPhases = true
+	client.WorkingDir = wd
+	client.Tags = []string{fmt.Sprintf("test.%d", time.Now().UnixNano())}
+
+	return client, wd, cleanup, nil
+}
 
 // createWorkingDir creates a directory to work in and changes into that directory.
 // Returns a cleanup function.
-func createWorkingDir(t *testing.T, testName, testPath string) (string, func()) {
+func createWorkingDir(testName, testPath string) (string, func(), error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
@@ -23,12 +66,12 @@ func createWorkingDir(t *testing.T, testName, testPath string) (string, func()) 
 	}
 	workingDir, err := ioutil.TempDir(workingPath, testName)
 	if err != nil {
-		t.Fatal(err)
+		return "", func() {}, err
 	}
 	copy_folder(testPath, workingDir)
 	return workingDir, func() {
 		os.RemoveAll(workingDir)
-	}
+	}, nil
 }
 
 func copy_folder(source string, dest string) (err error) {
@@ -56,12 +99,12 @@ func copy_folder(source string, dest string) (err error) {
 		if obj.IsDir() {
 			err = copy_folder(sourcefilepointer, destinationfilepointer)
 			if err != nil {
-				fmt.Println("Copying folder:",err)
+				fmt.Println("Copying folder:", err)
 			}
 		} else {
 			err = copy_file(sourcefilepointer, destinationfilepointer)
 			if err != nil {
-				fmt.Println("Copying file:",err)
+				fmt.Println("Copying file:", err)
 			}
 		}
 

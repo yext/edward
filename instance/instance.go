@@ -1,4 +1,4 @@
-package services
+package instance
 
 import (
 	"bufio"
@@ -9,8 +9,10 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
@@ -18,14 +20,15 @@ import (
 	"github.com/yext/edward/commandline"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
+	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/warmup"
 )
 
-// ServiceCommand provides state and functions for managing a service
-type ServiceCommand struct {
+// Instance provides state and functions for managing a service
+type Instance struct {
 	// Parent service config
-	Service *ServiceConfig `json:"service"`
+	Service *services.ServiceConfig `json:"service"`
 	// Pid of currently running instance
 	Pid int `json:"pid"`
 	// Config file from which this instance was launched
@@ -33,16 +36,18 @@ type ServiceCommand struct {
 	// The edward version under which this instance was launched
 	EdwardVersion string `json:"edwardVersion"`
 	// Overrides applied by the group under which this service was started
-	Overrides ContextOverride `json:"overrides,omitempty"`
+	Overrides services.ContextOverride `json:"overrides,omitempty"`
 	// Identifier for this instance of the service
 	InstanceId string
 
 	Logger common.Logger `json:"-"`
+
+	dirConfig *home.EdwardConfiguration
 }
 
-// LoadServiceCommand loads the command to control the specified service
-func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (command *ServiceCommand, err error) {
-	command = &ServiceCommand{
+// Load loads an instance to control the specified service
+func Load(dirConfig *home.EdwardConfiguration, service *services.ServiceConfig, overrides services.ContextOverride) (command *Instance, err error) {
+	command = &Instance{
 		Service:    service,
 		ConfigFile: service.ConfigFile,
 		InstanceId: uuid.NewV4().String(),
@@ -52,22 +57,23 @@ func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (comm
 		command.Logger = service.Logger
 		command.EdwardVersion = common.EdwardVersion
 		command.Overrides = command.Overrides.Merge(overrides)
+		command.dirConfig = dirConfig
 		pidCheckErr := command.checkPid()
 		if err == nil {
 			err = pidCheckErr
 		}
 	}()
 
-	legacyPidFile := service.GetPidPathLegacy()
+	legacyPidFile := service.GetPidPathLegacy(dirConfig.PidDir)
 	if _, err := os.Stat(legacyPidFile); err == nil {
-		command.Pid, err = service.getPid(command, legacyPidFile)
+		command.Pid, err = service.GetPid(legacyPidFile)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
 		return command, nil
 	}
 
-	stateFile := service.getStatePath()
+	stateFile := service.GetStatePath(dirConfig.StateDir)
 	if _, err := os.Stat(stateFile); err == nil {
 		raw, err := ioutil.ReadFile(stateFile)
 		if err != nil {
@@ -80,13 +86,13 @@ func LoadServiceCommand(service *ServiceConfig, overrides ContextOverride) (comm
 }
 
 // Env provides the combined environment variables for this service command
-func (c *ServiceCommand) Env() []string {
+func (c *Instance) Env() []string {
 	return append(c.Service.Env, c.Overrides.Env...)
 }
 
 // Getenv returns the environment variable value for the provided key, if present.
 // Env overrides are consulted first, followed by service env settings, then the os Env.
-func (c *ServiceCommand) Getenv(key string) string {
+func (c *Instance) Getenv(key string) string {
 	for _, env := range c.Overrides.Env {
 		if strings.HasPrefix(env, key+"=") {
 			return strings.Replace(env, key+"=", "", 1)
@@ -100,7 +106,7 @@ func (c *ServiceCommand) Getenv(key string) string {
 	return os.Getenv(key)
 }
 
-func (c *ServiceCommand) checkPid() error {
+func (c *Instance) checkPid() error {
 	if c == nil || c.Pid == 0 {
 		return nil
 	}
@@ -109,8 +115,8 @@ func (c *ServiceCommand) checkPid() error {
 		return errors.WithStack(err)
 	}
 	if !exists {
-		c.printf("Process for %v was not found, resetting.\n", c.Service.Name)
-		c.clearState()
+		c.printf("Process for %v was not found.\n", c.Service.Name)
+		c.Pid = 0
 		return nil
 	}
 
@@ -123,31 +129,31 @@ func (c *ServiceCommand) checkPid() error {
 		return errors.WithStack(err)
 	}
 	if !strings.Contains(cmdline, c.Service.Name) {
-		c.printf("Process for %v was not as expected (found %v), resetting.\n", c.Service.Name, cmdline)
-		c.clearState()
+		c.printf("Process for %v was not as expected (found %v).\n", c.Service.Name, cmdline)
+		c.Pid = 0
 	}
 	return nil
 }
 
 // save will store the current state of this command to a state file
-func (c *ServiceCommand) save() error {
+func (c *Instance) save() error {
 	commandJSON, _ := json.Marshal(c)
-	err := ioutil.WriteFile(c.Service.getStatePath(), commandJSON, 0644)
+	err := ioutil.WriteFile(c.Service.GetStatePath(c.dirConfig.StateDir), commandJSON, 0644)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 	return nil
 }
 
-func (c *ServiceCommand) printf(format string, v ...interface{}) {
+func (c *Instance) printf(format string, v ...interface{}) {
 	if c.Logger == nil {
 		return
 	}
 	c.Logger.Printf(format, v...)
 }
 
-func (c *ServiceCommand) createScript(content string, scriptType string) (*os.File, error) {
-	file, err := os.Create(path.Join(home.EdwardConfig.ScriptDir, c.Service.Name+"-"+scriptType))
+func (c *Instance) createScript(content string, scriptType string) (*os.File, error) {
+	file, err := os.Create(path.Join(c.dirConfig.ScriptDir, c.Service.Name+"-"+scriptType))
 	if err != nil {
 		return nil, err
 	}
@@ -162,18 +168,10 @@ func (c *ServiceCommand) createScript(content string, scriptType string) (*os.Fi
 	return file, nil
 }
 
-func (c *ServiceCommand) deleteScript(scriptType string) error {
-	return errors.WithStack(
-		os.Remove(
-			path.Join(home.EdwardConfig.ScriptDir, c.Service.Name+"-"+scriptType),
-		),
-	)
-}
-
 // StartAsync starts the service in the background
 // Will block until the service is known to have started successfully.
 // If the service fails to launch, an error will be returned.
-func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) error {
+func (c *Instance) StartAsync(cfg services.OperationConfig, task tracker.Task) error {
 	if c.Service.Commands.Launch == "" {
 		return nil
 	}
@@ -199,7 +197,7 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) erro
 		}
 	}
 
-	os.Remove(c.Service.GetRunLog())
+	os.Remove(c.Service.GetRunLog(c.dirConfig.LogDir))
 
 	cmd, err := c.getLaunchCommand(cfg)
 	if err != nil {
@@ -225,20 +223,21 @@ func (c *ServiceCommand) StartAsync(cfg OperationConfig, task tracker.Task) erro
 		return errors.WithStack(err)
 	}
 
-	err = WaitUntilLive(cmd, c.Service)
+	err = WaitUntilRunning(c.dirConfig, cmd, c.Service)
 	if err == nil {
 		startTask.SetState(tracker.TaskStateSuccess)
 		warmup.Run(c.Service.Name, c.Service.Warmup, task)
 		return nil
 	}
 
-	log, readingErr := logToStringSlice(c.Service.GetRunLog())
+	log, readingErr := logToStringSlice(c.Service.GetRunLog(c.dirConfig.LogDir))
 	if readingErr != nil {
 		startTask.SetState(tracker.TaskStateFailed, "Could not read log", readingErr.Error(), fmt.Sprint("Original error: ", err.Error()))
 	} else {
+		log = append(log, err.Error())
 		startTask.SetState(tracker.TaskStateFailed, log...)
 	}
-	stopErr := c.Service.doStop(cfg, c.Overrides, task.Child("Cleanup"))
+	stopErr := c.StopSync(cfg, c.Overrides, task.Child("Cleanup"))
 	if stopErr != nil {
 		return errors.WithStack(stopErr)
 	}
@@ -258,7 +257,7 @@ func readAvailableLines(r io.ReadCloser) ([]string, error) {
 	return nil, nil
 }
 
-func (c *ServiceCommand) getLaunchCommand(cfg OperationConfig) (*exec.Cmd, error) {
+func (c *Instance) getLaunchCommand(cfg services.OperationConfig) (*exec.Cmd, error) {
 	command := cfg.EdwardExecutable
 	var cmdArgs []string
 	cmdArgs = append(cmdArgs, "run", c.Service.Name)
@@ -272,6 +271,9 @@ func (c *ServiceCommand) getLaunchCommand(cfg OperationConfig) (*exec.Cmd, error
 	if cfg.LogFile != "" {
 		cmdArgs = append(cmdArgs, "--logfile", cfg.LogFile)
 	}
+
+	cmdArgs = append(cmdArgs, "--edward_home", c.dirConfig.Dir)
+
 	c.printf("Launching runner with args: %v", cmdArgs)
 	cmd := exec.Command(command, cmdArgs...)
 	cmd.Dir = commandline.BuildAbsPath(cfg.WorkingDir, c.Service.Path)
@@ -282,7 +284,7 @@ func (c *ServiceCommand) getLaunchCommand(cfg OperationConfig) (*exec.Cmd, error
 // RunStopScript will execute the stop script for this command, returning full output
 // from running the script.
 // Assumes the service has a stop script configured.
-func (c *ServiceCommand) RunStopScript(workingDir string) ([]byte, error) {
+func (c *Instance) RunStopScript(workingDir string) ([]byte, error) {
 	c.printf("Running stop script for %v\n", c.Service.Name)
 	cmd, err := commandline.ConstructCommand(workingDir, c.Service.Path, c.Service.Commands.Stop, c.Getenv)
 	if err != nil {
@@ -296,26 +298,22 @@ func (c *ServiceCommand) RunStopScript(workingDir string) ([]byte, error) {
 	return nil, nil
 }
 
-func (c *ServiceCommand) clearPid() {
+func (c *Instance) clearPid() {
 	c.Pid = 0
 	var err error
-	_ = os.Remove(c.Service.GetPidPathLegacy())
-	err = os.Remove(c.Service.getStatePath())
+	_ = os.Remove(c.Service.GetPidPathLegacy(c.dirConfig.PidDir))
+	err = os.Remove(c.Service.GetStatePath(c.dirConfig.StateDir))
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (c *ServiceCommand) clearState() {
+func (c *Instance) clearState() {
 	c.clearPid()
-	c.deleteScript("Stop")
-	c.deleteScript("Launch")
-	c.deleteScript("Build")
 }
 
-func (c *ServiceCommand) validateState() (bool, error) {
+func (c *Instance) validateState() (bool, error) {
 	if c.Pid == 0 {
-		c.clearPid()
 		return false, nil
 	}
 	exists, err := process.PidExists(int32(c.Pid))
@@ -323,7 +321,7 @@ func (c *ServiceCommand) validateState() (bool, error) {
 		return false, errors.WithStack(err)
 	}
 	if !exists {
-		c.clearPid()
+		c.Pid = 0
 		return false, nil
 	}
 	return true, nil
@@ -331,17 +329,17 @@ func (c *ServiceCommand) validateState() (bool, error) {
 
 // InterruptGroup sends an interrupt signal to a process group.
 // Will use sudo if required by this service.
-func InterruptGroup(cfg OperationConfig, pgid int, service *ServiceConfig) error {
+func InterruptGroup(cfg services.OperationConfig, pgid int, service *services.ServiceConfig) error {
 	return errors.WithStack(signalGroup(cfg, pgid, service, "-2"))
 }
 
 // KillGroup sends a kill signal to a process group.
 // Will use sudo priviledges if required by this service.
-func KillGroup(cfg OperationConfig, pgid int, service *ServiceConfig) error {
+func KillGroup(cfg services.OperationConfig, pgid int, service *services.ServiceConfig) error {
 	return errors.WithStack(signalGroup(cfg, pgid, service, "-9"))
 }
 
-func signalGroup(cfg OperationConfig, pgid int, service *ServiceConfig, flag string) error {
+func signalGroup(cfg services.OperationConfig, pgid int, service *services.ServiceConfig, flag string) error {
 	cmdName := "kill"
 	cmdArgs := []string{}
 	if service.IsSudo(cfg) {
@@ -386,4 +384,107 @@ func logToStringSlice(path string) ([]string, error) {
 		return nil, errors.WithStack(err)
 	}
 	return lines, nil
+}
+
+// StopSync stops this service in a synchronous manner
+func (c *Instance) StopSync(cfg services.OperationConfig, overrides services.ContextOverride, task tracker.Task) error {
+	logger := c.Service.Logger
+
+	if cfg.IsExcluded(c.Service) {
+		return nil
+	}
+
+	if c.Service.Commands.Launch == "" {
+		return nil
+	}
+
+	// Clean up when this function returns
+	defer c.clearState()
+
+	job := task.Child(c.Service.GetName()).Child("Stop")
+	job.SetState(tracker.TaskStateInProgress)
+	if c.Pid == 0 {
+		job.SetState(tracker.TaskStateWarning, "Not running")
+		return nil
+	}
+
+	logger.Printf("Interrupting process for %v\n", c.Service.Name)
+	stopped, err := c.interruptProcess(cfg)
+	if err != nil {
+		job.SetState(tracker.TaskStateFailed, err.Error())
+		return nil
+	}
+	logger.Printf("Interrupt succeeded, was process stopped? %v\n", stopped)
+
+	if !stopped {
+		logger.Printf("SIGINT failed to stop service, waiting for 5s before sending SIGKILL\n")
+		stopped, err := c.waitForTerm(time.Second * 5)
+		if err != nil {
+			job.SetState(tracker.TaskStateFailed, "Waiting for termination failed", err.Error())
+			return nil
+		}
+		if !stopped {
+			stopped, err := c.killProcess(cfg)
+			if err != nil {
+				job.SetState(tracker.TaskStateFailed, "Kill failed", err.Error())
+				return nil
+			}
+			if stopped {
+				job.SetState(tracker.TaskStateWarning, "Killed")
+				return nil
+			}
+			job.SetState(tracker.TaskStateFailed, "Process was not killed")
+			return nil
+		}
+	}
+
+	logger.Printf("Cleaning up state after shutdown")
+	job.SetState(tracker.TaskStateSuccess)
+	return nil
+}
+
+func (c *Instance) killProcess(cfg services.OperationConfig) (success bool, err error) {
+	pgid, err := syscall.Getpgid(c.Pid)
+	if err != nil {
+		return false, errors.WithMessage(err, fmt.Sprintf("Could not kill pid %v", c.Pid))
+	}
+
+	if pgid == 0 || pgid == 1 {
+		return false, errors.WithStack(errors.New("suspect pgid: " + strconv.Itoa(pgid)))
+	}
+
+	err = KillGroup(cfg, pgid, c.Service)
+	return true, errors.WithStack(err)
+}
+
+func (c *Instance) interruptProcess(cfg services.OperationConfig) (success bool, err error) {
+	p, err := process.NewProcess(int32(c.Pid))
+	if err != nil {
+		return false, errors.WithStack(err)
+	}
+	err = p.SendSignal(syscall.SIGINT)
+	if err != nil {
+		return false, errors.WithStack(err)
+	}
+
+	// Check to see if the process is still running
+	exists, err := process.PidExists(int32(c.Pid))
+	if err != nil {
+		return false, errors.WithStack(err)
+	}
+	return !exists, nil
+}
+
+func (c *Instance) waitForTerm(timeout time.Duration) (bool, error) {
+	for elapsed := time.Duration(0); elapsed <= timeout; elapsed += time.Millisecond * 100 {
+		exists, err := process.PidExists(int32(c.Pid))
+		if err != nil {
+			return false, errors.WithStack(err)
+		}
+		if !exists {
+			return true, nil
+		}
+		time.Sleep(time.Millisecond * 100)
+	}
+	return false, nil
 }

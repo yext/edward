@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/yext/edward/home"
+
 	"github.com/pkg/errors"
+	"github.com/yext/edward/builder"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
 	fsnotify "gopkg.in/fsnotify.v1"
@@ -12,7 +15,7 @@ import (
 
 // BeginWatch starts auto-restart watches for the provided services. The function returned will close the
 // watcher.
-func BeginWatch(service services.ServiceOrGroup, restart func() error, logger Logger) (func(), error) {
+func BeginWatch(dirConfig *home.EdwardConfiguration, service services.ServiceOrGroup, restart func() error, logger Logger) (func(), error) {
 	watches, err := service.Watch()
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -23,7 +26,7 @@ func BeginWatch(service services.ServiceOrGroup, restart func() error, logger Lo
 
 	var watchers []*fsnotify.Watcher
 	for _, watch := range watches {
-		watcher, err := startWatch(&watch, restart, logger)
+		watcher, err := startWatch(dirConfig, &watch, restart, logger)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -39,7 +42,7 @@ func BeginWatch(service services.ServiceOrGroup, restart func() error, logger Lo
 	return closeAll, nil
 }
 
-func startWatch(watch *services.ServiceWatch, restart func() error, logger Logger) (*fsnotify.Watcher, error) {
+func startWatch(dirConfig *home.EdwardConfiguration, watch *services.ServiceWatch, restart func() error, logger Logger) (*fsnotify.Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -61,7 +64,7 @@ func startWatch(watch *services.ServiceWatch, restart func() error, logger Logge
 					continue
 				}
 				fmt.Printf("Rebuilding %v\n", watch.Service.GetName())
-				err = rebuildService(watch.Service, restart, logger)
+				err = rebuildService(dirConfig, watch.Service, restart, logger)
 				if err != nil {
 					logger.Printf("Could not rebuild %v: %v\n", watch.Service.GetName(), err)
 				}
@@ -82,9 +85,9 @@ func startWatch(watch *services.ServiceWatch, restart func() error, logger Logge
 	return watcher, nil
 }
 
-func rebuildService(service *services.ServiceConfig, restart func() error, logger Logger) error {
-	b := services.NewBuilder(services.OperationConfig{}, services.ContextOverride{})
-	err := b.BuildWithTracker(tracker.NewTask(func(updatedTask tracker.Task) {}), service, true)
+func rebuildService(dirConfig *home.EdwardConfiguration, service *services.ServiceConfig, restart func() error, logger Logger) error {
+	b := builder.New(services.OperationConfig{}, services.ContextOverride{})
+	err := b.BuildWithTracker(dirConfig, tracker.NewTask(func(updatedTask tracker.Task) {}), service, true)
 	if err != nil {
 		return fmt.Errorf("build failed: %v", err)
 	}

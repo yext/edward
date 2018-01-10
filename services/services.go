@@ -1,8 +1,8 @@
 package services
 
 import (
+	"github.com/pkg/errors"
 	"github.com/yext/edward/tracker"
-	"github.com/yext/edward/worker"
 )
 
 // OperationConfig provides additional configuration for an operation
@@ -33,10 +33,6 @@ func (o *OperationConfig) IsExcluded(sg ServiceOrGroup) bool {
 type ServiceOrGroup interface {
 	GetName() string
 	GetDescription() string
-	Start(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error  // Build and Launch this service/group
-	Launch(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error // Launch this service/group without building
-	Stop(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error
-	Restart(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error
 	IsSudo(cfg OperationConfig) bool
 	Watch() ([]ServiceWatch, error)
 }
@@ -72,6 +68,28 @@ func Services(sgs []ServiceOrGroup) []*ServiceConfig {
 		}
 	}
 	return services
+}
+
+// DoForServices performs a taks for a set of services
+func DoForServices(sgs []ServiceOrGroup, task tracker.Task, f func(service *ServiceConfig, overrides ContextOverride, task tracker.Task) error) error {
+	for _, sg := range sgs {
+		switch v := sg.(type) {
+		case *ServiceConfig:
+			err := f(v, ContextOverride{}, task)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+		case *ServiceGroupConfig:
+			t := task.Child(v.Name)
+			err := DoForServices(v.Children(), t, func(service *ServiceConfig, overrides ContextOverride, task tracker.Task) error {
+				return errors.WithStack(f(service, v.getOverrides(overrides), task))
+			})
+			if err != nil {
+				return errors.WithStack(err)
+			}
+		}
+	}
+	return nil
 }
 
 func getGroupServices(group *ServiceGroupConfig) []*ServiceConfig {

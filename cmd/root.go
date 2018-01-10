@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
@@ -37,29 +38,59 @@ var RootCmd = &cobra.Command{
 Build, start and manage service instances with a single command.`,
 	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+
+		var dirConfig *home.EdwardConfiguration
+		var err error
+		dirConfig = &home.EdwardConfiguration{}
+		if edwardHome != "" {
+			err = dirConfig.InitializeWithDir(edwardHome)
+		} else {
+			err = dirConfig.Initialize()
+		}
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
 		if redirectLogs {
 			logger = log.New(os.Stdout, fmt.Sprintf("%v >", os.Args), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 		}
-		if logFile != "" {
-			prefix := "edward"
-			if len(args) > 0 {
-				prefix = fmt.Sprintf("%s %s", cmd.Use, args[0])
-			}
-			logger = log.New(&lumberjack.Logger{
-				Filename:   logFile,
-				MaxSize:    50, // megabytes
-				MaxBackups: 30,
-				MaxAge:     1, //days
-			}, fmt.Sprintf("%s > ", prefix), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+
+		prefix := "edward"
+		if len(args) > 0 {
+			prefix = fmt.Sprintf("%s %s", cmd.Use, args[0])
 		}
+		logger = log.New(&lumberjack.Logger{
+			Filename:   path.Join(dirConfig.EdwardLogDir, "edward.log"),
+			MaxSize:    50, // megabytes
+			MaxBackups: 30,
+			MaxAge:     1, //days
+		}, fmt.Sprintf("%s > ", prefix), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+
 		// Begin logging
 		logger.Printf("=== Edward v%v ===\n", common.EdwardVersion)
 		logger.Printf("Args: %v\n", os.Args)
+		// Recover from any panic and log appropriately
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Recovered from panic:", r)
+				if logger != nil {
+					logger.Printf("Recovered from panic: %v", r)
+				}
+			}
+			if logger != nil {
+				logger.Printf("=== Exiting ===\n")
+			}
+		}()
 
 		// Set the default config path
 		if configPath == "" {
 			var err error
-			configPath, err = config.GetConfigPathFromWorkingDirectory()
+			tmpDirCfg := &home.EdwardConfiguration{}
+			err = tmpDirCfg.Initialize()
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			configPath, err = config.GetConfigPathFromWorkingDirectory(tmpDirCfg.Dir)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -67,7 +98,6 @@ Build, start and manage service instances with a single command.`,
 
 		command := cmd.Use
 
-		var err error
 		if command != "generate" {
 			edwardClient, err = edward.NewClientWithConfig(configPath, common.EdwardVersion, logger)
 			if err != nil {
@@ -83,6 +113,8 @@ Build, start and manage service instances with a single command.`,
 				return errors.WithStack(err)
 			}
 		}
+
+		edwardClient.DirConfig = dirConfig
 
 		// Set service checks to restart the client on sudo as needed
 		edwardClient.ServiceChecks = func(sgs []services.ServiceOrGroup) error {
@@ -102,7 +134,7 @@ Build, start and manage service instances with a single command.`,
 		if command != "stop" {
 			// Check for legacy pidfiles and error out if any are found
 			for _, service := range edwardClient.ServiceMap() {
-				if _, err := os.Stat(service.GetPidPathLegacy()); !os.IsNotExist(err) {
+				if _, err := os.Stat(service.GetPidPathLegacy(edwardClient.DirConfig.PidDir)); !os.IsNotExist(err) {
 					return errors.New("one or more services were started with an older version of Edward. Please run `edward stop` to stop these instances")
 				}
 			}
@@ -110,13 +142,12 @@ Build, start and manage service instances with a single command.`,
 
 		if command != "run" {
 			checkUpdateChan = make(chan interface{})
-			go checkUpdateAvailable(checkUpdateChan)
+			go checkUpdateAvailable(edwardClient.DirConfig.Dir, checkUpdateChan)
 		}
 
 		return nil
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		defer logger.Printf("=== Exiting ===\n")
 		if checkUpdateChan != nil { //&& !didAutoComplete { // TODO: skip when autocompleting
 			updateAvailable, ok := (<-checkUpdateChan).(bool)
 			if ok && updateAvailable {
@@ -131,8 +162,10 @@ Build, start and manage service instances with a single command.`,
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 
-	if err := home.EdwardConfig.Initialize(); err != nil {
-		fmt.Printf("%+v", err)
+	defaultHome := &home.EdwardConfiguration{}
+	err := defaultHome.Initialize()
+	if err != nil {
+		panic(err)
 	}
 
 	logPrefix := "edward"
@@ -141,7 +174,7 @@ func Execute() {
 	}
 
 	logger = log.New(&lumberjack.Logger{
-		Filename:   filepath.Join(home.EdwardConfig.EdwardLogDir, "edward.log"),
+		Filename:   filepath.Join(defaultHome.EdwardLogDir, "edward.log"),
 		MaxSize:    50, // megabytes
 		MaxBackups: 30,
 		MaxAge:     1, //days
@@ -149,7 +182,7 @@ func Execute() {
 
 	for _, arg := range os.Args {
 		if arg == "--generate-bash-completion" {
-			autocompleteServicesAndGroups(logger)
+			autocompleteServicesAndGroups(defaultHome.Dir, logger)
 			return
 		}
 	}
@@ -163,6 +196,7 @@ func Execute() {
 var configPath string
 var redirectLogs bool
 var logFile string
+var edwardHome string
 
 func init() {
 	cobra.OnInitialize(initConfig)
@@ -170,11 +204,16 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&logFile, "logfile", "", "Write logs to `PATH`")
 	RootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "Use service configuration file at `PATH`")
 	RootCmd.PersistentFlags().BoolVar(&redirectLogs, "redirect_logs", false, "Redirect edward logs to the console")
+	RootCmd.PersistentFlags().StringVar(&edwardHome, "edward_home", "", "")
 	err := RootCmd.PersistentFlags().MarkHidden("redirect_logs")
 	if err != nil {
 		panic(err)
 	}
 	err = RootCmd.PersistentFlags().MarkHidden("logfile")
+	if err != nil {
+		panic(err)
+	}
+	err = RootCmd.PersistentFlags().MarkHidden("edward_home")
 	if err != nil {
 		panic(err)
 	}
@@ -206,9 +245,9 @@ func initConfig() {
 	}
 }
 
-func checkUpdateAvailable(checkUpdateChan chan interface{}) {
+func checkUpdateAvailable(homeDir string, checkUpdateChan chan interface{}) {
 	defer close(checkUpdateChan)
-	updateAvailable, latestVersion, err := updates.UpdateAvailable("yext", "edward", common.EdwardVersion, filepath.Join(home.EdwardConfig.Dir, ".cache/version"), logger)
+	updateAvailable, latestVersion, err := updates.UpdateAvailable("yext", "edward", common.EdwardVersion, filepath.Join(homeDir, ".cache/version"), logger)
 	if err != nil {
 		logger.Println("Error checking for updates:", err)
 		return
