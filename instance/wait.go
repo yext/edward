@@ -23,6 +23,14 @@ func WaitUntilRunning(dirCfg *home.EdwardConfiguration, cmd *exec.Cmd, service *
 	case err := <-errChan:
 		return errors.WithStack(err)
 	case <-exitChan:
+		statuses, err := LoadStatusForService(service, dirCfg.StateDir)
+		if err == nil {
+			for _, status := range statuses {
+				if status.State == StateDied || status.State == StateStopped {
+					return fmt.Errorf("exited with state: %v", status.State)
+				}
+			}
+		}
 		return errors.New("runner process exited")
 	}
 }
