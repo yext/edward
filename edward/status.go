@@ -11,7 +11,6 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
-	"github.com/yext/edward/home"
 	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
 )
@@ -89,15 +88,15 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 
 type statusCommandTuple struct {
 	status  instance.Status
-	command *services.ServiceCommand
+	command *instance.Instance
 }
 
 func (c *Client) getStates(service *services.ServiceConfig) ([]statusCommandTuple, error) {
-	command, err := service.GetCommand(services.ContextOverride{})
+	command, err := instance.Load(c.DirConfig, service, services.ContextOverride{})
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not get service command")
 	}
-	statuses, _ := instance.LoadStatusForService(service, home.EdwardConfig.StateDir)
+	statuses, _ := instance.LoadStatusForService(service, c.DirConfig.StateDir)
 	if status, ok := statuses[command.InstanceId]; ok {
 		return []statusCommandTuple{
 			statusCommandTuple{
@@ -114,7 +113,7 @@ func (c *Client) getServiceList(names []string, all bool) ([]services.ServiceOrG
 	var err error
 
 	if all {
-		runningServices, err := services.LoadRunningServices()
+		runningServices, err := instance.LoadRunningServices(c.DirConfig.StateDir)
 		if err != nil {
 			return nil, err
 		}

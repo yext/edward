@@ -35,13 +35,15 @@ type Status struct {
 var store = make(map[string]Status)
 
 func LoadStatusForService(service *services.ServiceConfig, baseDir string) (map[string]Status, error) {
+	var statuses = make(map[string]Status)
 	statusDir := statusDir(service, baseDir)
+	if _, err := os.Stat(statusDir); os.IsNotExist(err) {
+		return statuses, nil
+	}
 	files, err := ioutil.ReadDir(statusDir)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-
-	var statuses = make(map[string]Status)
 	for _, f := range files {
 		raw, err := ioutil.ReadFile(path.Join(statusDir, f.Name()))
 		if err != nil {
@@ -81,6 +83,15 @@ func SaveStatusForService(service *services.ServiceConfig, instanceId string, st
 		return errors.WithMessage(err, "save status")
 	}
 	return nil
+}
+
+func DeleteAllStatusesForService(service *services.ServiceConfig, baseDir string) error {
+	statusDir := statusDir(service, baseDir)
+	if _, err := os.Stat(statusDir); os.IsNotExist(err) {
+		return nil
+	}
+	err := os.RemoveAll(statusDir)
+	return errors.WithStack(err)
 }
 
 func DeleteStatusForService(service *services.ServiceConfig, instanceId, baseDir string) error {

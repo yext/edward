@@ -1,0 +1,11 @@
+{
+    "services": [
+        {
+            "name": "service",
+            "path": "edward-test-service",
+            "commands": {
+                "launch": "go run main.go"
+            }
+        }
+    ]
+}

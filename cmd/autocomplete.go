@@ -9,10 +9,10 @@ import (
 	"github.com/yext/edward/config"
 )
 
-func autocompleteServicesAndGroups(logger *log.Logger) {
+func autocompleteServicesAndGroups(homeDir string, logger *log.Logger) {
 	printCommandChildren(RootCmd)
 
-	configPath, err := config.GetConfigPathFromWorkingDirectory()
+	configPath, err := config.GetConfigPathFromWorkingDirectory(homeDir)
 	if err != nil {
 		logger.Println("Autocomplete> Error getting config path:", err)
 		return
