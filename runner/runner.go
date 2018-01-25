@@ -52,6 +52,8 @@ func (r *Runner) Messagef(format string, a ...interface{}) {
 }
 
 func (r *Runner) Run(args []string) error {
+	r.updateServiceState(instance.StateStarting)
+
 	// Allow shutdown through signals
 	r.configureSignals()
 
@@ -66,6 +68,7 @@ func (r *Runner) Run(args []string) error {
 	if r.WorkingDir != "" {
 		err := os.Chdir(r.WorkingDir)
 		if err != nil {
+			r.updateServiceState(instance.StateDied)
 			return errors.WithStack(err)
 		}
 	}
@@ -76,8 +79,6 @@ func (r *Runner) Run(args []string) error {
 		r.Messagef("Could not get service command: %v\n", err)
 	}
 	r.instanceId = command.InstanceId
-
-	r.updateServiceState(instance.StateStarting)
 
 	err = r.configureLogs()
 	if err != nil {
