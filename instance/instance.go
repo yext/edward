@@ -22,7 +22,6 @@ import (
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
-	"github.com/yext/edward/warmup"
 )
 
 // Instance provides state and functions for managing a service
@@ -166,82 +165,6 @@ func (c *Instance) createScript(content string, scriptType string) (*os.File, er
 	}
 
 	return file, nil
-}
-
-// StartAsync starts the service in the background
-// Will block until the service is known to have started successfully.
-// If the service fails to launch, an error will be returned.
-func (c *Instance) StartAsync(cfg services.OperationConfig, task tracker.Task) error {
-	if c.Service.Commands.Launch == "" {
-		return nil
-	}
-
-	startTask := task.Child(c.Service.GetName()).Child("Start")
-	startTask.SetState(tracker.TaskStateInProgress)
-
-	if c.Pid != 0 {
-		startTask.SetState(tracker.TaskStateWarning, "Already running")
-		return nil
-	}
-
-	if c.Service.LaunchChecks != nil && len(c.Service.LaunchChecks.Ports) > 0 {
-		inUse, err := c.areAnyListeningPortsOpen(c.Service.LaunchChecks.Ports)
-		if err != nil {
-			startTask.SetState(tracker.TaskStateFailed, err.Error())
-			return errors.WithStack(err)
-		}
-		if inUse {
-			inUseErr := errors.New("one or more of the ports required by this service are in use")
-			startTask.SetState(tracker.TaskStateFailed, inUseErr.Error())
-			return errors.WithStack(inUseErr)
-		}
-	}
-
-	os.Remove(c.Service.GetRunLog(c.dirConfig.LogDir))
-
-	cmd, err := c.getLaunchCommand(cfg)
-	if err != nil {
-		startTask.SetState(tracker.TaskStateFailed, err.Error())
-		return errors.WithStack(err)
-	}
-	cmd.Env = append(os.Environ(), c.Overrides.Env...)
-	cmd.Env = append(cmd.Env, c.Service.Env...)
-
-	err = cmd.Start()
-	if err != nil {
-		startTask.SetState(tracker.TaskStateFailed)
-		return errors.WithStack(err)
-	}
-
-	c.Pid = cmd.Process.Pid
-
-	c.printf("%v has PID: %d.\n", c.Service.Name, c.Pid)
-
-	err = c.save()
-	if err != nil {
-		startTask.SetState(tracker.TaskStateFailed)
-		return errors.WithStack(err)
-	}
-
-	err = WaitUntilRunning(c.dirConfig, cmd, c.Service)
-	if err == nil {
-		startTask.SetState(tracker.TaskStateSuccess)
-		warmup.Run(c.Service.Name, c.Service.Warmup, task)
-		return nil
-	}
-
-	log, readingErr := logToStringSlice(c.Service.GetRunLog(c.dirConfig.LogDir))
-	if readingErr != nil {
-		startTask.SetState(tracker.TaskStateFailed, "Could not read log", readingErr.Error(), fmt.Sprint("Original error: ", err.Error()))
-	} else {
-		log = append(log, err.Error())
-		startTask.SetState(tracker.TaskStateFailed, log...)
-	}
-	stopErr := c.StopSync(cfg, c.Overrides, task.Child("Cleanup"))
-	if stopErr != nil {
-		return errors.WithStack(stopErr)
-	}
-	return errors.WithStack(err)
 }
 
 func readAvailableLines(r io.ReadCloser) ([]string, error) {
