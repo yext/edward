@@ -92,7 +92,7 @@ func TestStopAll(t *testing.T) {
 			tf := newTestFollower()
 			client.Follower = tf
 
-			err = client.Start(test.servicesStart, test.skipBuild, false, test.noWatch, test.exclude)
+			err = client.Start(test.servicesStart, test.skipBuild, test.noWatch, test.exclude)
 			if err != nil {
 				t.Fatal(err)
 			}

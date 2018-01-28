@@ -86,7 +86,7 @@ func TestRestart(t *testing.T) {
 			tf := newTestFollower()
 			client.Follower = tf
 
-			err = client.Start(test.servicesStart, test.skipBuild, false, test.noWatch, test.exclude)
+			err = client.Start(test.servicesStart, test.skipBuild, test.noWatch, test.exclude)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -97,7 +97,7 @@ func TestRestart(t *testing.T) {
 			tf = newTestFollower()
 			client.Follower = tf
 
-			err = client.Restart(test.servicesRestart, true, test.skipBuild, false, test.noWatch, test.exclude)
+			err = client.Restart(test.servicesRestart, true, test.skipBuild, test.noWatch, test.exclude)
 			must.BeEqualErrors(t, test.err, err)
 			must.BeEqual(t, test.expectedStates, tf.states)
 			must.BeEqual(t, test.expectedMessages, tf.messages)

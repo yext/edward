@@ -71,7 +71,7 @@ func TestStatus(t *testing.T) {
 			tf := newTestFollower()
 			client.Follower = tf
 
-			err = client.Start(test.runningServices, false, false, false, nil)
+			err = client.Start(test.runningServices, false, false, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -11,28 +11,27 @@ import (
 	"github.com/yext/edward/worker"
 )
 
-func (c *Client) Restart(names []string, force bool, skipBuild bool, tail bool, noWatch bool, exclude []string) error {
+func (c *Client) Restart(names []string, force bool, skipBuild bool, noWatch bool, exclude []string) error {
 
 	if len(names) == 0 {
 		// Prompt user to confirm the restart
 		if !force && !c.askForConfirmation("Are you sure you want to restart all services?") {
 			return nil
 		}
-		c.restartAll(skipBuild, tail, noWatch, exclude)
+		err := c.restartAll(skipBuild, noWatch, exclude)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 	} else {
-		err := c.restartOneOrMoreServices(names, skipBuild, tail, noWatch, exclude)
+		err := c.restartOneOrMoreServices(names, skipBuild, noWatch, exclude)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 	}
-
-	if tail {
-		return errors.WithStack(c.tailFromFlag(names))
-	}
 	return nil
 }
 
-func (c *Client) restartAll(skipBuild bool, tail bool, noWatch bool, exclude []string) error {
+func (c *Client) restartAll(skipBuild bool, noWatch bool, exclude []string) error {
 	var instances []*instance.Instance
 	for _, service := range c.serviceMap {
 		running, err := instance.HasRunning(c.DirConfig, service)
@@ -57,10 +56,10 @@ func (c *Client) restartAll(skipBuild bool, tail bool, noWatch bool, exclude []s
 		serviceNames = append(serviceNames, instance.Service.Name)
 	}
 
-	return errors.WithStack(c.restartOneOrMoreServices(serviceNames, skipBuild, tail, noWatch, exclude))
+	return errors.WithStack(c.restartOneOrMoreServices(serviceNames, skipBuild, noWatch, exclude))
 }
 
-func (c *Client) restartOneOrMoreServices(serviceNames []string, skipBuild bool, tail bool, noWatch bool, exclude []string) error {
+func (c *Client) restartOneOrMoreServices(serviceNames []string, skipBuild bool, noWatch bool, exclude []string) error {
 	sgs, err := c.getServicesOrGroups(serviceNames)
 	if err != nil {
 		return errors.WithStack(err)
@@ -95,7 +94,7 @@ func (c *Client) restartOneOrMoreServices(serviceNames []string, skipBuild bool,
 		launchPool.Stop()
 		_ = <-launchPool.Complete()
 	}()
-	services.DoForServices(sgs, task, func(service *services.ServiceConfig, overrides services.ContextOverride, task tracker.Task) error {
+	err = services.DoForServices(sgs, task, func(service *services.ServiceConfig, overrides services.ContextOverride, task tracker.Task) error {
 		var err error
 		i, err := instance.Load(c.DirConfig, service, overrides)
 		if err != nil {
@@ -122,5 +121,5 @@ func (c *Client) restartOneOrMoreServices(serviceNames []string, skipBuild bool,
 
 		return nil
 	})
-	return nil
+	return errors.WithStack(err)
 }

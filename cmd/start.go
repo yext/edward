@@ -10,9 +10,14 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Build and launch a service or a group",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return errors.WithStack(
-			edwardClient.Start(args, *startFlags.skipBuild, *startFlags.tail, *startFlags.noWatch, *startFlags.exclude),
-		)
+		err := edwardClient.Start(args, *startFlags.skipBuild, *startFlags.noWatch, *startFlags.exclude)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		if *startFlags.tail {
+			return errors.WithStack(edwardClient.Log(args, getSignalChannel()))
+		}
+		return nil
 	},
 }
 

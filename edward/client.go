@@ -113,7 +113,7 @@ func (c *Client) ServiceMap() map[string]*services.ServiceConfig {
 	return c.serviceMap
 }
 
-func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, tail bool, noWatch bool, exclude []string, edwardExecutable string) error {
+func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, noWatch bool, exclude []string, edwardExecutable string) error {
 	cfg := services.OperationConfig{
 		WorkingDir:       c.WorkingDir,
 		EdwardExecutable: edwardExecutable,
@@ -162,11 +162,6 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, ta
 		return nil
 	})
 	return errors.WithStack(err)
-}
-
-func (c *Client) tailFromFlag(names []string) error {
-	fmt.Println("=== Logs ===")
-	return errors.WithStack(c.Log(names))
 }
 
 func (c *Client) askForConfirmation(question string) bool {

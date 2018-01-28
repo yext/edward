@@ -12,10 +12,14 @@ import (
 	"github.com/yext/edward/services"
 )
 
-func (c *Client) Log(names []string) error {
+func (c *Client) Log(names []string, cancelChannel <-chan struct{}) error {
 	if len(names) == 0 {
-		return errors.New("At least one service or group must be specified")
+		return errors.New("at least one service or group must be specified")
 	}
+	if cancelChannel == nil {
+		return errors.New("a cancellation channel is required")
+	}
+
 	sgs, err := c.getServicesOrGroups(names)
 	if err != nil {
 		return errors.WithStack(err)
@@ -40,19 +44,26 @@ func (c *Client) Log(names []string) error {
 		}
 	}
 
-	var stopChannel = make(chan runner.LogLine)
+	var stopChannel = make(chan struct{})
 	statusTicker := time.NewTicker(time.Second * 5)
 	go func() {
-		for _ = range statusTicker.C {
-			running, err := checkAllRunning(c.DirConfig, sgs)
-			if err != nil {
-				c.Logger.Printf("Error checking service state for tailing: %v", err)
-				continue
-			}
-			// All services stopped, notify the log process
-			if !running {
-				statusTicker.Stop()
+		for {
+			select {
+			case _ = <-statusTicker.C:
+				running, err := checkAllRunning(c.DirConfig, sgs)
+				if err != nil {
+					c.Logger.Printf("Error checking service state for tailing: %v", err)
+					continue
+				}
+				// All services stopped, notify the log process
+				if !running {
+					statusTicker.Stop()
+					close(stopChannel)
+					return
+				}
+			case _ = <-cancelChannel:
 				close(stopChannel)
+				return
 			}
 		}
 	}()

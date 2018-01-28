@@ -4,8 +4,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) Start(names []string, skipBuild bool, tail bool, noWatch bool, exclude []string) error {
-	c.Logger.Println("Start:", names, skipBuild, tail, noWatch, exclude)
+func (c *Client) Start(names []string, skipBuild bool, noWatch bool, exclude []string) error {
+	c.Logger.Println("Start:", names, skipBuild, noWatch, exclude)
 	if len(names) == 0 {
 		return errors.New("At least one service or group must be specified")
 	}
@@ -21,13 +21,9 @@ func (c *Client) Start(names []string, skipBuild bool, tail bool, noWatch bool, 
 		}
 	}
 
-	err = c.startAndTrack(sgs, skipBuild, tail, noWatch, exclude, c.EdwardExecutable)
+	err = c.startAndTrack(sgs, skipBuild, noWatch, exclude, c.EdwardExecutable)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	if tail {
-		return errors.WithStack(c.tailFromFlag(names))
-	}
-
 	return nil
 }

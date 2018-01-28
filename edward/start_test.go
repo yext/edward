@@ -218,7 +218,7 @@ func TestStart(t *testing.T) {
 
 			defer showLogsIfFailed(t, test.name, wd, client)
 
-			err = client.Start(test.services, test.skipBuild, false, test.noWatch, test.exclude)
+			err = client.Start(test.services, test.skipBuild, test.noWatch, test.exclude)
 			must.BeEqual(t, test.expectedStates, tf.states)
 			must.BeEqual(t, test.expectedMessages, tf.messages)
 			must.BeEqualErrors(t, test.err, err)
@@ -373,7 +373,7 @@ func TestStartOrder(t *testing.T) {
 
 			defer showLogsIfFailed(t, test.name, wd, client)
 
-			err = client.Start(test.services, test.skipBuild, false, test.noWatch, test.exclude)
+			err = client.Start(test.services, test.skipBuild, test.noWatch, test.exclude)
 			must.BeEqual(t, test.expectedStateOrder, tf.stateOrder)
 			must.BeEqualErrors(t, test.err, err)
 
