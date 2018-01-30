@@ -1,21 +1,17 @@
 package edward_test
 
 import (
-	"fmt"
-	"log"
-	"path"
-	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/theothertomelliott/must"
-	"github.com/yext/edward/common"
-	"github.com/yext/edward/edward"
-	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 func TestStatus(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
 	var tests = []struct {
 		name             string
 		path             string
@@ -69,31 +65,13 @@ func TestStatus(t *testing.T) {
 			var err error
 
 			// Copy test content into a temp dir on the GOPATH & defer deletion
-			wd, cleanup := createWorkingDir(t, test.name, test.path)
+			client, _, cleanup, err := createClient(test.config, test.name, test.path)
 			defer cleanup()
 
-			client, err := edward.NewClientWithConfig(
-				path.Join(wd, test.config),
-				common.EdwardVersion,
-				log.New(&lumberjack.Logger{
-					Filename:   filepath.Join(wd, "edward.log"),
-					MaxSize:    50, // megabytes
-					MaxBackups: 30,
-					MaxAge:     1, //days
-				}, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile),
-			)
-			if err != nil {
-				t.Fatal(err)
-			}
-			client.WorkingDir = wd
 			tf := newTestFollower()
 			client.Follower = tf
 
-			client.EdwardExecutable = edwardExecutable
-			client.DisableConcurrentPhases = true
-			client.Tags = []string{fmt.Sprintf("test.status.%d", time.Now().UnixNano())}
-
-			err = client.Start(test.runningServices, false, false, false, nil)
+			err = client.Start(test.runningServices, false, false, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

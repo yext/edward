@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
 )
 
@@ -13,6 +14,7 @@ func NewRunningCommand(service *services.ServiceConfig, cmd *exec.Cmd, commandWa
 	return &RunningCommand{
 		service:     service,
 		command:     cmd,
+		started:     make(chan struct{}),
 		done:        make(chan struct{}),
 		commandWait: commandWait,
 	}
@@ -22,33 +24,41 @@ func NewRunningCommand(service *services.ServiceConfig, cmd *exec.Cmd, commandWa
 type RunningCommand struct {
 	service     *services.ServiceConfig
 	command     *exec.Cmd
+	started     chan struct{}
 	done        chan struct{}
 	commandWait *sync.WaitGroup
 }
 
-// Start starts a command running in a goroutine
+// Start starts a command running in a goroutine.
+// Will block until the service has started running and has a PID.
 func (c *RunningCommand) Start(errorLog Logger) {
 	go func() {
-		err := c.command.Run()
+		err := c.command.Start()
+		close(c.started)
+		if err != nil {
+			errorLog.Printf("start error: %v", err)
+		}
+		err = c.command.Wait()
 		if err != nil {
 			errorLog.Printf("start error: %v", err)
 		}
 		c.commandWait.Done()
 		close(c.done)
 	}()
+	<-c.started
 }
 
 // Interrupt sends an interrupt to a running command
 func (c *RunningCommand) Interrupt() error {
 	return errors.WithStack(
-		services.InterruptGroup(services.OperationConfig{}, c.command.Process.Pid, c.service),
+		instance.InterruptGroup(services.OperationConfig{}, c.command.Process.Pid, c.service),
 	)
 }
 
 // Kill sends a kill signal to a running command
 func (c *RunningCommand) Kill() error {
 	return errors.WithStack(
-		services.KillGroup(services.OperationConfig{}, c.command.Process.Pid, c.service),
+		instance.KillGroup(services.OperationConfig{}, c.command.Process.Pid, c.service),
 	)
 }
 

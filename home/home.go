@@ -18,13 +18,19 @@ type EdwardConfiguration struct {
 	ScriptDir    string
 }
 
-// EdwardConfig stores a shared instance of EdwardConfiguration for use across the app
-var EdwardConfig = EdwardConfiguration{}
-
 func createDirIfNeeded(path string) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		os.MkdirAll(path, 0777)
 	}
+}
+
+func NewConfiguration() (*EdwardConfiguration, error) {
+	cfg := &EdwardConfiguration{}
+	err := cfg.Initialize()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return cfg, nil
 }
 
 // Initialize sets up EdwardConfig based on the location of .edward in the home dir
@@ -33,7 +39,11 @@ func (e *EdwardConfiguration) Initialize() error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	e.Dir = path.Join(user.HomeDir, ".edward")
+	return e.InitializeWithDir(path.Join(user.HomeDir, ".edward"))
+}
+
+func (e *EdwardConfiguration) InitializeWithDir(dir string) error {
+	e.Dir = dir
 	createDirIfNeeded(e.Dir)
 	e.EdwardLogDir = path.Join(e.Dir, "edward_logs")
 	createDirIfNeeded(e.EdwardLogDir)

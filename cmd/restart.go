@@ -10,16 +10,20 @@ var restartCmd = &cobra.Command{
 	Use:   "restart",
 	Short: "Rebuild and relaunch a service or a group",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return errors.WithStack(
-			edwardClient.Restart(
-				args,
-				*restartFlags.force,
-				*restartFlags.skipBuild,
-				*restartFlags.tail,
-				*restartFlags.noWatch,
-				*restartFlags.exclude,
-			),
+		err := edwardClient.Restart(
+			args,
+			*restartFlags.force,
+			*restartFlags.skipBuild,
+			*restartFlags.noWatch,
+			*restartFlags.exclude,
 		)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		if *restartFlags.tail {
+			return errors.WithStack(edwardClient.Log(args, getSignalChannel()))
+		}
+		return nil
 	},
 }
 

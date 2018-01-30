@@ -1,4 +1,4 @@
-package services
+package instance
 
 import (
 	"encoding/json"
@@ -6,24 +6,23 @@ import (
 	"path"
 
 	"github.com/pkg/errors"
-	"github.com/yext/edward/home"
+	"github.com/yext/edward/services"
 )
 
-func LoadRunningServices() ([]ServiceOrGroup, error) {
-	dir := home.EdwardConfig.StateDir
-	stateFiles, err := ioutil.ReadDir(dir)
+func LoadRunningServices(stateDir string) ([]services.ServiceOrGroup, error) {
+	stateFiles, err := ioutil.ReadDir(stateDir)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	var services []ServiceOrGroup
+	var services []services.ServiceOrGroup
 	for _, file := range stateFiles {
 		// Skip directories (these contain instance state)
 		if file.IsDir() {
 			continue
 		}
 
-		command := &ServiceCommand{}
-		raw, err := ioutil.ReadFile(path.Join(dir, file.Name()))
+		command := &Instance{}
+		raw, err := ioutil.ReadFile(path.Join(stateDir, file.Name()))
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}

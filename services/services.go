@@ -1,28 +1,9 @@
 package services
 
 import (
-	"time"
-
+	"github.com/pkg/errors"
 	"github.com/yext/edward/tracker"
-	"github.com/yext/edward/worker"
 )
-
-// StatusRunning is the status string for a running service
-const StatusRunning = "RUNNING"
-
-// StatusStopped is the status string for a stopped service
-const StatusStopped = "STOPPED"
-
-// ServiceStatus contains the status for a service at a given point in time
-type ServiceStatus struct {
-	Service     *ServiceConfig
-	Status      string
-	Pid         int
-	StartTime   time.Time
-	Ports       []string
-	StderrCount int
-	StdoutCount int
-}
 
 // OperationConfig provides additional configuration for an operation
 // on a service or group
@@ -52,12 +33,6 @@ func (o *OperationConfig) IsExcluded(sg ServiceOrGroup) bool {
 type ServiceOrGroup interface {
 	GetName() string
 	GetDescription() string
-	Build(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error                     // Build this service/group from source
-	Start(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error  // Build and Launch this service/group
-	Launch(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error // Launch this service/group without building
-	Stop(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error
-	Restart(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error
-	Status() ([]ServiceStatus, error)
 	IsSudo(cfg OperationConfig) bool
 	Watch() ([]ServiceWatch, error)
 }
@@ -78,23 +53,50 @@ func (c ContextOverride) Merge(m ContextOverride) ContextOverride {
 
 // CountServices returns the total number of services in the slice of services and groups.
 func CountServices(sgs []ServiceOrGroup) int {
-	var count int
+	return len(Services(sgs))
+}
+
+// Services returns a slice of services from a slice of services or groups.
+func Services(sgs []ServiceOrGroup) []*ServiceConfig {
+	var services []*ServiceConfig
 	for _, sg := range sgs {
 		switch v := sg.(type) {
 		case *ServiceConfig:
-			count++
+			services = append(services, v)
 		case *ServiceGroupConfig:
-			count += countGroupServices(v)
+			services = append(services, getGroupServices(v)...)
 		}
 	}
-	return count
+	return services
 }
 
-func countGroupServices(group *ServiceGroupConfig) int {
-	var count int
-	for _, g := range group.Groups {
-		count += countGroupServices(g)
+// DoForServices performs a taks for a set of services
+func DoForServices(sgs []ServiceOrGroup, task tracker.Task, f func(service *ServiceConfig, overrides ContextOverride, task tracker.Task) error) error {
+	for _, sg := range sgs {
+		switch v := sg.(type) {
+		case *ServiceConfig:
+			err := f(v, ContextOverride{}, task)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+		case *ServiceGroupConfig:
+			t := task.Child(v.Name)
+			err := DoForServices(v.Children(), t, func(service *ServiceConfig, overrides ContextOverride, task tracker.Task) error {
+				return errors.WithStack(f(service, v.getOverrides(overrides), task))
+			})
+			if err != nil {
+				return errors.WithStack(err)
+			}
+		}
 	}
-	count += len(group.Services)
-	return count
+	return nil
+}
+
+func getGroupServices(group *ServiceGroupConfig) []*ServiceConfig {
+	var services []*ServiceConfig
+	for _, g := range group.Groups {
+		services = append(services, getGroupServices(g)...)
+	}
+	services = append(services, group.Services...)
+	return services
 }

@@ -4,56 +4,62 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
+	"github.com/yext/edward/builder"
+	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/worker"
 )
 
-func (c *Client) Restart(names []string, force bool, skipBuild bool, tail bool, noWatch bool, exclude []string) error {
+func (c *Client) Restart(names []string, force bool, skipBuild bool, noWatch bool, exclude []string) error {
 
 	if len(names) == 0 {
 		// Prompt user to confirm the restart
 		if !force && !c.askForConfirmation("Are you sure you want to restart all services?") {
 			return nil
 		}
-		c.restartAll(skipBuild, tail, noWatch, exclude)
-	} else {
-		err := c.restartOneOrMoreServices(names, skipBuild, tail, noWatch, exclude)
+		err := c.restartAll(skipBuild, noWatch, exclude)
 		if err != nil {
 			return errors.WithStack(err)
 		}
-	}
-
-	if tail {
-		return errors.WithStack(c.tailFromFlag(names))
+	} else {
+		err := c.restartOneOrMoreServices(names, skipBuild, noWatch, exclude)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 	}
 	return nil
 }
 
-func (c *Client) restartAll(skipBuild bool, tail bool, noWatch bool, exclude []string) error {
-	var as []*services.ServiceConfig
+func (c *Client) restartAll(skipBuild bool, noWatch bool, exclude []string) error {
+	var instances []*instance.Instance
 	for _, service := range c.serviceMap {
-		s, err := service.Status()
+		running, err := instance.HasRunning(c.DirConfig, service)
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		for _, status := range s {
-			if status.Status != services.StatusStopped {
-				as = append(as, service)
+		if running {
+			i, err := instance.Load(c.DirConfig, service, services.ContextOverride{})
+			if err != nil {
+				return errors.WithStack(err)
 			}
+			instances = append(instances, i)
 		}
 	}
 
-	sort.Sort(serviceConfigByPID(as))
+	sort.Slice(instances, func(i, j int) bool {
+		return instances[i].Pid < instances[j].Pid
+	})
+
 	var serviceNames []string
-	for _, service := range as {
-		serviceNames = append(serviceNames, service.Name)
+	for _, instance := range instances {
+		serviceNames = append(serviceNames, instance.Service.Name)
 	}
 
-	return errors.WithStack(c.restartOneOrMoreServices(serviceNames, skipBuild, tail, noWatch, exclude))
+	return errors.WithStack(c.restartOneOrMoreServices(serviceNames, skipBuild, noWatch, exclude))
 }
 
-func (c *Client) restartOneOrMoreServices(serviceNames []string, skipBuild bool, tail bool, noWatch bool, exclude []string) error {
+func (c *Client) restartOneOrMoreServices(serviceNames []string, skipBuild bool, noWatch bool, exclude []string) error {
 	sgs, err := c.getServicesOrGroups(serviceNames)
 	if err != nil {
 		return errors.WithStack(err)
@@ -88,11 +94,32 @@ func (c *Client) restartOneOrMoreServices(serviceNames []string, skipBuild bool,
 		launchPool.Stop()
 		_ = <-launchPool.Complete()
 	}()
-	for _, s := range sgs {
-		err = s.Restart(cfg, services.ContextOverride{}, task, launchPool)
+	err = services.DoForServices(sgs, task, func(service *services.ServiceConfig, overrides services.ContextOverride, task tracker.Task) error {
+		var err error
+		i, err := instance.Load(c.DirConfig, service, overrides)
 		if err != nil {
 			return errors.WithStack(err)
 		}
-	}
-	return nil
+		overrides = i.Overrides.Merge(overrides)
+
+		err = i.StopSync(cfg, overrides, task)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		if !cfg.SkipBuild {
+			b := builder.New(cfg, overrides)
+			err := b.Build(c.DirConfig, task, service)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+		}
+		err = i.StartAsync(cfg, task)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		return nil
+	})
+	return errors.WithStack(err)
 }

@@ -10,6 +10,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/yext/edward/builder"
+	"github.com/yext/edward/home"
+	"github.com/yext/edward/instance"
 	"github.com/yext/edward/output"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
@@ -42,6 +45,8 @@ type Client struct {
 	serviceMap map[string]*services.ServiceConfig
 
 	Tags []string // Tags to distinguish runners started by this instance of edward
+
+	DirConfig *home.EdwardConfiguration
 }
 
 type TaskFollower interface {
@@ -56,6 +61,11 @@ func NewClient() (*Client, error) {
 		return nil, errors.WithStack(err)
 	}
 
+	dirCfg, err := home.NewConfiguration()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
 	return &Client{
 		Input:      os.Stdin,
 		Output:     os.Stdout,
@@ -64,12 +74,18 @@ func NewClient() (*Client, error) {
 		WorkingDir: wd,
 		groupMap:   make(map[string]*services.ServiceGroupConfig),
 		serviceMap: make(map[string]*services.ServiceConfig),
+		DirConfig:  dirCfg,
 	}, nil
 }
 
 // NewClientWithConfig creates an Edward client and loads the config from the given path
 func NewClientWithConfig(configPath, version string, logger *log.Logger) (*Client, error) {
 	wd, err := os.Getwd()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	dirCfg, err := home.NewConfiguration()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -83,6 +99,7 @@ func NewClientWithConfig(configPath, version string, logger *log.Logger) (*Clien
 		Config:     configPath,
 		groupMap:   make(map[string]*services.ServiceGroupConfig),
 		serviceMap: make(map[string]*services.ServiceConfig),
+		DirConfig:  dirCfg,
 	}
 	err = client.LoadConfig(version)
 	return client, errors.WithStack(err)
@@ -96,7 +113,7 @@ func (c *Client) ServiceMap() map[string]*services.ServiceConfig {
 	return c.serviceMap
 }
 
-func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, tail bool, noWatch bool, exclude []string, edwardExecutable string) error {
+func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, noWatch bool, exclude []string, edwardExecutable string) error {
 	cfg := services.OperationConfig{
 		WorkingDir:       c.WorkingDir,
 		EdwardExecutable: edwardExecutable,
@@ -121,26 +138,30 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, ta
 		_ = <-p.Complete()
 	}()
 	var err error
-	for _, s := range sgs {
+	err = services.DoForServices(sgs, task, func(s *services.ServiceConfig, overrides services.ContextOverride, task tracker.Task) error {
 		if skipBuild {
 			c.Logger.Println("skipping build phase")
-			err = s.Launch(cfg, services.ContextOverride{}, task, p)
+			err = instance.Launch(c.DirConfig, s, cfg, overrides, task, p)
 			if err != nil {
 				return errors.WithMessage(err, "Error launching "+s.GetName())
 			}
 		} else {
-			err = s.Start(cfg, services.ContextOverride{}, task, p)
-			if err != nil {
-				return errors.WithMessage(err, "Error starting "+s.GetName())
+			if cfg.IsExcluded(s) {
+				return nil
 			}
+			c.Logger.Printf("Building: %s", s.Name)
+			b := builder.New(cfg, overrides)
+			err := b.Build(c.DirConfig, task, s)
+			if err != nil {
+				return errors.WithMessage(err, "Error starting "+s.GetName()+": build")
+			}
+			c.Logger.Printf("Launching: %s", s.Name)
+			err = instance.Launch(c.DirConfig, s, cfg, overrides, task, p)
+			return errors.WithMessage(err, "Error starting "+s.GetName()+": launch")
 		}
-	}
-	return nil
-}
-
-func (c *Client) tailFromFlag(names []string) error {
-	fmt.Println("=== Logs ===")
-	return errors.WithStack(c.Log(names))
+		return nil
+	})
+	return errors.WithStack(err)
 }
 
 func (c *Client) askForConfirmation(question string) bool {
@@ -168,18 +189,4 @@ func (c *Client) askForConfirmation(question string) bool {
 			return false
 		}
 	}
-}
-
-type serviceConfigByPID []*services.ServiceConfig
-
-func (s serviceConfigByPID) Len() int {
-	return len(s)
-}
-func (s serviceConfigByPID) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-func (s serviceConfigByPID) Less(i, j int) bool {
-	cmd1, _ := s[i].GetCommand(services.ContextOverride{})
-	cmd2, _ := s[j].GetCommand(services.ContextOverride{})
-	return cmd1.Pid < cmd2.Pid
 }

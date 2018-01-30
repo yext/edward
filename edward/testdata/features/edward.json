@@ -7,7 +7,7 @@
             ],
             "env": [
                 "BUILD=build",
-                "PORT=51937",
+                "PORT=51938",
                 "APPLIED=YES"
             ]
         }
@@ -48,10 +48,7 @@
             "commands": {
                 "build": "go ${BUILD}",
                 "launch": "./edward-test-expectenv ${PORT}"
-            },
-            "env": [
-                "APPLIED=YES"
-            ]
+            }
         },
         {
             "name": "wait",

@@ -11,7 +11,6 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
-	"github.com/yext/edward/home"
 	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
 )
@@ -47,7 +46,8 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 	table.SetHeader(headings)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 
-	for _, s := range sgs {
+	services := services.Services(sgs)
+	for _, s := range services {
 		statuses, err := c.getStates(s)
 		if err != nil {
 			return "", errors.WithStack(err)
@@ -88,34 +88,24 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 
 type statusCommandTuple struct {
 	status  instance.Status
-	command *services.ServiceCommand
+	command *instance.Instance
 }
 
-func (c *Client) getStates(s services.ServiceOrGroup) ([]statusCommandTuple, error) {
-	if service, ok := s.(*services.ServiceConfig); ok {
-		command, err := service.GetCommand(services.ContextOverride{})
-		if err != nil {
-			return nil, errors.WithMessage(err, "could not get service command")
-		}
-		statuses, _ := instance.LoadStatusForService(service, home.EdwardConfig.StateDir)
-		if status, ok := statuses[command.InstanceId]; ok {
-			return []statusCommandTuple{
-				statusCommandTuple{
-					status:  status,
-					command: command,
-				},
-			}, nil
-		}
-		return nil, nil
+func (c *Client) getStates(service *services.ServiceConfig) ([]statusCommandTuple, error) {
+	command, err := instance.Load(c.DirConfig, service, services.ContextOverride{})
+	if err != nil {
+		return nil, errors.WithMessage(err, "could not get service command")
 	}
-	var stateList []statusCommandTuple
-	if group, ok := s.(*services.ServiceGroupConfig); ok {
-		for _, service := range group.Services {
-			serviceStates, _ := c.getStates(service)
-			stateList = append(stateList, serviceStates...)
-		}
+	statuses, _ := instance.LoadStatusForService(service, c.DirConfig.StateDir)
+	if status, ok := statuses[command.InstanceId]; ok {
+		return []statusCommandTuple{
+			statusCommandTuple{
+				status:  status,
+				command: command,
+			},
+		}, nil
 	}
-	return stateList, nil
+	return nil, nil
 }
 
 func (c *Client) getServiceList(names []string, all bool) ([]services.ServiceOrGroup, error) {
@@ -123,7 +113,7 @@ func (c *Client) getServiceList(names []string, all bool) ([]services.ServiceOrG
 	var err error
 
 	if all {
-		runningServices, err := services.LoadRunningServices()
+		runningServices, err := instance.LoadRunningServices(c.DirConfig.StateDir)
 		if err != nil {
 			return nil, err
 		}

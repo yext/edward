@@ -1,12 +1,7 @@
 package services
 
 import (
-	"fmt"
-
-	"github.com/pkg/errors"
 	"github.com/yext/edward/common"
-	"github.com/yext/edward/tracker"
-	"github.com/yext/edward/worker"
 )
 
 var _ ServiceOrGroup = &ServiceGroupConfig{}
@@ -63,28 +58,6 @@ func (c *ServiceGroupConfig) GetDescription() string {
 	return c.Description
 }
 
-// Build builds all services within this group
-func (c *ServiceGroupConfig) Build(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error {
-	if cfg.IsExcluded(c) {
-		return nil
-	}
-	groupTracker := task.Child(c.GetName())
-
-	for _, group := range c.Groups {
-		err := group.Build(cfg, overrides, groupTracker)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	for _, service := range c.Services {
-		err := service.Build(cfg, overrides, groupTracker)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	return nil
-}
-
 func (c *ServiceGroupConfig) getOverrides(o ContextOverride) ContextOverride {
 	override := ContextOverride{
 		Env: c.Env,
@@ -106,115 +79,13 @@ func (c *ServiceGroupConfig) getChild(name string) ServiceOrGroup {
 	return nil
 }
 
-// Start will build and launch all services within this group
-func (c *ServiceGroupConfig) Start(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
-	if cfg.IsExcluded(c) {
-		return nil
+// Children returns a slice of all children of this group in the configured order
+func (c *ServiceGroupConfig) Children() []ServiceOrGroup {
+	var children []ServiceOrGroup
+	for _, name := range c.ChildOrder {
+		children = append(children, c.getChild(name))
 	}
-	groupTracker := task.Child(c.GetName())
-
-	for _, childName := range c.ChildOrder {
-		child := c.getChild(childName)
-		if child == nil {
-			return fmt.Errorf("Child not found: %s", childName)
-		}
-		err := child.Start(cfg, c.getOverrides(overrides), groupTracker, pool)
-		if err != nil {
-			// Always fail if any services in a dependant group failed
-			return errors.WithStack(err)
-		}
-	}
-	return nil
-}
-
-// Launch will launch all services within this group
-func (c *ServiceGroupConfig) Launch(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
-	if cfg.IsExcluded(c) {
-		return nil
-	}
-
-	groupTracker := task.Child(c.GetName())
-	for _, group := range c.Groups {
-		err := group.Launch(cfg, c.getOverrides(overrides), groupTracker, pool)
-		if err != nil {
-			// Always fail if any services in a dependant group failed
-			return errors.WithStack(err)
-		}
-	}
-	var outErr error
-	for _, service := range c.Services {
-		err := service.Launch(cfg, c.getOverrides(overrides), groupTracker, pool)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	return outErr
-}
-
-// Stop stops all services within this group
-func (c *ServiceGroupConfig) Stop(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
-	if cfg.IsExcluded(c) {
-		return nil
-	}
-	groupTracker := task.Child(c.GetName())
-
-	// TODO: Do this in reverse
-	for _, service := range c.Services {
-		err := service.Stop(cfg, c.getOverrides(overrides), groupTracker, pool)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	for _, group := range c.Groups {
-		err := group.Stop(cfg, c.getOverrides(overrides), groupTracker, pool)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	return nil
-}
-
-// Restart restarts all services within this group
-func (c *ServiceGroupConfig) Restart(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
-	if cfg.IsExcluded(c) {
-		return nil
-	}
-	groupTracker := task.Child(c.GetName())
-
-	// TODO: Do this in reverse
-	for _, service := range c.Services {
-		err := service.Restart(cfg, c.getOverrides(overrides), groupTracker, pool)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	for _, group := range c.Groups {
-		err := group.Restart(cfg, c.getOverrides(overrides), groupTracker, pool)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	return nil
-}
-
-// Status returns the status for all services within this group
-func (c *ServiceGroupConfig) Status() ([]ServiceStatus, error) {
-	var outStatus []ServiceStatus
-	for _, service := range c.Services {
-		statuses, err := service.Status()
-		if err != nil {
-			return outStatus, errors.WithStack(err)
-		}
-		outStatus = append(outStatus, statuses...)
-	}
-	for _, group := range c.Groups {
-		statuses, err := group.Status()
-		if err != nil {
-			return outStatus, errors.WithStack(err)
-		}
-		outStatus = append(outStatus, statuses...)
-	}
-	return outStatus, nil
+	return children
 }
 
 // IsSudo returns true if any of the services in this group require sudo to run

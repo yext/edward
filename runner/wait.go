@@ -1,39 +1,47 @@
-package services
+package runner
 
 import (
-	"os/exec"
+	"fmt"
 	"strings"
 	"time"
+
+	"github.com/yext/edward/home"
 
 	"github.com/hpcloud/tail"
 	"github.com/pkg/errors"
 	"github.com/theothertomelliott/gopsutil-nocgo/net"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
+	"github.com/yext/edward/instance"
+	"github.com/yext/edward/services"
 )
 
 // WaitUntilLive blocks until a command running the specified service is in the RUNNING state.
 // An error will be returned if the command exits before reaching RUNNING.
-func WaitUntilLive(command *exec.Cmd, service *ServiceConfig) error {
-
-	service.printf("Waiting for %v to start.\n", service.Name)
+func WaitUntilLive(dirConfig *home.EdwardConfiguration, pid int32, service *services.ServiceConfig) error {
+	logger := service.Logger
+	fmt.Println("Wait until live")
+	logger.Printf("Waiting for %v to start.\n", service.Name)
 
 	var startCheck func(cancel <-chan struct{}) error
 	if service.LaunchChecks != nil && len(service.LaunchChecks.LogText) > 0 {
-		service.printf("Waiting for log text: %v", service.LaunchChecks.LogText)
+		fmt.Printf("Waiting for log text: %v\n", service.LaunchChecks.LogText)
+		logger.Printf("Waiting for log text: %v", service.LaunchChecks.LogText)
 		startCheck = func(cancel <-chan struct{}) error {
 			return errors.WithStack(
-				waitForLogText(service.LaunchChecks.LogText, cancel, service),
+				waitForLogText(dirConfig, service.LaunchChecks.LogText, cancel, service),
 			)
 		}
 	} else if service.LaunchChecks != nil && len(service.LaunchChecks.Ports) > 0 {
-		service.printf("Waiting for ports: %v", service.LaunchChecks.Ports)
+		fmt.Printf("Waiting for ports: %v\n", service.LaunchChecks.Ports)
+		logger.Printf("Waiting for ports: %v", service.LaunchChecks.Ports)
 		startCheck = func(cancel <-chan struct{}) error {
 			return errors.WithStack(
-				waitForListeningPorts(service.LaunchChecks.Ports, cancel, command),
+				waitForListeningPorts(service.LaunchChecks.Ports, cancel, pid),
 			)
 		}
 	} else if service.LaunchChecks != nil && service.LaunchChecks.Wait != 0 {
-		service.printf("Waiting for: %dms", service.LaunchChecks.Wait)
+		fmt.Printf("Waiting for: %dms\n", service.LaunchChecks.Wait)
+		logger.Printf("Waiting for: %dms", service.LaunchChecks.Wait)
 		startCheck = func(cancel <-chan struct{}) error {
 			delay := time.NewTimer(time.Duration(service.LaunchChecks.Wait) * time.Millisecond)
 			defer delay.Stop()
@@ -45,23 +53,13 @@ func WaitUntilLive(command *exec.Cmd, service *ServiceConfig) error {
 			}
 		}
 	} else {
-		service.printf("Waiting for any port")
+		fmt.Printf("Waiting for any port\n")
+		logger.Printf("Waiting for any port")
 		startCheck = func(cancel <-chan struct{}) error {
 			return errors.WithStack(
-				waitForAnyPort(cancel, command),
+				waitForAnyPort(cancel, pid),
 			)
 		}
-	}
-
-	processFinished := func(cancel <-chan struct{}) error {
-		// Wait until the process exists
-		command.Wait()
-		select {
-		case <-cancel:
-			return nil
-		default:
-		}
-		return errors.New("service terminated prematurely")
 	}
 
 	done := make(chan struct{})
@@ -69,20 +67,18 @@ func WaitUntilLive(command *exec.Cmd, service *ServiceConfig) error {
 
 	select {
 	case result := <-cancelableWait(done, startCheck):
-		service.printf("Process started")
-		return errors.WithStack(result.error)
-	case result := <-cancelableWait(done, processFinished):
-		service.printf("Process exited")
+		fmt.Printf("Process started\n")
+		logger.Printf("Process started")
 		return errors.WithStack(result.error)
 	}
 
 }
 
-func waitForLogText(line string, cancel <-chan struct{}, service *ServiceConfig) error {
+func waitForLogText(dirConfig *home.EdwardConfiguration, line string, cancel <-chan struct{}, service *services.ServiceConfig) error {
 	// Read output until we get the success
 	var t *tail.Tail
 	var err error
-	t, err = tail.TailFile(service.GetRunLog(), tail.Config{
+	t, err = tail.TailFile(service.GetRunLog(dirConfig.LogDir), tail.Config{
 		Follow: true,
 		ReOpen: true,
 		Poll:   true,
@@ -108,8 +104,7 @@ func waitForLogText(line string, cancel <-chan struct{}, service *ServiceConfig)
 
 const portStatusListen = "LISTEN"
 
-func (c *ServiceCommand) areAnyListeningPortsOpen(ports []int) (bool, error) {
-
+func areAnyListeningPortsOpen(c *instance.Instance, ports []int) (bool, error) {
 	var matchedPorts = make(map[int]struct{})
 	for _, port := range ports {
 		matchedPorts[port] = struct{}{}
@@ -129,7 +124,7 @@ func (c *ServiceCommand) areAnyListeningPortsOpen(ports []int) (bool, error) {
 	return false, nil
 }
 
-func waitForListeningPorts(ports []int, cancel <-chan struct{}, command *exec.Cmd) error {
+func waitForListeningPorts(ports []int, cancel <-chan struct{}, pid int32) error {
 	for true {
 		time.Sleep(100 * time.Millisecond)
 
@@ -163,7 +158,7 @@ func waitForListeningPorts(ports []int, cancel <-chan struct{}, command *exec.Cm
 	return errors.New("exited check loop unexpectedly")
 }
 
-func waitForAnyPort(cancel <-chan struct{}, command *exec.Cmd) error {
+func waitForAnyPort(cancel <-chan struct{}, pid int32) error {
 	for true {
 		time.Sleep(100 * time.Millisecond)
 
@@ -178,7 +173,7 @@ func waitForAnyPort(cancel <-chan struct{}, command *exec.Cmd) error {
 			return errors.WithStack(err)
 		}
 
-		proc, err := process.NewProcess(int32(command.Process.Pid))
+		proc, err := process.NewProcess(pid)
 		if err != nil {
 			return errors.WithStack(err)
 		}

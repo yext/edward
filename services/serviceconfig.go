@@ -1,29 +1,19 @@
 package services
 
 import (
-	"bufio"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path"
 	"runtime"
 	"strconv"
-	"strings"
 	"sync"
-	"syscall"
-	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theothertomelliott/gopsutil-nocgo/net"
-	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/common"
-	"github.com/yext/edward/home"
-	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/warmup"
-	"github.com/yext/edward/worker"
 )
 
 var _ ServiceOrGroup = &ServiceConfig{}
@@ -231,313 +221,6 @@ func (c *ServiceConfig) GetDescription() string {
 	return c.Description
 }
 
-// Build builds this service
-func (c *ServiceConfig) Build(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error {
-	if cfg.IsExcluded(c) {
-		return nil
-	}
-
-	command, err := c.GetCommand(overrides)
-	if err != nil {
-		return errors.WithMessage(err, "getting command")
-	}
-	return errors.WithStack(command.BuildSync(cfg.WorkingDir, false, task))
-}
-
-// Launch launches this service
-func (c *ServiceConfig) Launch(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
-	if cfg.IsExcluded(c) {
-		return nil
-	}
-
-	command, err := c.GetCommand(overrides)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	err = pool.Enqueue(func() error {
-		return errors.WithStack(command.StartAsync(cfg, task))
-	})
-	return errors.WithStack(err)
-}
-
-// Start builds then launches this service
-func (c *ServiceConfig) Start(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
-	if cfg.IsExcluded(c) {
-		return nil
-	}
-
-	c.printf("Building: %s", c.Name)
-	err := c.Build(cfg, overrides, task)
-	if err != nil {
-		return errors.WithMessage(err, "build")
-	}
-	c.printf("Launching: %s", c.Name)
-	err = c.Launch(cfg, overrides, task, pool)
-	return errors.WithMessage(err, "launch")
-}
-
-// Stop stops this service
-func (c *ServiceConfig) Stop(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
-	err := pool.Enqueue(func() error {
-		return errors.WithStack(c.doStop(cfg, overrides, task))
-	})
-	return errors.WithStack(err)
-}
-
-// Restart restarts this service
-func (c *ServiceConfig) Restart(cfg OperationConfig, overrides ContextOverride, task tracker.Task, pool *worker.Pool) error {
-	var err error
-	command, err := c.GetCommand(overrides)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	overrides = command.Overrides.Merge(overrides)
-
-	err = c.doStop(cfg, overrides, task)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	if !cfg.SkipBuild {
-		err = c.Build(cfg, overrides, task)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-
-	startCmd, err := c.GetCommand(overrides)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	err = startCmd.StartAsync(cfg, task)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	return nil
-}
-
-func (c *ServiceConfig) doStop(cfg OperationConfig, overrides ContextOverride, task tracker.Task) error {
-	if cfg.IsExcluded(c) {
-		return nil
-	}
-
-	if c.Commands.Launch == "" {
-		return nil
-	}
-
-	job := task.Child(c.GetName()).Child("Stop")
-	job.SetState(tracker.TaskStateInProgress)
-
-	command, err := c.GetCommand(overrides)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	if command.Pid == 0 {
-		job.SetState(tracker.TaskStateWarning, "Not running")
-		return nil
-	}
-
-	c.printf("Interrupting process for %v\n", c.Name)
-	stopped, err := c.interruptProcess(cfg, command)
-	if err != nil {
-		job.SetState(tracker.TaskStateFailed, err.Error())
-		return nil
-	}
-	c.printf("Interrupt succeeded, was process stopped? %v\n", stopped)
-
-	if !stopped {
-		c.printf("SIGINT failed to stop service, waiting for 5s before sending SIGKILL\n")
-		stopped, err := waitForTerm(command, time.Second*5)
-		if err != nil {
-			job.SetState(tracker.TaskStateFailed, err.Error())
-			return nil
-		}
-		if !stopped {
-			stopped, err := c.killProcess(cfg, command)
-			if err != nil {
-				job.SetState(tracker.TaskStateFailed, err.Error())
-				return nil
-			}
-			if stopped {
-				job.SetState(tracker.TaskStateWarning, "Killed")
-				return nil
-			}
-			job.SetState(tracker.TaskStateFailed, "Process was not killed")
-			return nil
-		}
-	}
-
-	c.printf("Cleaning up state after shutdown")
-	// Remove leftover files
-	command.clearState()
-	job.SetState(tracker.TaskStateSuccess)
-	return nil
-}
-
-func (c *ServiceConfig) interruptProcess(cfg OperationConfig, command *ServiceCommand) (success bool, err error) {
-	p, err := process.NewProcess(int32(command.Pid))
-	if err != nil {
-		return false, errors.WithStack(err)
-	}
-	err = p.SendSignal(syscall.SIGINT)
-	if err != nil {
-		return false, errors.WithStack(err)
-	}
-
-	// Check to see if the process is still running
-	exists, err := process.PidExists(int32(command.Pid))
-	if err != nil {
-		return false, errors.WithStack(err)
-	}
-	return !exists, nil
-}
-
-func (c *ServiceConfig) killProcess(cfg OperationConfig, command *ServiceCommand) (success bool, err error) {
-	pgid, err := syscall.Getpgid(command.Pid)
-	if err != nil {
-		return false, errors.WithStack(err)
-	}
-
-	if pgid == 0 || pgid == 1 {
-		return false, errors.WithStack(errors.New("suspect pgid: " + strconv.Itoa(pgid)))
-	}
-
-	err = KillGroup(cfg, pgid, c)
-	return true, errors.WithStack(err)
-}
-
-func waitForTerm(command *ServiceCommand, timeout time.Duration) (bool, error) {
-	for elapsed := time.Duration(0); elapsed <= timeout; elapsed += time.Millisecond * 100 {
-		exists, err := process.PidExists(int32(command.Pid))
-		if err != nil {
-			return false, errors.WithStack(err)
-		}
-		if !exists {
-			return true, nil
-		}
-		time.Sleep(time.Millisecond * 100)
-	}
-	return false, nil
-}
-
-// Status returns the status for this service
-func (c *ServiceConfig) Status() ([]ServiceStatus, error) {
-	command, err := c.GetCommand(ContextOverride{})
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	status := ServiceStatus{
-		Service: c,
-		Status:  StatusStopped,
-	}
-
-	if command.Pid != 0 {
-		proc, err := process.NewProcess(int32(command.Pid))
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-		epochStart, err := proc.CreateTime()
-		if err != nil {
-			if strings.HasPrefix(err.Error(), "exit status") {
-				return []ServiceStatus{
-					status,
-				}, nil
-			}
-			return nil, errors.WithStack(err)
-		}
-		status.Status = StatusRunning
-		status.Pid = command.Pid
-		status.StartTime = time.Unix(epochStart/1000, 0)
-		status.Ports, err = c.getPorts(proc)
-		status.StdoutCount, status.StderrCount = c.getLogCounts()
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-	}
-
-	return []ServiceStatus{
-		status,
-	}, nil
-}
-
-func (c *ServiceConfig) getPorts(proc *process.Process) ([]string, error) {
-	ports, err := c.doGetPorts(proc)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	if c.LaunchChecks != nil {
-		for _, port := range c.LaunchChecks.Ports {
-			ports = append(ports, strconv.Itoa(port))
-		}
-	}
-	return ports, nil
-}
-
-func (c *ServiceConfig) getLogCounts() (int, int) {
-	logFile, err := os.Open(c.GetRunLog())
-	if err != nil {
-		return 0, 0
-	}
-	defer logFile.Close()
-	scanner := bufio.NewScanner(logFile)
-	var stdoutCount int
-	var stderrCount int
-	var lineData struct{ Stream string }
-	for scanner.Scan() {
-		text := scanner.Text()
-		err := json.Unmarshal([]byte(text), &lineData)
-		if err != nil {
-			continue
-		}
-		if lineData.Stream == "stdout" {
-			stdoutCount++
-		}
-		if lineData.Stream == "stderr" {
-			stderrCount++
-		}
-	}
-	return stdoutCount, stderrCount
-}
-
-func (c *ServiceConfig) doGetPorts(proc *process.Process) ([]string, error) {
-	connectionsCache, err := net.Connections("all")
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	var ports []string
-	var knownPorts = make(map[int]struct{})
-	if c.LaunchChecks != nil {
-		for _, port := range c.LaunchChecks.Ports {
-			knownPorts[port] = struct{}{}
-		}
-	}
-	for _, connection := range connectionsCache {
-		if connection.Status == "LISTEN" {
-			if _, ok := knownPorts[int(connection.Laddr.Port)]; connection.Pid == proc.Pid && !ok {
-				ports = append(ports, strconv.Itoa(int(connection.Laddr.Port)))
-			}
-		}
-	}
-
-	children, err := proc.Children()
-	// This will error out if the process has finished or has no children
-	if err != nil {
-		return ports, nil
-	}
-	for _, child := range children {
-		childPorts, err := c.doGetPorts(child)
-		if err == nil {
-			ports = append(ports, childPorts...)
-		}
-	}
-	return ports, nil
-}
-
 // IsSudo returns true if this service requires sudo to run.
 // If this service is excluded by cfg, then will always return false.
 func (c *ServiceConfig) IsSudo(cfg OperationConfig) bool {
@@ -549,15 +232,8 @@ func (c *ServiceConfig) IsSudo(cfg OperationConfig) bool {
 }
 
 // GetRunLog returns the path to the run log for this service
-func (c *ServiceConfig) GetRunLog() string {
-	dir := home.EdwardConfig.LogDir
-	return path.Join(dir, c.Name+".log")
-}
-
-// GetCommand returns the ServiceCommand for this service
-func (c *ServiceConfig) GetCommand(overrides ContextOverride) (*ServiceCommand, error) {
-	command, err := LoadServiceCommand(c, overrides)
-	return command, errors.WithStack(err)
+func (c *ServiceConfig) GetRunLog(logDir string) string {
+	return path.Join(logDir, c.Name+".log")
 }
 
 // IdentifyingFilename returns a filename that can be used to identify this service uniquely among all services
@@ -571,7 +247,7 @@ func (c *ServiceConfig) IdentifyingFilename() string {
 	return fmt.Sprintf("%v.%v", sha, name)
 }
 
-func (c *ServiceConfig) getPid(command *ServiceCommand, pidFile string) (int, error) {
+func (c *ServiceConfig) GetPid(pidFile string) (int, error) {
 	dat, err := ioutil.ReadFile(pidFile)
 	if err != nil {
 		return 0, errors.WithStack(err)
@@ -583,17 +259,15 @@ func (c *ServiceConfig) getPid(command *ServiceCommand, pidFile string) (int, er
 	return pid, nil
 }
 
-func (c *ServiceConfig) getStateBase() string {
-	dir := home.EdwardConfig.StateDir
-	return path.Join(dir, c.IdentifyingFilename())
+func (c *ServiceConfig) GetStateBase(stateDir string) string {
+	return path.Join(stateDir, c.IdentifyingFilename())
 }
 
-func (c *ServiceConfig) getStatePath() string {
-	return fmt.Sprintf("%v.state", c.getStateBase())
+func (c *ServiceConfig) GetStatePath(stateDir string) string {
+	return fmt.Sprintf("%v.state", c.GetStateBase(stateDir))
 }
 
-func (c *ServiceConfig) GetPidPathLegacy() string {
-	dir := home.EdwardConfig.PidDir
+func (c *ServiceConfig) GetPidPathLegacy(pidDir string) string {
 	name := c.Name
-	return path.Join(dir, fmt.Sprintf("%v.pid", name))
+	return path.Join(pidDir, fmt.Sprintf("%v.pid", name))
 }
