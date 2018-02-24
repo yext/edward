@@ -61,8 +61,10 @@ func (v *ProcfileGenerator) VisitDir(path string) (bool, error) {
 			service := &services.ServiceConfig{
 				Name: group.Name + "-" + def[0],
 				Path: &relPath,
-				Commands: services.ServiceConfigCommands{
-					Launch: strings.TrimSpace(def[1]),
+				TypeConfig: &services.ConfigCommandLine{
+					Commands: services.ServiceConfigCommands{
+						Launch: strings.TrimSpace(def[1]),
+					},
 				},
 			}
 			group.Services = append(group.Services, service)

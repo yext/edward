@@ -36,14 +36,8 @@ type ServiceConfig struct {
 	// Optional path to service. If nil, uses cwd
 	Path *string `json:"path,omitempty"`
 
-	// Type of service, controlling how this service is built and launched.
-	// Defaults to the command line type.
-	Type Type
-
 	// Does this service require sudo privileges?
 	RequiresSudo bool `json:"requiresSudo,omitempty"`
-	// Commands for managing the service
-	Commands ServiceConfigCommands `json:"commands"`
 
 	// Checks to perform to ensure that a service has started correctly
 	LaunchChecks *LaunchChecks `json:"launch_checks,omitempty"`
@@ -66,6 +60,8 @@ type ServiceConfig struct {
 
 	// Logger for actions on this service
 	Logger common.Logger `json:"-"`
+
+	TypeConfig interface{}
 }
 
 // Matches returns true if the service name or an alias matches the provided name.
@@ -86,13 +82,43 @@ func (c *ServiceConfig) Matches(name string) bool {
 func (c *ServiceConfig) UnmarshalJSON(data []byte) error {
 	type Alias ServiceConfig
 	aux := &struct {
-		Properties *ServiceConfigProperties `json:"log_properties,omitempty"`
 		*Alias
 	}{
 		Alias: (*Alias)(c),
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return errors.Wrap(err, "could not parse service config")
+	}
+
+	if err := c.unmarshalLegacy(data); err != nil {
+		return errors.WithStack(err)
+	}
+
+	if err := c.unmarshalType(data); err != nil {
+		return errors.WithStack(err)
+	}
+
+	return errors.WithStack(c.validate())
+}
+
+func (c *ServiceConfig) MarshalJSON() ([]byte, error) {
+	type Alias ServiceConfig
+	aux := &struct {
+		*Alias
+		*ConfigCommandLine
+	}{
+		Alias:             (*Alias)(c),
+		ConfigCommandLine: c.TypeConfig.(*ConfigCommandLine),
+	}
+	return json.Marshal(aux)
+}
+
+func (c *ServiceConfig) unmarshalLegacy(data []byte) error {
+	aux := &struct {
+		Properties *ServiceConfigProperties `json:"log_properties,omitempty"`
+	}{}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return errors.Wrap(err, "could not parse legacy properties")
 	}
 	if aux.Properties != nil {
 		if c.LaunchChecks != nil {
@@ -103,12 +129,34 @@ func (c *ServiceConfig) UnmarshalJSON(data []byte) error {
 			}
 		}
 	}
+	return nil
+}
 
-	if c.Type == "" {
-		c.Type = TypeCommandLine
+func (c *ServiceConfig) unmarshalType(data []byte) error {
+	aux := &struct {
+		// Type of service, controlling how this service is built and launched.
+		// Defaults to the command line type.
+		Type Type `json:"type"`
+	}{}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return errors.Wrap(err, "could not parse legacy properties")
+	}
+	if aux.Type == "" {
+		aux.Type = TypeCommandLine
 	}
 
-	return errors.WithStack(c.validate())
+	switch aux.Type {
+	case TypeCommandLine:
+		var config ConfigCommandLine
+		if err := json.Unmarshal(data, &config); err != nil {
+			return errors.Wrap(err, "could not parse command line config")
+		}
+		c.TypeConfig = &config
+	default:
+		return fmt.Errorf("unknown config type: %s", aux.Type)
+	}
+
+	return nil
 }
 
 // validate checks if this config is allowed

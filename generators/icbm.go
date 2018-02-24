@@ -90,9 +90,11 @@ func playService(path, name string) *services.ServiceConfig {
 		Name: name,
 		Path: &path,
 		Env:  []string{},
-		Commands: services.ServiceConfigCommands{
-			Build:  "python tools/icbm/build.py :" + name + "_dev",
-			Launch: "thirdparty/play/play test src/com/yext/" + name,
+		TypeConfig: &services.ConfigCommandLine{
+			Commands: services.ServiceConfigCommands{
+				Build:  "python tools/icbm/build.py :" + name + "_dev",
+				Launch: "thirdparty/play/play test src/com/yext/" + name,
+			},
 		},
 	}
 }
@@ -102,9 +104,11 @@ func javaService(path, name string) *services.ServiceConfig {
 		Name: name,
 		Path: &path,
 		Env:  []string{},
-		Commands: services.ServiceConfigCommands{
-			Build:  "python tools/icbm/build.py :" + name,
-			Launch: "build/" + name + "/" + name,
+		TypeConfig: &services.ConfigCommandLine{
+			Commands: services.ServiceConfigCommands{
+				Build:  "python tools/icbm/build.py :" + name,
+				Launch: "build/" + name + "/" + name,
+			},
 		},
 	}
 }

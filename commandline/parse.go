@@ -1,7 +1,6 @@
 package commandline
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -62,7 +61,7 @@ func ParseCommand(cmd string) (string, []string, error) {
 	}
 
 	if len(args) <= 0 {
-		return "", []string{}, errors.New("Empty command line")
+		return "", []string{}, fmt.Errorf("Empty command line built from: '%s'", cmd)
 	}
 
 	if len(args) == 1 {

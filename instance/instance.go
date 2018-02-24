@@ -209,7 +209,11 @@ func (c *Instance) getLaunchCommand(cfg services.OperationConfig) (*exec.Cmd, er
 // Assumes the service has a stop script configured.
 func (c *Instance) RunStopScript(workingDir string) ([]byte, error) {
 	c.printf("Running stop script for %v\n", c.Service.Name)
-	cmd, err := commandline.ConstructCommand(workingDir, c.Service.Path, c.Service.Commands.Stop, c.Getenv)
+	clConfig, err := services.GetConfigCommandLine(c.Service)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	cmd, err := commandline.ConstructCommand(workingDir, c.Service.Path, clConfig.Commands.Stop, c.Getenv)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -313,7 +317,11 @@ func (c *Instance) StopSync(cfg services.OperationConfig, overrides services.Con
 		return nil
 	}
 
-	if c.Service.Commands.Launch == "" {
+	clConfig, err := services.GetConfigCommandLine(c.Service)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	if clConfig.Commands.Launch == "" {
 		return nil
 	}
 

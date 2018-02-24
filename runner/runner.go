@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/kylelemons/godebug/pretty"
 	"github.com/pkg/errors"
 	"github.com/theothertomelliott/gopsutil-nocgo/net"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
@@ -72,6 +73,8 @@ func (r *Runner) Run(args []string) error {
 			return errors.WithStack(err)
 		}
 	}
+
+	r.Logger.Printf("Service config: %s", pretty.Sprint(r.Service))
 
 	// Set the instance id
 	command, err := instance.Load(r.DirConfig, r.Service, services.ContextOverride{})
@@ -285,7 +288,13 @@ func (r *Runner) stopService() error {
 
 	var scriptErr error
 	var scriptOutput []byte
-	if r.Service.Commands.Stop != "" {
+
+	clConfig, err := services.GetConfigCommandLine(r.Service)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if clConfig.Commands.Stop != "" {
 		r.Messagef("Running stop script for %v.\n", r.Service.Name)
 		scriptOutput, scriptErr = command.RunStopScript(wd)
 		if scriptErr != nil {
@@ -352,7 +361,15 @@ func (r *Runner) startService() error {
 		stream: "stderr",
 	}
 
-	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(r.Service.Commands.Launch))
+	clConfig, err := services.GetConfigCommandLine(r.Service)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	r.Logger.Printf("Service: %s", pretty.Sprint(r.Service))
+	r.Logger.Printf("ClConfig: %s", pretty.Sprint(clConfig))
+
+	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(clConfig.Commands.Launch))
 	if err != nil {
 		return errors.WithStack(err)
 	}

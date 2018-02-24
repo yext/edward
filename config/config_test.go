@@ -17,11 +17,12 @@ var service1 = services.ServiceConfig{
 	Description:  "My Service 1 is magic",
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
-	Type:         services.TypeCommandLine,
-	Commands: services.ServiceConfigCommands{
-		Build:  "buildCmd",
-		Launch: "launchCmd",
-		Stop:   "stopCmd",
+	TypeConfig: &services.ConfigCommandLine{
+		Commands: services.ServiceConfigCommands{
+			Build:  "buildCmd",
+			Launch: "launchCmd",
+			Stop:   "stopCmd",
+		},
 	},
 	LaunchChecks: &services.LaunchChecks{
 		LogText: "startedProperty",
@@ -34,11 +35,12 @@ var service1alias = services.ServiceConfig{
 	Aliases:      []string{"service2"},
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
-	Type:         services.TypeCommandLine,
-	Commands: services.ServiceConfigCommands{
-		Build:  "buildCmd",
-		Launch: "launchCmd",
-		Stop:   "stopCmd",
+	TypeConfig: &services.ConfigCommandLine{
+		Commands: services.ServiceConfigCommands{
+			Build:  "buildCmd",
+			Launch: "launchCmd",
+			Stop:   "stopCmd",
+		},
 	},
 	LaunchChecks: &services.LaunchChecks{
 		LogText: "startedProperty",
@@ -67,11 +69,12 @@ var group1alias = services.ServiceGroupConfig{
 var service2 = services.ServiceConfig{
 	Name: "service2",
 	Path: common.StringToStringPointer("service2/path"),
-	Type: services.TypeCommandLine,
-	Commands: services.ServiceConfigCommands{
-		Build:  "buildCmd2",
-		Launch: "launchCmd2",
-		Stop:   "stopCmd2",
+	TypeConfig: &services.ConfigCommandLine{
+		Commands: services.ServiceConfigCommands{
+			Build:  "buildCmd2",
+			Launch: "launchCmd2",
+			Stop:   "stopCmd2",
+		},
 	},
 	Logger: common.NullLogger{},
 }
@@ -88,11 +91,12 @@ var service3 = services.ServiceConfig{
 	Name:         "service3",
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
-	Type:         services.TypeCommandLine,
-	Commands: services.ServiceConfigCommands{
-		Build:  "buildCmd",
-		Launch: "launchCmd",
-		Stop:   "stopCmd",
+	TypeConfig: &services.ConfigCommandLine{
+		Commands: services.ServiceConfigCommands{
+			Build:  "buildCmd",
+			Launch: "launchCmd",
+			Stop:   "stopCmd",
+		},
 	},
 	LaunchChecks: &services.LaunchChecks{
 		LogText: "startedProperty",
