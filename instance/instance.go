@@ -317,11 +317,7 @@ func (c *Instance) StopSync(cfg services.OperationConfig, overrides services.Con
 		return nil
 	}
 
-	clConfig, err := services.GetConfigCommandLine(c.Service)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	if clConfig.Commands.Launch == "" {
+	if !c.Service.TypeConfig.HasLaunchStep() {
 		return nil
 	}
 

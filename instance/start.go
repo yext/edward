@@ -33,11 +33,7 @@ func Launch(dirConfig *home.EdwardConfiguration, c *services.ServiceConfig, cfg 
 // Will block until the service is known to have started successfully.
 // If the service fails to launch, an error will be returned.
 func (c *Instance) StartAsync(cfg services.OperationConfig, task tracker.Task) error {
-	clConfig, err := services.GetConfigCommandLine(c.Service)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	if clConfig.Commands.Launch == "" {
+	if !c.Service.TypeConfig.HasLaunchStep() {
 		return nil
 	}
 
@@ -50,7 +46,7 @@ func (c *Instance) StartAsync(cfg services.OperationConfig, task tracker.Task) e
 	}
 
 	// Clear previously existing statuses to avoid premature STOPPED state.
-	err = DeleteAllStatusesForService(c.Service, c.dirConfig.StateDir)
+	err := DeleteAllStatusesForService(c.Service, c.dirConfig.StateDir)
 	if err != nil {
 		return errors.WithStack(err)
 	}

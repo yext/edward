@@ -2,9 +2,24 @@ package services
 
 import "github.com/pkg/errors"
 
+type ConfigType interface {
+	HasBuildStep() bool
+	HasLaunchStep() bool
+}
+
+var _ ConfigType = &ConfigCommandLine{}
+
 type ConfigCommandLine struct {
 	// Commands for managing the service
 	Commands ServiceConfigCommands `json:"commands"`
+}
+
+func (c *ConfigCommandLine) HasBuildStep() bool {
+	return c.Commands.Build != ""
+}
+
+func (c *ConfigCommandLine) HasLaunchStep() bool {
+	return c.Commands.Launch != ""
 }
 
 func GetConfigCommandLine(s *ServiceConfig) (*ConfigCommandLine, error) {

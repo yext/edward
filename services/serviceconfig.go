@@ -61,7 +61,7 @@ type ServiceConfig struct {
 	// Logger for actions on this service
 	Logger common.Logger `json:"-"`
 
-	TypeConfig interface{}
+	TypeConfig ConfigType `json:"-"`
 }
 
 // Matches returns true if the service name or an alias matches the provided name.
@@ -90,7 +90,7 @@ func (c *ServiceConfig) UnmarshalJSON(data []byte) error {
 		return errors.Wrap(err, "could not parse service config")
 	}
 
-	if err := c.unmarshalLegacy(data); err != nil {
+	if err := c.unmarshalLegacyLaunchChecks(data); err != nil {
 		return errors.WithStack(err)
 	}
 
@@ -113,7 +113,7 @@ func (c *ServiceConfig) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
-func (c *ServiceConfig) unmarshalLegacy(data []byte) error {
+func (c *ServiceConfig) unmarshalLegacyLaunchChecks(data []byte) error {
 	aux := &struct {
 		Properties *ServiceConfigProperties `json:"log_properties,omitempty"`
 	}{}
