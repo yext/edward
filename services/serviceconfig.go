@@ -9,7 +9,6 @@ import (
 	"path"
 	"runtime"
 	"strconv"
-	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/yext/edward/common"
@@ -17,6 +16,14 @@ import (
 )
 
 var _ ServiceOrGroup = &ServiceConfig{}
+
+// Type identifies the manner in which this service is built and launched.
+type Type string
+
+const (
+	//TypeCommandLine identifies a service as being built and launched via the command line
+	TypeCommandLine Type = "commandline"
+)
 
 // ServiceConfig represents a service that can be managed by Edward
 type ServiceConfig struct {
@@ -28,6 +35,11 @@ type ServiceConfig struct {
 	Description string `json:"description,omitempty"`
 	// Optional path to service. If nil, uses cwd
 	Path *string `json:"path,omitempty"`
+
+	// Type of service, controlling how this service is built and launched.
+	// Defaults to the command line type.
+	Type Type
+
 	// Does this service require sudo privileges?
 	RequiresSudo bool `json:"requiresSudo,omitempty"`
 	// Commands for managing the service
@@ -54,10 +66,6 @@ type ServiceConfig struct {
 
 	// Logger for actions on this service
 	Logger common.Logger `json:"-"`
-
-	lockToken string
-
-	mtx sync.Mutex
 }
 
 // Matches returns true if the service name or an alias matches the provided name.
@@ -94,6 +102,10 @@ func (c *ServiceConfig) UnmarshalJSON(data []byte) error {
 				LogText: aux.Properties.Started,
 			}
 		}
+	}
+
+	if c.Type == "" {
+		c.Type = TypeCommandLine
 	}
 
 	return errors.WithStack(c.validate())

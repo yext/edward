@@ -17,6 +17,7 @@ var service1 = services.ServiceConfig{
 	Description:  "My Service 1 is magic",
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
+	Type:         services.TypeCommandLine,
 	Commands: services.ServiceConfigCommands{
 		Build:  "buildCmd",
 		Launch: "launchCmd",
@@ -33,6 +34,7 @@ var service1alias = services.ServiceConfig{
 	Aliases:      []string{"service2"},
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
+	Type:         services.TypeCommandLine,
 	Commands: services.ServiceConfigCommands{
 		Build:  "buildCmd",
 		Launch: "launchCmd",
@@ -65,6 +67,7 @@ var group1alias = services.ServiceGroupConfig{
 var service2 = services.ServiceConfig{
 	Name: "service2",
 	Path: common.StringToStringPointer("service2/path"),
+	Type: services.TypeCommandLine,
 	Commands: services.ServiceConfigCommands{
 		Build:  "buildCmd2",
 		Launch: "launchCmd2",
@@ -85,6 +88,7 @@ var service3 = services.ServiceConfig{
 	Name:         "service3",
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
+	Type:         services.TypeCommandLine,
 	Commands: services.ServiceConfigCommands{
 		Build:  "buildCmd",
 		Launch: "launchCmd",
