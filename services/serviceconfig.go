@@ -174,13 +174,6 @@ func (c *ServiceConfig) MatchesPlatform() bool {
 	return len(c.Platform) == 0 || c.Platform == runtime.GOOS
 }
 
-func (c *ServiceConfig) printf(format string, v ...interface{}) {
-	if c.Logger == nil {
-		return
-	}
-	c.Logger.Printf(format, v...)
-}
-
 // LaunchChecks defines the mechanism for testing whether a service has started successfully
 type LaunchChecks struct {
 	// A string to look for in the service's logs that indicates it has completed startup.
