@@ -22,7 +22,7 @@ type Runner interface {
 }
 
 type Builder interface {
-	Build() error
+	Build(string, func(string) string) ([]byte, error)
 }
 
 var defaultType Type

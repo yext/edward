@@ -5,15 +5,6 @@ import (
 	"github.com/yext/edward/services"
 )
 
-// TypeCommandLine identifies a service as being built and launched via the command line.
-// Defined in this package as a default
-const TypeCommandLine services.Type = "commandline"
-
-func init() {
-	services.RegisterServiceType(TypeCommandLine, &CommandLineLoader{})
-	services.SetDefaultServiceType(TypeCommandLine)
-}
-
 var _ services.ConfigType = &ConfigCommandLine{}
 
 type ConfigCommandLine struct {
@@ -45,24 +36,4 @@ func GetConfigCommandLine(s *services.ServiceConfig) (*ConfigCommandLine, error)
 		return cl, nil
 	}
 	return nil, errors.New("service was not a command line service")
-}
-
-type CommandLineLoader struct {
-}
-
-func (l *CommandLineLoader) New() services.ConfigType {
-	return &ConfigCommandLine{}
-}
-
-func (l *CommandLineLoader) Handles(c services.ConfigType) bool {
-	_, ok := c.(*ConfigCommandLine)
-	return ok
-}
-
-func (l *CommandLineLoader) Builder(s *services.ServiceConfig) (services.Builder, error) {
-	return nil, nil
-}
-
-func (l *CommandLineLoader) Runner(s *services.ServiceConfig) (services.Runner, error) {
-	return nil, nil
 }
