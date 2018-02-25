@@ -6,6 +6,7 @@ import (
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
+	commandlineservice "github.com/yext/edward/services/types/commandline"
 	"github.com/yext/edward/tracker"
 )
 
@@ -37,7 +38,7 @@ func (b *builder) Build(dirConfig *home.EdwardConfiguration, task tracker.Task, 
 // BuildWithTracker builds a service.
 // If force is false, the build will be skipped if the service is already running.
 func (b *builder) BuildWithTracker(dirConfig *home.EdwardConfiguration, task tracker.Task, service *services.ServiceConfig, force bool) error {
-	clConfig, err := services.GetConfigCommandLine(service)
+	clConfig, err := commandlineservice.GetConfigCommandLine(service)
 	if err != nil {
 		return errors.WithStack(err)
 	}

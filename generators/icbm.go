@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/yext/edward/services"
+	"github.com/yext/edward/services/types/commandline"
 )
 
 // IcbmGenerator generates services from an icbm build.spec file
@@ -90,8 +91,8 @@ func playService(path, name string) *services.ServiceConfig {
 		Name: name,
 		Path: &path,
 		Env:  []string{},
-		TypeConfig: &services.ConfigCommandLine{
-			Commands: services.ServiceConfigCommands{
+		TypeConfig: &commandline.ConfigCommandLine{
+			Commands: commandline.ServiceConfigCommands{
 				Build:  "python tools/icbm/build.py :" + name + "_dev",
 				Launch: "thirdparty/play/play test src/com/yext/" + name,
 			},
@@ -104,8 +105,8 @@ func javaService(path, name string) *services.ServiceConfig {
 		Name: name,
 		Path: &path,
 		Env:  []string{},
-		TypeConfig: &services.ConfigCommandLine{
-			Commands: services.ServiceConfigCommands{
+		TypeConfig: &commandline.ConfigCommandLine{
+			Commands: commandline.ServiceConfigCommands{
 				Build:  "python tools/icbm/build.py :" + name,
 				Launch: "build/" + name + "/" + name,
 			},

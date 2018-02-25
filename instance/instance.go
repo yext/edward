@@ -21,6 +21,7 @@ import (
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/services"
+	commandlinetype "github.com/yext/edward/services/types/commandline"
 	"github.com/yext/edward/tracker"
 )
 
@@ -209,7 +210,7 @@ func (c *Instance) getLaunchCommand(cfg services.OperationConfig) (*exec.Cmd, er
 // Assumes the service has a stop script configured.
 func (c *Instance) RunStopScript(workingDir string) ([]byte, error) {
 	c.printf("Running stop script for %v\n", c.Service.Name)
-	clConfig, err := services.GetConfigCommandLine(c.Service)
+	clConfig, err := commandlinetype.GetConfigCommandLine(c.Service)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

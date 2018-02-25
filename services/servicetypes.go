@@ -1,6 +1,12 @@
 package services
 
-import "fmt"
+import (
+	"fmt"
+)
+
+// TypeCommandLine identifies a service as being built and launched via the command line.
+// Defined in this package as a default
+const TypeCommandLine Type = "commandline"
 
 type ConfigType interface {
 	HasBuildStep() bool

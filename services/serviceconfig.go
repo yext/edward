@@ -115,6 +115,11 @@ func (c *ServiceConfig) MarshalJSON() ([]byte, error) {
 	for key, value := range typeMap {
 		auxMap[key] = value
 	}
+	for typeName, loader := range loaders {
+		if loader.Handles(c.TypeConfig) {
+			auxMap["type"] = typeName
+		}
+	}
 
 	return json.Marshal(auxMap)
 }
@@ -272,17 +277,6 @@ type ServiceConfigProperties struct {
 	Started string `json:"started,omitempty"`
 	// Custom properties, mapping a property name to a regex
 	Custom map[string]string `json:"-"`
-}
-
-// ServiceConfigCommands define the commands for building, launching and stopping a service
-// All commands are optional
-type ServiceConfigCommands struct {
-	// Command to build
-	Build string `json:"build,omitempty"`
-	// Command to launch
-	Launch string `json:"launch,omitempty"`
-	// Optional command to stop
-	Stop string `json:"stop,omitempty"`
 }
 
 // GetName returns the name for this service

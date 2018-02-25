@@ -17,6 +17,7 @@ import (
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
+	commandlineservice "github.com/yext/edward/services/types/commandline"
 )
 
 // Runner provides state and functions for running a given service
@@ -289,7 +290,7 @@ func (r *Runner) stopService() error {
 	var scriptErr error
 	var scriptOutput []byte
 
-	clConfig, err := services.GetConfigCommandLine(r.Service)
+	clConfig, err := commandlineservice.GetConfigCommandLine(r.Service)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -361,7 +362,7 @@ func (r *Runner) startService() error {
 		stream: "stderr",
 	}
 
-	clConfig, err := services.GetConfigCommandLine(r.Service)
+	clConfig, err := commandlineservice.GetConfigCommandLine(r.Service)
 	if err != nil {
 		return errors.WithStack(err)
 	}
