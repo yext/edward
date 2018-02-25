@@ -4,10 +4,6 @@ import (
 	"fmt"
 )
 
-// TypeCommandLine identifies a service as being built and launched via the command line.
-// Defined in this package as a default
-const TypeCommandLine Type = "commandline"
-
 type ConfigType interface {
 	HasBuildStep() bool
 	HasLaunchStep() bool
@@ -29,10 +25,15 @@ type Builder interface {
 	Build() error
 }
 
+var defaultType Type
 var loaders = make(map[Type]TypeLoader)
 
 func RegisterServiceType(name Type, loader TypeLoader) {
 	loaders[name] = loader
+}
+
+func SetDefaultServiceType(name Type) {
+	defaultType = name
 }
 
 func GetBuilder(s *ServiceConfig) (Builder, error) {

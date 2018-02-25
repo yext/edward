@@ -166,7 +166,7 @@ func (c *ServiceConfig) unmarshalType(data []byte) error {
 		return errors.Wrap(err, "could not parse legacy properties")
 	}
 	if aux.Type == "" {
-		aux.Type = TypeCommandLine
+		aux.Type = defaultType
 	}
 
 	var (
