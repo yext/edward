@@ -9,7 +9,7 @@ build:
 	./build.sh
 
 test:
-	go test -timeout 3m -race -cover $(PKGS)
+	go test -timeout 3m -race -cover -count 1 $(PKGS)
 
 checkdocs:
 	./check_docs.sh
