@@ -28,6 +28,15 @@ func (b *buildandrun) Start() error {
 	return nil
 }
 
-func (b *buildandrun) Stop() error {
-	return nil
+func (b *buildandrun) Stop(workingDir string, getenv func(string) string) ([]byte, error) {
+	cmd, err := commandline.ConstructCommand(workingDir, b.Service.Path, b.Backend.Commands.Stop, getenv)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return out, errors.WithStack(err)
+	}
+	return nil, nil
 }

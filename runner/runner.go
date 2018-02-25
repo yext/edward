@@ -282,30 +282,25 @@ func (r *Runner) stopService() error {
 		return errors.WithStack(err)
 	}
 
-	command, err := instance.Load(r.DirConfig, r.Service, services.ContextOverride{})
-	if err != nil {
-		r.Messagef("Could not get service command: %v\n", err)
-	}
-
 	var scriptErr error
 	var scriptOutput []byte
 
-	clConfig, err := commandlineservice.GetConfigCommandLine(r.Service)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	if clConfig.Commands.Stop != "" {
-		r.Messagef("Running stop script for %v.\n", r.Service.Name)
-		scriptOutput, scriptErr = command.RunStopScript(wd)
+	if r.Service.BackendConfig.HasStopStep() {
+		r.Messagef("Running stop step for %v.\n", r.Service.Name)
+		runner, err := services.GetRunner(r.Service)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		// TODO: Get the right env function from the client
+		scriptOutput, scriptErr = runner.Stop(wd, nil)
 		if scriptErr != nil {
 			r.Messagef("%v\n", string(scriptOutput))
-			r.Messagef("Stop script failed: %v\n", scriptErr)
+			r.Messagef("Stop step failed: %v\n", scriptErr)
 		}
 		if r.waitForCompletionWithTimeout(1 * time.Second) {
 			return nil
 		}
-		r.Messagef("Stop script did not effectively stop service, sending interrupt\n")
+		r.Messagef("Stop step did not effectively stop service, sending interrupt\n")
 	}
 
 	err = r.command.Interrupt()

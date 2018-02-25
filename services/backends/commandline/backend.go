@@ -31,6 +31,10 @@ func (c *CommandLineBackend) HasLaunchStep() bool {
 	return c.Commands.Launch != ""
 }
 
+func (c *CommandLineBackend) HasStopStep() bool {
+	return c.Commands.Stop != ""
+}
+
 func GetConfigCommandLine(s *services.ServiceConfig) (*CommandLineBackend, error) {
 	if cl, ok := s.BackendConfig.(*CommandLineBackend); ok {
 		return cl, nil

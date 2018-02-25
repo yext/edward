@@ -10,6 +10,7 @@ type BackendName string
 type Backend interface {
 	HasBuildStep() bool
 	HasLaunchStep() bool
+	HasStopStep() bool
 }
 
 type BackendLoader interface {
@@ -21,7 +22,7 @@ type BackendLoader interface {
 
 type Runner interface {
 	Start() error
-	Stop() error
+	Stop(workingDir string, getenv func(string) string) ([]byte, error)
 }
 
 type Builder interface {

@@ -33,6 +33,10 @@ func (c *configTest) HasLaunchStep() bool {
 	return false
 }
 
+func (c *configTest) HasStopStep() bool {
+	return false
+}
+
 func testBackendName(t *testing.T) {
 	serviceType := services.BackendName("testBackendName")
 	loader := &loaderProto{

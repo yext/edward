@@ -21,7 +21,6 @@ import (
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/services"
-	commandlinetype "github.com/yext/edward/services/backends/commandline"
 	"github.com/yext/edward/tracker"
 )
 
@@ -203,27 +202,6 @@ func (c *Instance) getLaunchCommand(cfg services.OperationConfig) (*exec.Cmd, er
 	cmd.Dir = commandline.BuildAbsPath(cfg.WorkingDir, c.Service.Path)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	return cmd, nil
-}
-
-// RunStopScript will execute the stop script for this command, returning full output
-// from running the script.
-// Assumes the service has a stop script configured.
-func (c *Instance) RunStopScript(workingDir string) ([]byte, error) {
-	c.printf("Running stop script for %v\n", c.Service.Name)
-	clConfig, err := commandlinetype.GetConfigCommandLine(c.Service)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	cmd, err := commandline.ConstructCommand(workingDir, c.Service.Path, clConfig.Commands.Stop, c.Getenv)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return out, errors.WithStack(err)
-	}
-	return nil, nil
 }
 
 func (c *Instance) clearPid() {
