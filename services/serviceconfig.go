@@ -17,9 +17,6 @@ import (
 
 var _ ServiceOrGroup = &ServiceConfig{}
 
-// Type identifies the manner in which this service is built and launched.
-type Type string
-
 // ServiceConfig represents a service that can be managed by Edward
 type ServiceConfig struct {
 	// Service name, used to identify in commands
@@ -56,7 +53,7 @@ type ServiceConfig struct {
 	// Logger for actions on this service
 	Logger common.Logger `json:"-"`
 
-	TypeConfig ConfigType `json:"-"`
+	BackendConfig Backend `json:"-"`
 }
 
 // Matches returns true if the service name or an alias matches the provided name.
@@ -107,7 +104,7 @@ func (c *ServiceConfig) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, errors.WithMessage(err, "config")
 	}
-	typeMap, err := toMapViaJson(c.TypeConfig)
+	typeMap, err := toMapViaJson(c.BackendConfig)
 	if err != nil {
 		return nil, errors.WithMessage(err, "type config")
 	}
@@ -116,8 +113,8 @@ func (c *ServiceConfig) MarshalJSON() ([]byte, error) {
 		auxMap[key] = value
 	}
 	for typeName, loader := range loaders {
-		if loader.Handles(c.TypeConfig) {
-			auxMap["type"] = typeName
+		if loader.Handles(c.BackendConfig) {
+			auxMap["backend"] = typeName
 		}
 	}
 
@@ -158,29 +155,29 @@ func (c *ServiceConfig) unmarshalLegacyLaunchChecks(data []byte) error {
 
 func (c *ServiceConfig) unmarshalType(data []byte) error {
 	aux := &struct {
-		// Type of service, controlling how this service is built and launched.
+		// Backend of service, controlling how this service is built and launched.
 		// Defaults to the command line type.
-		Type Type `json:"type"`
+		Backend BackendName `json:"backend"`
 	}{}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return errors.Wrap(err, "could not parse legacy properties")
 	}
-	if aux.Type == "" {
-		aux.Type = defaultType
+	if aux.Backend == "" {
+		aux.Backend = defaultType
 	}
 
 	var (
-		loader TypeLoader
+		loader BackendLoader
 		ok     bool
 	)
-	if loader, ok = loaders[aux.Type]; !ok {
-		return fmt.Errorf("unknown config type: %s", aux.Type)
+	if loader, ok = loaders[aux.Backend]; !ok {
+		return fmt.Errorf("unknown config type: %s", aux.Backend)
 	}
 	config := loader.New()
 	if err := json.Unmarshal(data, config); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("could not parse config of type '%s'", aux.Type))
+		return errors.Wrap(err, fmt.Sprintf("could not parse config of type '%s'", aux.Backend))
 	}
-	c.TypeConfig = config
+	c.BackendConfig = config
 	return nil
 
 }

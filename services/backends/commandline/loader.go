@@ -8,12 +8,12 @@ import (
 type CommandLineLoader struct {
 }
 
-func (l *CommandLineLoader) New() services.ConfigType {
-	return &ConfigCommandLine{}
+func (l *CommandLineLoader) New() services.Backend {
+	return &CommandLineBackend{}
 }
 
-func (l *CommandLineLoader) Handles(c services.ConfigType) bool {
-	_, ok := c.(*ConfigCommandLine)
+func (l *CommandLineLoader) Handles(c services.Backend) bool {
+	_, ok := c.(*CommandLineBackend)
 	return ok
 }
 
@@ -26,10 +26,10 @@ func (l *CommandLineLoader) Runner(s *services.ServiceConfig) (services.Runner, 
 }
 
 func (l *CommandLineLoader) buildandrun(s *services.ServiceConfig) (*buildandrun, error) {
-	if config, ok := s.TypeConfig.(*ConfigCommandLine); ok {
+	if config, ok := s.BackendConfig.(*CommandLineBackend); ok {
 		return &buildandrun{
 			Service: s,
-			Config:  config,
+			Backend: config,
 		}, nil
 	}
 	return nil, errors.New("config was not of expected type")

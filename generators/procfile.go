@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/yext/edward/services"
-	"github.com/yext/edward/services/types/commandline"
+	"github.com/yext/edward/services/backends/commandline"
 )
 
 // ProcfileGenerator generates services and groups from Procfiles.
@@ -62,7 +62,7 @@ func (v *ProcfileGenerator) VisitDir(path string) (bool, error) {
 			service := &services.ServiceConfig{
 				Name: group.Name + "-" + def[0],
 				Path: &relPath,
-				TypeConfig: &commandline.ConfigCommandLine{
+				BackendConfig: &commandline.CommandLineBackend{
 					Commands: commandline.ServiceConfigCommands{
 						Launch: strings.TrimSpace(def[1]),
 					},

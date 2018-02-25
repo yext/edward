@@ -17,7 +17,7 @@ import (
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
-	commandlineservice "github.com/yext/edward/services/types/commandline"
+	commandlineservice "github.com/yext/edward/services/backends/commandline"
 )
 
 // Runner provides state and functions for running a given service

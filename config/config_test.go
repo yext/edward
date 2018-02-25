@@ -10,15 +10,23 @@ import (
 
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
-	"github.com/yext/edward/services/types/commandline"
+	"github.com/yext/edward/services/backends/commandline"
 )
+
+func TestMain(m *testing.M) {
+	// Register necessary backends
+	services.RegisterBackend(commandline.TypeCommandLine, &commandline.CommandLineLoader{})
+	services.SetDefaultBackend(commandline.TypeCommandLine)
+
+	os.Exit(m.Run())
+}
 
 var service1 = services.ServiceConfig{
 	Name:         "service1",
 	Description:  "My Service 1 is magic",
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
-	TypeConfig: &commandline.ConfigCommandLine{
+	BackendConfig: &commandline.CommandLineBackend{
 		Commands: commandline.ServiceConfigCommands{
 			Build:  "buildCmd",
 			Launch: "launchCmd",
@@ -36,7 +44,7 @@ var service1alias = services.ServiceConfig{
 	Aliases:      []string{"service2"},
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
-	TypeConfig: &commandline.ConfigCommandLine{
+	BackendConfig: &commandline.CommandLineBackend{
 		Commands: commandline.ServiceConfigCommands{
 			Build:  "buildCmd",
 			Launch: "launchCmd",
@@ -70,7 +78,7 @@ var group1alias = services.ServiceGroupConfig{
 var service2 = services.ServiceConfig{
 	Name: "service2",
 	Path: common.StringToStringPointer("service2/path"),
-	TypeConfig: &commandline.ConfigCommandLine{
+	BackendConfig: &commandline.CommandLineBackend{
 		Commands: commandline.ServiceConfigCommands{
 			Build:  "buildCmd2",
 			Launch: "launchCmd2",
@@ -92,7 +100,7 @@ var service3 = services.ServiceConfig{
 	Name:         "service3",
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
-	TypeConfig: &commandline.ConfigCommandLine{
+	BackendConfig: &commandline.CommandLineBackend{
 		Commands: commandline.ServiceConfigCommands{
 			Build:  "buildCmd",
 			Launch: "launchCmd",

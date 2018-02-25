@@ -21,7 +21,7 @@ import (
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/services"
-	commandlinetype "github.com/yext/edward/services/types/commandline"
+	commandlinetype "github.com/yext/edward/services/backends/commandline"
 	"github.com/yext/edward/tracker"
 )
 
@@ -318,7 +318,7 @@ func (c *Instance) StopSync(cfg services.OperationConfig, overrides services.Con
 		return nil
 	}
 
-	if !c.Service.TypeConfig.HasLaunchStep() {
+	if !c.Service.BackendConfig.HasLaunchStep() {
 		return nil
 	}
 

@@ -4,14 +4,17 @@ import (
 	"fmt"
 )
 
-type ConfigType interface {
+// BackendName identifies the manner in which this service is built and launched.
+type BackendName string
+
+type Backend interface {
 	HasBuildStep() bool
 	HasLaunchStep() bool
 }
 
-type TypeLoader interface {
-	New() ConfigType
-	Handles(ConfigType) bool
+type BackendLoader interface {
+	New() Backend
+	Handles(Backend) bool
 	Builder(*ServiceConfig) (Builder, error)
 	Runner(*ServiceConfig) (Runner, error)
 }
@@ -25,20 +28,20 @@ type Builder interface {
 	Build(string, func(string) string) ([]byte, error)
 }
 
-var defaultType Type
-var loaders = make(map[Type]TypeLoader)
+var defaultType BackendName
+var loaders = make(map[BackendName]BackendLoader)
 
-func RegisterServiceType(name Type, loader TypeLoader) {
+func RegisterBackend(name BackendName, loader BackendLoader) {
 	loaders[name] = loader
 }
 
-func SetDefaultServiceType(name Type) {
+func SetDefaultBackend(name BackendName) {
 	defaultType = name
 }
 
 func GetBuilder(s *ServiceConfig) (Builder, error) {
 	for _, loader := range loaders {
-		if loader.Handles(s.TypeConfig) {
+		if loader.Handles(s.BackendConfig) {
 			return loader.Builder(s)
 		}
 	}
@@ -47,7 +50,7 @@ func GetBuilder(s *ServiceConfig) (Builder, error) {
 
 func GetRunner(s *ServiceConfig) (Runner, error) {
 	for _, loader := range loaders {
-		if loader.Handles(s.TypeConfig) {
+		if loader.Handles(s.BackendConfig) {
 			return loader.Runner(s)
 		}
 	}

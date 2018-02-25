@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/yext/edward/services"
-	"github.com/yext/edward/services/types/commandline"
+	"github.com/yext/edward/services/backends/commandline"
 )
 
 // DockerGenerator generates services from Docker files.
@@ -56,7 +56,7 @@ func (v *DockerGenerator) VisitDir(path string) (bool, error) {
 			Name: name,
 			Path: &dockerPath,
 			Env:  []string{},
-			TypeConfig: &commandline.ConfigCommandLine{
+			BackendConfig: &commandline.CommandLineBackend{
 				Commands: commandline.ServiceConfigCommands{
 					Build:  "docker build -t " + tag + " .",
 					Launch: "docker run " + strings.Join(portCommands, " ") + " " + tag,

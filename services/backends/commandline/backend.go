@@ -5,9 +5,9 @@ import (
 	"github.com/yext/edward/services"
 )
 
-var _ services.ConfigType = &ConfigCommandLine{}
+var _ services.Backend = &CommandLineBackend{}
 
-type ConfigCommandLine struct {
+type CommandLineBackend struct {
 	// Commands for managing the service
 	Commands ServiceConfigCommands `json:"commands"`
 }
@@ -23,16 +23,16 @@ type ServiceConfigCommands struct {
 	Stop string `json:"stop,omitempty"`
 }
 
-func (c *ConfigCommandLine) HasBuildStep() bool {
+func (c *CommandLineBackend) HasBuildStep() bool {
 	return c.Commands.Build != ""
 }
 
-func (c *ConfigCommandLine) HasLaunchStep() bool {
+func (c *CommandLineBackend) HasLaunchStep() bool {
 	return c.Commands.Launch != ""
 }
 
-func GetConfigCommandLine(s *services.ServiceConfig) (*ConfigCommandLine, error) {
-	if cl, ok := s.TypeConfig.(*ConfigCommandLine); ok {
+func GetConfigCommandLine(s *services.ServiceConfig) (*CommandLineBackend, error) {
+	if cl, ok := s.BackendConfig.(*CommandLineBackend); ok {
 		return cl, nil
 	}
 	return nil, errors.New("service was not a command line service")

@@ -2,13 +2,22 @@ package generators
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	must "github.com/theothertomelliott/must"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
-	"github.com/yext/edward/services/types/commandline"
+	"github.com/yext/edward/services/backends/commandline"
 )
+
+func TestMain(m *testing.M) {
+	// Register necessary backends
+	services.RegisterBackend(commandline.TypeCommandLine, &commandline.CommandLineLoader{})
+	services.SetDefaultBackend(commandline.TypeCommandLine)
+
+	os.Exit(m.Run())
+}
 
 func TestInvalidPaths(t *testing.T) {
 	var goTests = []struct {
@@ -72,7 +81,7 @@ func TestEdwardGenerator(t *testing.T) {
 					Name: "goproject",
 					Path: common.StringToStringPointer("goproject"),
 					Env:  []string{},
-					TypeConfig: &commandline.ConfigCommandLine{
+					BackendConfig: &commandline.CommandLineBackend{
 						Commands: commandline.ServiceConfigCommands{
 							Build:  "go install",
 							Launch: "goproject",
@@ -123,7 +132,7 @@ func TestGoGenerator(t *testing.T) {
 					Name: "simple",
 					Path: common.StringToStringPointer("gocode/src/yext/simple"),
 					Env:  []string{},
-					TypeConfig: &commandline.ConfigCommandLine{
+					BackendConfig: &commandline.CommandLineBackend{
 						Commands: commandline.ServiceConfigCommands{
 							Build:  "go install",
 							Launch: "simple",
@@ -141,7 +150,7 @@ func TestGoGenerator(t *testing.T) {
 					Name: "service1",
 					Path: common.StringToStringPointer("service1"),
 					Env:  []string{},
-					TypeConfig: &commandline.ConfigCommandLine{
+					BackendConfig: &commandline.CommandLineBackend{
 						Commands: commandline.ServiceConfigCommands{
 							Build:  "go install",
 							Launch: "service1",
@@ -152,7 +161,7 @@ func TestGoGenerator(t *testing.T) {
 					Name: "service2",
 					Path: common.StringToStringPointer("service2"),
 					Env:  []string{},
-					TypeConfig: &commandline.ConfigCommandLine{
+					BackendConfig: &commandline.CommandLineBackend{
 						Commands: commandline.ServiceConfigCommands{
 							Build:  "go install",
 							Launch: "service2",
@@ -171,7 +180,7 @@ func TestGoGenerator(t *testing.T) {
 					Name: "service1",
 					Path: common.StringToStringPointer("service1"),
 					Env:  []string{},
-					TypeConfig: &commandline.ConfigCommandLine{
+					BackendConfig: &commandline.CommandLineBackend{
 						Commands: commandline.ServiceConfigCommands{
 							Build:  "go install",
 							Launch: "service1",
@@ -189,7 +198,7 @@ func TestGoGenerator(t *testing.T) {
 					Name: "simple",
 					Path: common.StringToStringPointer("project/simple"),
 					Env:  []string{},
-					TypeConfig: &commandline.ConfigCommandLine{
+					BackendConfig: &commandline.CommandLineBackend{
 						Commands: commandline.ServiceConfigCommands{
 							Build:  "go install",
 							Launch: "simple",
@@ -238,7 +247,7 @@ func TestDockerGenerator(t *testing.T) {
 					Name: "service",
 					Path: common.StringToStringPointer("service"),
 					Env:  []string{},
-					TypeConfig: &commandline.ConfigCommandLine{
+					BackendConfig: &commandline.CommandLineBackend{
 						Commands: commandline.ServiceConfigCommands{
 							Build:  "docker build -t service:edward .",
 							Launch: "docker run -p 80:80 service:edward",
@@ -258,7 +267,7 @@ func TestDockerGenerator(t *testing.T) {
 					Name: "child",
 					Path: common.StringToStringPointer("parent/child"),
 					Env:  []string{},
-					TypeConfig: &commandline.ConfigCommandLine{
+					BackendConfig: &commandline.CommandLineBackend{
 						Commands: commandline.ServiceConfigCommands{
 							Build:  "docker build -t child:edward .",
 							Launch: "docker run -p 80:80 child:edward",
@@ -272,7 +281,7 @@ func TestDockerGenerator(t *testing.T) {
 					Name: "parent",
 					Path: common.StringToStringPointer("parent"),
 					Env:  []string{},
-					TypeConfig: &commandline.ConfigCommandLine{
+					BackendConfig: &commandline.CommandLineBackend{
 						Commands: commandline.ServiceConfigCommands{
 							Build:  "docker build -t parent:edward .",
 							Launch: "docker run -p 80:80 parent:edward",
@@ -292,7 +301,7 @@ func TestDockerGenerator(t *testing.T) {
 					Name: "child",
 					Path: common.StringToStringPointer("parent/child"),
 					Env:  []string{},
-					TypeConfig: &commandline.ConfigCommandLine{
+					BackendConfig: &commandline.CommandLineBackend{
 						Commands: commandline.ServiceConfigCommands{
 							Build:  "go install",
 							Launch: "child",
@@ -303,7 +312,7 @@ func TestDockerGenerator(t *testing.T) {
 					Name: "parent",
 					Path: common.StringToStringPointer("parent"),
 					Env:  []string{},
-					TypeConfig: &commandline.ConfigCommandLine{
+					BackendConfig: &commandline.CommandLineBackend{
 						Commands: commandline.ServiceConfigCommands{
 							Build:  "docker build -t parent:edward .",
 							Launch: "docker run -p 80:80 parent:edward",
@@ -357,7 +366,7 @@ func TestProcfileGenerator(t *testing.T) {
 					Name: "service-database",
 					Path: common.StringToStringPointer("service"),
 					Env:  []string{},
-					TypeConfig: &commandline.ConfigCommandLine{
+					BackendConfig: &commandline.CommandLineBackend{
 						Commands: commandline.ServiceConfigCommands{
 							Launch: "db launch command",
 						},
@@ -367,7 +376,7 @@ func TestProcfileGenerator(t *testing.T) {
 					Name: "service-web",
 					Path: common.StringToStringPointer("service"),
 					Env:  []string{},
-					TypeConfig: &commandline.ConfigCommandLine{
+					BackendConfig: &commandline.CommandLineBackend{
 						Commands: commandline.ServiceConfigCommands{
 							Launch: "web launch command",
 						},
@@ -382,7 +391,7 @@ func TestProcfileGenerator(t *testing.T) {
 							Name: "service-web",
 							Path: common.StringToStringPointer("service"),
 							Env:  []string{},
-							TypeConfig: &commandline.ConfigCommandLine{
+							BackendConfig: &commandline.CommandLineBackend{
 								Commands: commandline.ServiceConfigCommands{
 									Launch: "web launch command",
 								},
@@ -392,7 +401,7 @@ func TestProcfileGenerator(t *testing.T) {
 							Name: "service-database",
 							Path: common.StringToStringPointer("service"),
 							Env:  []string{},
-							TypeConfig: &commandline.ConfigCommandLine{
+							BackendConfig: &commandline.CommandLineBackend{
 								Commands: commandline.ServiceConfigCommands{
 									Launch: "db launch command",
 								},

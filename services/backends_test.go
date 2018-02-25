@@ -8,14 +8,14 @@ import (
 )
 
 type loaderProto struct {
-	new     func() services.ConfigType
-	handles func(c services.ConfigType) bool
+	new     func() services.Backend
+	handles func(c services.Backend) bool
 	builder func(s *services.ServiceConfig) (services.Builder, error)
 	runner  func(s *services.ServiceConfig) (services.Runner, error)
 }
 
-func (l *loaderProto) New() services.ConfigType           { return l.new() }
-func (l *loaderProto) Handles(c services.ConfigType) bool { return l.handles(c) }
+func (l *loaderProto) New() services.Backend           { return l.new() }
+func (l *loaderProto) Handles(c services.Backend) bool { return l.handles(c) }
 func (l *loaderProto) Builder(s *services.ServiceConfig) (services.Builder, error) {
 	return l.builder(s)
 }
@@ -33,23 +33,23 @@ func (c *configTest) HasLaunchStep() bool {
 	return false
 }
 
-func TestTypeLoading(t *testing.T) {
-	serviceType := services.Type("testTypeLoading")
+func testBackendName(t *testing.T) {
+	serviceType := services.BackendName("testBackendName")
 	loader := &loaderProto{
-		new: func() services.ConfigType {
+		new: func() services.Backend {
 			return &configTest{}
 		},
-		handles: func(c services.ConfigType) bool {
+		handles: func(c services.Backend) bool {
 			_, matches := c.(*configTest)
 			return matches
 		},
 	}
 
-	services.RegisterServiceType(serviceType, loader)
+	services.RegisterBackend(serviceType, loader)
 
 	configJson := `{
 		"name": "testService",
-		"type": "testTypeLoading",
+		"backend": "testBackendName",
 		"field": "value"
 	}`
 

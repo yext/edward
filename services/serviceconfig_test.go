@@ -9,18 +9,18 @@ import (
 )
 
 func TestJsonMarshal(t *testing.T) {
-	serviceType := services.Type("testTypeLoading")
+	serviceType := services.BackendName("testTypeLoading")
 	loader := &loaderProto{
-		new: func() services.ConfigType {
+		new: func() services.Backend {
 			return &configTest{}
 		},
-		handles: func(c services.ConfigType) bool {
+		handles: func(c services.Backend) bool {
 			_, matches := c.(*configTest)
 			return matches
 		},
 	}
 
-	services.RegisterServiceType(serviceType, loader)
+	services.RegisterBackend(serviceType, loader)
 
 	tests := []struct {
 		name          string
@@ -29,15 +29,15 @@ func TestJsonMarshal(t *testing.T) {
 		{
 			name: "simple command line",
 			serviceConfig: &services.ServiceConfig{
-				Name:       "simple service",
-				TypeConfig: &configTest{},
+				Name:          "simple service",
+				BackendConfig: &configTest{},
 			},
 		},
 		{
 			name: "command line with commands",
 			serviceConfig: &services.ServiceConfig{
 				Name: "command line service",
-				TypeConfig: &configTest{
+				BackendConfig: &configTest{
 					Field: "field_value",
 				},
 			},

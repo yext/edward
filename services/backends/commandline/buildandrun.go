@@ -8,14 +8,14 @@ import (
 
 type buildandrun struct {
 	Service *services.ServiceConfig
-	Config  *ConfigCommandLine
+	Backend *CommandLineBackend
 }
 
 var _ services.Builder = &buildandrun{}
 var _ services.Runner = &buildandrun{}
 
 func (b *buildandrun) Build(workingDir string, getenv func(string) string) ([]byte, error) {
-	cmd, err := commandline.ConstructCommand(workingDir, b.Service.Path, b.Config.Commands.Build, getenv)
+	cmd, err := commandline.ConstructCommand(workingDir, b.Service.Path, b.Backend.Commands.Build, getenv)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

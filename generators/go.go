@@ -13,7 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/yext/edward/services"
-	"github.com/yext/edward/services/types/commandline"
+	"github.com/yext/edward/services/backends/commandline"
 )
 
 // GoGenerator generates go services from main packages
@@ -78,7 +78,7 @@ func (v *GoGenerator) goService(name, packagePath string) (*services.ServiceConf
 		Name: name,
 		Path: &packagePath,
 		Env:  []string{},
-		TypeConfig: &commandline.ConfigCommandLine{
+		BackendConfig: &commandline.CommandLineBackend{
 			Commands: commandline.ServiceConfigCommands{
 				Build:  "go install",
 				Launch: name,
