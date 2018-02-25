@@ -20,11 +20,6 @@ var _ ServiceOrGroup = &ServiceConfig{}
 // Type identifies the manner in which this service is built and launched.
 type Type string
 
-const (
-	//TypeCommandLine identifies a service as being built and launched via the command line
-	TypeCommandLine Type = "commandline"
-)
-
 // ServiceConfig represents a service that can be managed by Edward
 type ServiceConfig struct {
 	// Service name, used to identify in commands
@@ -105,12 +100,36 @@ func (c *ServiceConfig) MarshalJSON() ([]byte, error) {
 	type Alias ServiceConfig
 	aux := &struct {
 		*Alias
-		*ConfigCommandLine
 	}{
-		Alias:             (*Alias)(c),
-		ConfigCommandLine: c.TypeConfig.(*ConfigCommandLine),
+		Alias: (*Alias)(c),
 	}
-	return json.Marshal(aux)
+	auxMap, err := toMapViaJson(aux)
+	if err != nil {
+		return nil, errors.WithMessage(err, "config")
+	}
+	typeMap, err := toMapViaJson(c.TypeConfig)
+	if err != nil {
+		return nil, errors.WithMessage(err, "type config")
+	}
+
+	for key, value := range typeMap {
+		auxMap[key] = value
+	}
+
+	return json.Marshal(auxMap)
+}
+
+func toMapViaJson(v interface{}) (map[string]interface{}, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, errors.WithMessage(err, "initial marshal")
+	}
+	var dmap = make(map[string]interface{})
+	err = json.Unmarshal(data, &dmap)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unmarshalling to map")
+	}
+	return dmap, nil
 }
 
 func (c *ServiceConfig) unmarshalLegacyLaunchChecks(data []byte) error {
@@ -145,18 +164,20 @@ func (c *ServiceConfig) unmarshalType(data []byte) error {
 		aux.Type = TypeCommandLine
 	}
 
-	switch aux.Type {
-	case TypeCommandLine:
-		var config ConfigCommandLine
-		if err := json.Unmarshal(data, &config); err != nil {
-			return errors.Wrap(err, "could not parse command line config")
-		}
-		c.TypeConfig = &config
-	default:
+	var (
+		loader TypeLoader
+		ok     bool
+	)
+	if loader, ok = loaders[aux.Type]; !ok {
 		return fmt.Errorf("unknown config type: %s", aux.Type)
 	}
-
+	config := loader.New()
+	if err := json.Unmarshal(data, config); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("could not parse config of type '%s'", aux.Type))
+	}
+	c.TypeConfig = config
 	return nil
+
 }
 
 // validate checks if this config is allowed

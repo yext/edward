@@ -1,30 +1,48 @@
 package services
 
-import "github.com/pkg/errors"
+import "fmt"
 
 type ConfigType interface {
 	HasBuildStep() bool
 	HasLaunchStep() bool
 }
 
-var _ ConfigType = &ConfigCommandLine{}
-
-type ConfigCommandLine struct {
-	// Commands for managing the service
-	Commands ServiceConfigCommands `json:"commands"`
+type TypeLoader interface {
+	New() ConfigType
+	Handles(ConfigType) bool
+	Builder(*ServiceConfig) (Builder, error)
+	Runner(*ServiceConfig) (Runner, error)
 }
 
-func (c *ConfigCommandLine) HasBuildStep() bool {
-	return c.Commands.Build != ""
+type Runner interface {
+	Start() error
+	Stop() error
 }
 
-func (c *ConfigCommandLine) HasLaunchStep() bool {
-	return c.Commands.Launch != ""
+type Builder interface {
+	Build() error
 }
 
-func GetConfigCommandLine(s *ServiceConfig) (*ConfigCommandLine, error) {
-	if cl, ok := s.TypeConfig.(*ConfigCommandLine); ok {
-		return cl, nil
+var loaders = make(map[Type]TypeLoader)
+
+func RegisterServiceType(name Type, loader TypeLoader) {
+	loaders[name] = loader
+}
+
+func GetBuilder(s *ServiceConfig) (Builder, error) {
+	for _, loader := range loaders {
+		if loader.Handles(s.TypeConfig) {
+			return loader.Builder(s)
+		}
 	}
-	return nil, errors.New("service was not a command line service")
+	return nil, fmt.Errorf("builder not found for service '%s'", s.Name)
+}
+
+func GetRunner(s *ServiceConfig) (Runner, error) {
+	for _, loader := range loaders {
+		if loader.Handles(s.TypeConfig) {
+			return loader.Runner(s)
+		}
+	}
+	return nil, fmt.Errorf("runner not found for service '%s'", s.Name)
 }
