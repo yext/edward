@@ -76,11 +76,6 @@ func (b *buildandrun) Start(dirConfig *home.EdwardConfiguration, standardLog io.
 	}()
 	<-started
 
-	pid := b.cmd.Process.Pid
-	if pid == 0 {
-		return errors.New("no pid")
-	}
-
 	var live = make(chan error)
 	go func() {
 		err = b.waitUntilLive(dirConfig)
