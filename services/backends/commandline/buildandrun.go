@@ -1,14 +1,30 @@
 package commandline
 
 import (
+	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"strconv"
+	"sync"
+	"syscall"
+	"time"
+
 	"github.com/pkg/errors"
+	"github.com/theothertomelliott/gopsutil-nocgo/net"
+	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/commandline"
+	"github.com/yext/edward/home"
 	"github.com/yext/edward/services"
 )
 
 type buildandrun struct {
 	Service *services.ServiceConfig
 	Backend *CommandLineBackend
+	done    chan struct{}
+	cmd     *exec.Cmd
+
+	mtx sync.Mutex
 }
 
 var _ services.Builder = &buildandrun{}
@@ -19,24 +35,211 @@ func (b *buildandrun) Build(workingDir string, getenv func(string) string) ([]by
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-
 	out, err := cmd.CombinedOutput()
 	return out, errors.WithStack(err)
 }
 
-func (b *buildandrun) Start() error {
+func (b *buildandrun) Start(dirConfig *home.EdwardConfiguration, standardLog io.Writer, errorLog io.Writer) error {
+	b.mtx.Lock()
+	defer b.mtx.Unlock()
+
+	if b.cmd != nil {
+		return errors.New("service already started")
+	}
+
+	b.done = make(chan struct{})
+
+	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(b.Backend.Commands.Launch))
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	b.cmd = exec.Command(command, cmdArgs...)
+	if b.Service.Path != nil {
+		b.cmd.Dir = os.ExpandEnv(*b.Service.Path)
+	}
+	b.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	b.cmd.Stdout = standardLog
+	b.cmd.Stderr = errorLog
+
+	var started = make(chan struct{})
+	go func() {
+		err := b.cmd.Start()
+		close(started)
+		if err != nil {
+			errorLog.Write([]byte(fmt.Sprintf("start error: %v\n", err)))
+		}
+		err = b.cmd.Wait()
+		if err != nil {
+			errorLog.Write([]byte(fmt.Sprintf("start error: %v\n", err)))
+		}
+		close(b.done)
+	}()
+	<-started
+
+	pid := b.cmd.Process.Pid
+	if pid == 0 {
+		return errors.New("no pid")
+	}
+
+	var live = make(chan error)
+	go func() {
+		err = b.waitUntilLive(dirConfig)
+		if err != nil {
+			live <- errors.WithStack(err)
+		}
+		close(live)
+	}()
+
+	select {
+	case <-b.done:
+		return errors.New("process exited")
+	case e := <-live:
+		if e == nil {
+			return errors.WithStack(err)
+		}
+	}
+
 	return nil
 }
 
-func (b *buildandrun) Stop(workingDir string, getenv func(string) string) ([]byte, error) {
-	cmd, err := commandline.ConstructCommand(workingDir, b.Service.Path, b.Backend.Commands.Stop, getenv)
+func (b *buildandrun) Status() (services.BackendStatus, error) {
+	var status services.BackendStatus
+	pid := b.cmd.Process.Pid
+	if pid != 0 {
+		proc, err := process.NewProcess(int32(pid))
+		if err != nil {
+			return services.BackendStatus{}, errors.WithStack(err)
+		}
+		status.MemoryInfo, err = proc.MemoryInfo()
+		if err != nil {
+			return services.BackendStatus{}, errors.WithMessage(err, "retrieving memory info")
+		}
+		ports, err := doGetPorts(proc)
+		if err != nil {
+			return services.BackendStatus{}, errors.WithMessage(err, "retrieving port info")
+		}
+		status.Ports = ports
+	}
+	return status, nil
+}
+
+func doGetPorts(proc *process.Process) ([]string, error) {
+	connections, err := net.Connections("all")
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	out, err := cmd.CombinedOutput()
+	var ports []string
+	for _, connection := range connections {
+		if connection.Status == "LISTEN" && connection.Pid == proc.Pid {
+			ports = append(ports, strconv.Itoa(int(connection.Laddr.Port)))
+		}
+	}
+
+	children, err := proc.Children()
+	// This will error out if the process has finished or has no children
+	if err != nil {
+		return ports, nil
+	}
+	for _, child := range children {
+		childPorts, err := doGetPorts(child)
+		if err == nil {
+			ports = append(ports, childPorts...)
+		}
+	}
+	return ports, nil
+}
+
+// Wait blocks until this service has stopped.
+func (b *buildandrun) Wait() {
+	<-b.done
+}
+
+func (b *buildandrun) waitForCompletionWithTimeout(timeout time.Duration) bool {
+	var completed = make(chan struct{})
+	defer close(completed)
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	go func() {
+		b.Wait()
+		completed <- struct{}{}
+	}()
+
+	select {
+	case <-completed:
+		return true
+	case <-timer.C:
+		return false
+	}
+}
+
+func (b *buildandrun) Stop(workingDir string, getenv func(string) string) ([]byte, error) {
+	b.mtx.Lock()
+	defer b.mtx.Unlock()
+
+	var out []byte
+	if b.Backend.Commands.Stop != "" {
+		cmd, err := commandline.ConstructCommand(workingDir, b.Service.Path, b.Backend.Commands.Stop, getenv)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+
+		out, err = cmd.CombinedOutput()
+		if err != nil {
+			return out, errors.WithStack(err)
+		}
+
+		if b.waitForCompletionWithTimeout(1 * time.Second) {
+			return out, nil
+		}
+	}
+
+	err := InterruptGroup(b.cmd.Process.Pid, b.Service)
 	if err != nil {
 		return out, errors.WithStack(err)
 	}
-	return nil, nil
+
+	if b.waitForCompletionWithTimeout(2 * time.Second) {
+		return out, nil
+	}
+
+	err = KillGroup(b.cmd.Process.Pid, b.Service)
+	if err != nil {
+		return out, errors.WithMessage(err, "Kill failed")
+	}
+
+	if b.waitForCompletionWithTimeout(2 * time.Second) {
+		return out, nil
+	}
+	return nil, errors.New("kill did not stop service")
+
+	b.cmd = nil
+	return out, nil
+}
+
+// InterruptGroup sends an interrupt signal to a process group.
+// Will use sudo if required by this service.
+func InterruptGroup(pgid int, service *services.ServiceConfig) error {
+	return errors.WithStack(signalGroup(pgid, service, "-2"))
+}
+
+// KillGroup sends a kill signal to a process group.
+// Will use sudo priviledges if required by this service.
+func KillGroup(pgid int, service *services.ServiceConfig) error {
+	return errors.WithStack(signalGroup(pgid, service, "-9"))
+}
+
+func signalGroup(pgid int, service *services.ServiceConfig, flag string) error {
+	cmdName := "kill"
+	cmdArgs := []string{}
+	if service.IsSudo(services.OperationConfig{}) {
+		cmdName = "sudo"
+		cmdArgs = append(cmdArgs, "kill")
+	}
+	cmdArgs = append(cmdArgs, flag, fmt.Sprintf("-%v", pgid))
+	cmd := exec.Command(cmdName, cmdArgs...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	err := cmd.Run()
+	return errors.WithMessage(err, "signalGroup:")
 }

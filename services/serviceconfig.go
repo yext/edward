@@ -31,9 +31,6 @@ type ServiceConfig struct {
 	// Does this service require sudo privileges?
 	RequiresSudo bool `json:"requiresSudo,omitempty"`
 
-	// Checks to perform to ensure that a service has started correctly
-	LaunchChecks *LaunchChecks `json:"launch_checks,omitempty"`
-
 	// Env holds environment variables for a service, for example: GOPATH=~/gocode/
 	// These will be added to the vars in the environment under which the Edward command was run
 	Env []string `json:"env,omitempty"`
@@ -82,15 +79,11 @@ func (c *ServiceConfig) UnmarshalJSON(data []byte) error {
 		return errors.Wrap(err, "could not parse service config")
 	}
 
-	if err := c.unmarshalLegacyLaunchChecks(data); err != nil {
-		return errors.WithStack(err)
-	}
-
 	if err := c.unmarshalType(data); err != nil {
 		return errors.WithStack(err)
 	}
 
-	return errors.WithStack(c.validate())
+	return nil
 }
 
 func (c *ServiceConfig) MarshalJSON() ([]byte, error) {
@@ -134,25 +127,6 @@ func toMapViaJson(v interface{}) (map[string]interface{}, error) {
 	return dmap, nil
 }
 
-func (c *ServiceConfig) unmarshalLegacyLaunchChecks(data []byte) error {
-	aux := &struct {
-		Properties *ServiceConfigProperties `json:"log_properties,omitempty"`
-	}{}
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return errors.Wrap(err, "could not parse legacy properties")
-	}
-	if aux.Properties != nil {
-		if c.LaunchChecks != nil {
-			c.LaunchChecks.LogText = aux.Properties.Started
-		} else {
-			c.LaunchChecks = &LaunchChecks{
-				LogText: aux.Properties.Started,
-			}
-		}
-	}
-	return nil
-}
-
 func (c *ServiceConfig) unmarshalType(data []byte) error {
 	aux := &struct {
 		// Backend of service, controlling how this service is built and launched.
@@ -180,27 +154,6 @@ func (c *ServiceConfig) unmarshalType(data []byte) error {
 	c.BackendConfig = config
 	return nil
 
-}
-
-// validate checks if this config is allowed
-func (c *ServiceConfig) validate() error {
-	if c.LaunchChecks != nil {
-		checkCount := 0
-		if len(c.LaunchChecks.LogText) > 0 {
-			checkCount++
-		}
-		if len(c.LaunchChecks.Ports) > 0 {
-			checkCount++
-		}
-		if c.LaunchChecks.Wait != 0 {
-			checkCount++
-		}
-		if checkCount > 1 {
-			return errors.New("cannot specify multiple launch check types for one service")
-		}
-
-	}
-	return nil
 }
 
 // SetWatch sets the watch configuration for this service
@@ -255,25 +208,6 @@ type ServiceWatch struct {
 // MatchesPlatform determines whether or not this service can be run on the current OS
 func (c *ServiceConfig) MatchesPlatform() bool {
 	return len(c.Platform) == 0 || c.Platform == runtime.GOOS
-}
-
-// LaunchChecks defines the mechanism for testing whether a service has started successfully
-type LaunchChecks struct {
-	// A string to look for in the service's logs that indicates it has completed startup.
-	LogText string `json:"log_text,omitempty"`
-	// One or more specific ports that are expected to be opened when this service starts.
-	Ports []int `json:"ports,omitempty"`
-	// Wait for a specified amount of time (in ms) before calling the service started if still running.
-	Wait int64 `json:"wait,omitempty"`
-}
-
-// ServiceConfigProperties provides a set of regexes to detect properties of a service
-// Deprecated: This has been dropped in favour of LaunchChecks
-type ServiceConfigProperties struct {
-	// Regex to detect a line indicating the service has started successfully
-	Started string `json:"started,omitempty"`
-	// Custom properties, mapping a property name to a regex
-	Custom map[string]string `json:"-"`
 }
 
 // GetName returns the name for this service

@@ -252,9 +252,9 @@ func TestDockerGenerator(t *testing.T) {
 							Build:  "docker build -t service:edward .",
 							Launch: "docker run -p 80:80 service:edward",
 						},
-					},
-					LaunchChecks: &services.LaunchChecks{
-						Ports: []int{80},
+						LaunchChecks: &commandline.LaunchChecks{
+							Ports: []int{80},
+						},
 					},
 				},
 			},
@@ -272,9 +272,9 @@ func TestDockerGenerator(t *testing.T) {
 							Build:  "docker build -t child:edward .",
 							Launch: "docker run -p 80:80 child:edward",
 						},
-					},
-					LaunchChecks: &services.LaunchChecks{
-						Ports: []int{80},
+						LaunchChecks: &commandline.LaunchChecks{
+							Ports: []int{80},
+						},
 					},
 				},
 				{
@@ -286,9 +286,9 @@ func TestDockerGenerator(t *testing.T) {
 							Build:  "docker build -t parent:edward .",
 							Launch: "docker run -p 80:80 parent:edward",
 						},
-					},
-					LaunchChecks: &services.LaunchChecks{
-						Ports: []int{80},
+						LaunchChecks: &commandline.LaunchChecks{
+							Ports: []int{80},
+						},
 					},
 				},
 			},
@@ -317,9 +317,9 @@ func TestDockerGenerator(t *testing.T) {
 							Build:  "docker build -t parent:edward .",
 							Launch: "docker run -p 80:80 parent:edward",
 						},
-					},
-					LaunchChecks: &services.LaunchChecks{
-						Ports: []int{80},
+						LaunchChecks: &commandline.LaunchChecks{
+							Ports: []int{80},
+						},
 					},
 				},
 			},

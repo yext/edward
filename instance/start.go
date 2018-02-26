@@ -51,19 +51,6 @@ func (c *Instance) StartAsync(cfg services.OperationConfig, task tracker.Task) e
 		return errors.WithStack(err)
 	}
 
-	if c.Service.LaunchChecks != nil && len(c.Service.LaunchChecks.Ports) > 0 {
-		inUse, err := c.areAnyListeningPortsOpen(c.Service.LaunchChecks.Ports)
-		if err != nil {
-			startTask.SetState(tracker.TaskStateFailed, err.Error())
-			return errors.WithStack(err)
-		}
-		if inUse {
-			inUseErr := errors.New("one or more of the ports required by this service are in use")
-			startTask.SetState(tracker.TaskStateFailed, inUseErr.Error())
-			return errors.WithStack(inUseErr)
-		}
-	}
-
 	os.Remove(c.Service.GetRunLog(c.dirConfig.LogDir))
 
 	cmd, err := c.getLaunchCommand(cfg)

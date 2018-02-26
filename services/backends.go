@@ -2,6 +2,10 @@ package services
 
 import (
 	"fmt"
+	"io"
+
+	"github.com/theothertomelliott/gopsutil-nocgo/process"
+	"github.com/yext/edward/home"
 )
 
 // BackendName identifies the manner in which this service is built and launched.
@@ -21,8 +25,15 @@ type BackendLoader interface {
 }
 
 type Runner interface {
-	Start() error
+	Start(dirConfig *home.EdwardConfiguration, standardLog io.Writer, errorLog io.Writer) error
 	Stop(workingDir string, getenv func(string) string) ([]byte, error)
+	Status() (BackendStatus, error)
+	Wait()
+}
+
+type BackendStatus struct {
+	Ports      []string
+	MemoryInfo *process.MemoryInfoStat
 }
 
 type Builder interface {

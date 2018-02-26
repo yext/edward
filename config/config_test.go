@@ -32,9 +32,9 @@ var service1 = services.ServiceConfig{
 			Launch: "launchCmd",
 			Stop:   "stopCmd",
 		},
-	},
-	LaunchChecks: &services.LaunchChecks{
-		LogText: "startedProperty",
+		LaunchChecks: &commandline.LaunchChecks{
+			LogText: "startedProperty",
+		},
 	},
 	Logger: common.NullLogger{},
 }
@@ -50,9 +50,9 @@ var service1alias = services.ServiceConfig{
 			Launch: "launchCmd",
 			Stop:   "stopCmd",
 		},
-	},
-	LaunchChecks: &services.LaunchChecks{
-		LogText: "startedProperty",
+		LaunchChecks: &commandline.LaunchChecks{
+			LogText: "startedProperty",
+		},
 	},
 	Logger: common.NullLogger{},
 }
@@ -106,9 +106,9 @@ var service3 = services.ServiceConfig{
 			Launch: "launchCmd",
 			Stop:   "stopCmd",
 		},
-	},
-	LaunchChecks: &services.LaunchChecks{
-		LogText: "startedProperty",
+		LaunchChecks: &commandline.LaunchChecks{
+			LogText: "startedProperty",
+		},
 	},
 	Logger: common.NullLogger{},
 }

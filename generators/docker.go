@@ -61,9 +61,9 @@ func (v *DockerGenerator) VisitDir(path string) (bool, error) {
 					Build:  "docker build -t " + tag + " .",
 					Launch: "docker run " + strings.Join(portCommands, " ") + " " + tag,
 				},
-			},
-			LaunchChecks: &services.LaunchChecks{
-				Ports: expectedPorts,
+				LaunchChecks: &commandline.LaunchChecks{
+					Ports: expectedPorts,
+				},
 			},
 		}
 		v.foundServices = append(v.foundServices, service)

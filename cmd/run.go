@@ -17,15 +17,20 @@ var runCmd = &cobra.Command{
 		if service == nil {
 			return fmt.Errorf("service not found: %s", args[0])
 		}
-		r := &runner.Runner{
-			Service:   service,
-			DirConfig: edwardClient.DirConfig,
+		r, err := runner.NewRunner(
+			service,
+			edwardClient.DirConfig,
+			*runFlags.noWatch,
+			*runFlags.directory,
+			edwardClient.Logger,
+		)
+		if err != nil {
+			return errors.WithStack(err)
 		}
-		r.NoWatch = *runFlags.noWatch
-		r.WorkingDir = *runFlags.directory
-		r.Logger = edwardClient.Logger
-		err := r.Run(args)
-		return errors.WithStack(err)
+
+		return errors.WithStack(
+			r.Run(args),
+		)
 	},
 }
 
