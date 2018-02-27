@@ -9,18 +9,18 @@ import (
 )
 
 func TestJsonMarshal(t *testing.T) {
-	serviceType := services.BackendName("testTypeLoading")
 	loader := &loaderProto{
 		new: func() services.Backend {
 			return &configTest{}
 		},
+		name: "testTypeLoading",
 		handles: func(c services.Backend) bool {
 			_, matches := c.(*configTest)
 			return matches
 		},
 	}
 
-	services.RegisterBackend(serviceType, loader)
+	services.RegisterBackend(loader)
 
 	tests := []struct {
 		name          string

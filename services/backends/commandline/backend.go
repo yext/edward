@@ -9,10 +9,6 @@ import (
 
 var _ services.Backend = &CommandLineBackend{}
 
-// TypeCommandLine identifies a service as being built and launched via the command line.
-// Defined in this package as a default
-const TypeCommandLine services.BackendName = "commandline"
-
 type CommandLineBackend struct {
 	// Commands for managing the service
 	Commands ServiceConfigCommands `json:"commands"`
@@ -102,6 +98,10 @@ type ServiceConfigCommands struct {
 	Launch string `json:"launch,omitempty"`
 	// Optional command to stop
 	Stop string `json:"stop,omitempty"`
+}
+
+func (c *CommandLineBackend) Name() string {
+	return "commandline"
 }
 
 func (c *CommandLineBackend) HasBuildStep() bool {

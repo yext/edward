@@ -131,7 +131,7 @@ func (c *ServiceConfig) unmarshalType(data []byte) error {
 	aux := &struct {
 		// Backend of service, controlling how this service is built and launched.
 		// Defaults to the command line type.
-		Backend BackendName `json:"backend"`
+		Backend string `json:"backend"`
 	}{}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return errors.Wrap(err, "could not parse legacy properties")

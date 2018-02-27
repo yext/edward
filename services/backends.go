@@ -7,9 +7,6 @@ import (
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
 )
 
-// BackendName identifies the manner in which this service is built and launched.
-type BackendName string
-
 type Backend interface {
 	HasBuildStep() bool
 	HasLaunchStep() bool
@@ -17,6 +14,7 @@ type Backend interface {
 
 type BackendLoader interface {
 	New() Backend
+	Name() string
 	Handles(Backend) bool
 	Builder(*ServiceConfig) (Builder, error)
 	Runner(*ServiceConfig) (Runner, error)
@@ -38,15 +36,16 @@ type Builder interface {
 	Build(string, func(string) string) ([]byte, error)
 }
 
-var defaultType BackendName
-var loaders = make(map[BackendName]BackendLoader)
+var defaultType string
+var loaders = make(map[string]BackendLoader)
 
-func RegisterBackend(name BackendName, loader BackendLoader) {
-	loaders[name] = loader
+func RegisterBackend(loader BackendLoader) {
+	loaders[loader.Name()] = loader
 }
 
-func SetDefaultBackend(name BackendName) {
-	defaultType = name
+func RegisterDefaultBackend(loader BackendLoader) {
+	loaders[loader.Name()] = loader
+	defaultType = loader.Name()
 }
 
 func GetBuilder(s *ServiceConfig) (Builder, error) {

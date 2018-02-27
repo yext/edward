@@ -12,6 +12,10 @@ func (l *CommandLineLoader) New() services.Backend {
 	return &CommandLineBackend{}
 }
 
+func (l *CommandLineLoader) Name() string {
+	return "commandline"
+}
+
 func (l *CommandLineLoader) Handles(c services.Backend) bool {
 	_, ok := c.(*CommandLineBackend)
 	return ok
