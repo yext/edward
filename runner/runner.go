@@ -275,7 +275,7 @@ func (r *Runner) startService() error {
 		stream: "stderr",
 	}
 
-	err := r.backendRunner.Start(r.DirConfig, r.standardLog, r.errorLog)
+	err := r.backendRunner.Start(r.standardLog, r.errorLog)
 	if err != nil {
 		errors.WithStack(err)
 	}
