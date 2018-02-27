@@ -9,6 +9,10 @@ import (
 
 var _ services.Backend = &CommandLineBackend{}
 
+// TypeCommandLine identifies a service as being built and launched via the command line.
+// Defined in this package as a default
+const TypeCommandLine services.BackendName = "commandline"
+
 type CommandLineBackend struct {
 	// Commands for managing the service
 	Commands ServiceConfigCommands `json:"commands"`
