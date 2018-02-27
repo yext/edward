@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yext/edward/home"
+	"github.com/pkg/errors"
 
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/services/backends/commandline"
@@ -24,7 +24,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestStartService(t *testing.T) {
-
 	getPath := func(dir string) *string {
 		path := path.Join("testdata", dir)
 		return &path
@@ -36,13 +35,28 @@ func TestStartService(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "service",
+			name:     "default launch check",
 			expected: "Hello",
 			service: &services.ServiceConfig{
 				Path: getPath("service"),
 				BackendConfig: &commandline.CommandLineBackend{
 					Commands: commandline.ServiceConfigCommands{
 						Launch: "go run main.go",
+					},
+				},
+			},
+		},
+		{
+			name:     "log launch check",
+			expected: "Hello",
+			service: &services.ServiceConfig{
+				Path: getPath("service"),
+				BackendConfig: &commandline.CommandLineBackend{
+					Commands: commandline.ServiceConfigCommands{
+						Launch: "go run main.go",
+					},
+					LaunchChecks: &commandline.LaunchChecks{
+						LogText: "Started",
 					},
 				},
 			},
@@ -56,7 +70,7 @@ func TestStartService(t *testing.T) {
 				return
 			}
 
-			err = runner.Start(&home.EdwardConfiguration{}, os.Stdout, os.Stderr)
+			err = runner.Start(os.Stdout, os.Stderr)
 			if err != nil {
 				t.Error(err)
 				return
@@ -97,5 +111,63 @@ func TestStartService(t *testing.T) {
 			}
 		})
 	}
+}
 
+func TestStartServiceFailure(t *testing.T) {
+	getPath := func(dir string) *string {
+		path := path.Join("testdata", dir)
+		return &path
+	}
+
+	var tests = []struct {
+		name     string
+		service  *services.ServiceConfig
+		expected error
+	}{
+		{
+			name:     "default launch check",
+			expected: errors.New("process exited"),
+			service: &services.ServiceConfig{
+				Path: getPath("service"),
+				BackendConfig: &commandline.CommandLineBackend{
+					Commands: commandline.ServiceConfigCommands{
+						Launch: "go run missing.go",
+					},
+				},
+			},
+		},
+		{
+			name:     "log launch check",
+			expected: errors.New("process exited"),
+			service: &services.ServiceConfig{
+				Path: getPath("service"),
+				BackendConfig: &commandline.CommandLineBackend{
+					Commands: commandline.ServiceConfigCommands{
+						Launch: "go run missing.go",
+					},
+					LaunchChecks: &commandline.LaunchChecks{
+						LogText: "Started",
+					},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runner, err := services.GetRunner(test.service)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			err = runner.Start(os.Stdout, os.Stderr)
+			if err == nil {
+				t.Error("expected an error on start, got nil")
+				return
+			}
+			if fmt.Sprint(err) != fmt.Sprint(test.expected) {
+				t.Errorf("expected error '%s', got '%s'", test.expected, err)
+			}
+		})
+	}
 }

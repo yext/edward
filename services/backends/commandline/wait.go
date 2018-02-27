@@ -1,32 +1,28 @@
 package commandline
 
 import (
-	"fmt"
-	"strings"
 	"time"
 
-	"github.com/yext/edward/home"
-
-	"github.com/hpcloud/tail"
 	"github.com/pkg/errors"
 	"github.com/theothertomelliott/gopsutil-nocgo/net"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/instance"
-	"github.com/yext/edward/services"
 )
 
 // waitUntilLive blocks until a command running the specified service is in the RUNNING state.
 // An error will be returned if the command exits before reaching RUNNING.
-func (b *buildandrun) waitUntilLive(dirConfig *home.EdwardConfiguration) error {
-	fmt.Println("waitUntilLive")
+func (b *buildandrun) waitUntilLive() error {
 	pid := int32(b.cmd.Process.Pid)
 
 	var startCheck func(cancel <-chan struct{}) error
 	if b.Backend.LaunchChecks != nil && len(b.Backend.LaunchChecks.LogText) > 0 {
 		startCheck = func(cancel <-chan struct{}) error {
-			return errors.WithStack(
-				waitForLogText(dirConfig, b.Backend.LaunchChecks.LogText, cancel, b.Service),
-			)
+			select {
+			case <-b.launchConditionMet:
+				return nil
+			case <-cancel:
+				return nil
+			}
 		}
 	} else if b.Backend.LaunchChecks != nil && len(b.Backend.LaunchChecks.Ports) > 0 {
 		startCheck = func(cancel <-chan struct{}) error {
@@ -61,34 +57,6 @@ func (b *buildandrun) waitUntilLive(dirConfig *home.EdwardConfiguration) error {
 		return errors.WithStack(result.error)
 	}
 
-}
-
-func waitForLogText(dirConfig *home.EdwardConfiguration, line string, cancel <-chan struct{}, service *services.ServiceConfig) error {
-	// Read output until we get the success
-	var t *tail.Tail
-	var err error
-	t, err = tail.TailFile(service.GetRunLog(dirConfig.LogDir), tail.Config{
-		Follow: true,
-		ReOpen: true,
-		Poll:   true,
-		Logger: tail.DiscardingLogger,
-	})
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	for logLine := range t.Lines {
-
-		select {
-		case <-cancel:
-			return nil
-		default:
-		}
-
-		if strings.Contains(logLine.Text, line) {
-			return nil
-		}
-	}
-	return nil
 }
 
 const portStatusListen = "LISTEN"

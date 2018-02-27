@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -14,7 +15,6 @@ import (
 	"github.com/theothertomelliott/gopsutil-nocgo/net"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/commandline"
-	"github.com/yext/edward/home"
 	"github.com/yext/edward/services"
 )
 
@@ -23,6 +23,8 @@ type buildandrun struct {
 	Backend *CommandLineBackend
 	done    chan struct{}
 	cmd     *exec.Cmd
+
+	launchConditionMet chan struct{}
 
 	mtx sync.Mutex
 }
@@ -39,7 +41,7 @@ func (b *buildandrun) Build(workingDir string, getenv func(string) string) ([]by
 	return out, errors.WithStack(err)
 }
 
-func (b *buildandrun) Start(dirConfig *home.EdwardConfiguration, standardLog io.Writer, errorLog io.Writer) error {
+func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
 
@@ -48,6 +50,7 @@ func (b *buildandrun) Start(dirConfig *home.EdwardConfiguration, standardLog io.
 	}
 
 	b.done = make(chan struct{})
+	b.launchConditionMet = make(chan struct{})
 
 	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(b.Backend.Commands.Launch))
 	if err != nil {
@@ -58,8 +61,8 @@ func (b *buildandrun) Start(dirConfig *home.EdwardConfiguration, standardLog io.
 		b.cmd.Dir = os.ExpandEnv(*b.Service.Path)
 	}
 	b.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	b.cmd.Stdout = standardLog
-	b.cmd.Stderr = errorLog
+	b.cmd.Stdout = b.newWatchingWriter(standardLog)
+	b.cmd.Stderr = b.newWatchingWriter(errorLog)
 
 	var started = make(chan struct{})
 	go func() {
@@ -78,7 +81,7 @@ func (b *buildandrun) Start(dirConfig *home.EdwardConfiguration, standardLog io.
 
 	var live = make(chan error)
 	go func() {
-		err = b.waitUntilLive(dirConfig)
+		err = b.waitUntilLive()
 		if err != nil {
 			live <- errors.WithStack(err)
 		}
@@ -237,4 +240,42 @@ func signalGroup(pgid int, service *services.ServiceConfig, flag string) error {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	err := cmd.Run()
 	return errors.WithMessage(err, "signalGroup:")
+}
+
+func (b *buildandrun) newWatchingWriter(w io.Writer) io.Writer {
+	return &logWatchingWriter{
+		out:          w,
+		launchChecks: b.Backend.LaunchChecks,
+		found:        b.launchConditionMet,
+	}
+}
+
+type logWatchingWriter struct {
+	out          io.Writer
+	launchChecks *LaunchChecks
+
+	received []byte
+
+	found chan struct{}
+
+	mtx sync.Mutex
+}
+
+func (pw *logWatchingWriter) Write(p []byte) (n int, err error) {
+	pw.mtx.Lock()
+	defer pw.mtx.Unlock()
+
+	select {
+	case <-pw.found:
+		// Don't do anything if the log message has already been found
+	default:
+		if pw.launchChecks != nil && pw.launchChecks.LogText != "" {
+			pw.received = append(pw.received, p...)
+			if strings.Contains(string(pw.received), pw.launchChecks.LogText) {
+				close(pw.found)
+			}
+		}
+	}
+
+	return pw.out.Write(p)
 }
