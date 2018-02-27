@@ -13,7 +13,6 @@ type BackendName string
 type Backend interface {
 	HasBuildStep() bool
 	HasLaunchStep() bool
-	HasStopStep() bool
 }
 
 type BackendLoader interface {
