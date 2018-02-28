@@ -1,16 +1,11 @@
 {
     "services": [
         {
-            "name": "simple",
-            "path": "simple",
-            "commands": {
-                "build": "docker build -t simple:edward .",
-                "launch": "docker run -p 80:80 simple:edward"
-            },
-            "launch_checks": {
-                "ports": [
-                    80
-                ]
+            "name": "nginxhello",
+            "backend": "docker",
+            "repository": "hello-world-nginx",
+            "ports": {
+                "80": "8080"
             }
         }
     ]
