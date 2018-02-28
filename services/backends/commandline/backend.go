@@ -7,9 +7,9 @@ import (
 	"github.com/yext/edward/services"
 )
 
-var _ services.Backend = &CommandLineBackend{}
+var _ services.Backend = &Backend{}
 
-type CommandLineBackend struct {
+type Backend struct {
 	// Commands for managing the service
 	Commands ServiceConfigCommands `json:"commands"`
 
@@ -17,8 +17,8 @@ type CommandLineBackend struct {
 	LaunchChecks *LaunchChecks `json:"launch_checks,omitempty"`
 }
 
-func (c *CommandLineBackend) UnmarshalJSON(data []byte) error {
-	type Alias CommandLineBackend
+func (c *Backend) UnmarshalJSON(data []byte) error {
+	type Alias Backend
 	aux := &struct {
 		*Alias
 	}{
@@ -51,7 +51,7 @@ func (c *CommandLineBackend) UnmarshalJSON(data []byte) error {
 
 }
 
-func (c *CommandLineBackend) unmarshalLegacyLaunchChecks(data []byte) error {
+func (c *Backend) unmarshalLegacyLaunchChecks(data []byte) error {
 	aux := &struct {
 		Properties *ServiceConfigProperties `json:"log_properties,omitempty"`
 	}{}
@@ -100,20 +100,20 @@ type ServiceConfigCommands struct {
 	Stop string `json:"stop,omitempty"`
 }
 
-func (c *CommandLineBackend) Name() string {
+func (c *Backend) Name() string {
 	return "commandline"
 }
 
-func (c *CommandLineBackend) HasBuildStep() bool {
+func (c *Backend) HasBuildStep() bool {
 	return c.Commands.Build != ""
 }
 
-func (c *CommandLineBackend) HasLaunchStep() bool {
+func (c *Backend) HasLaunchStep() bool {
 	return c.Commands.Launch != ""
 }
 
-func GetConfigCommandLine(s *services.ServiceConfig) (*CommandLineBackend, error) {
-	if cl, ok := s.BackendConfig.(*CommandLineBackend); ok {
+func GetConfigCommandLine(s *services.ServiceConfig) (*Backend, error) {
+	if cl, ok := s.BackendConfig.(*Backend); ok {
 		return cl, nil
 	}
 	return nil, errors.New("service was not a command line service")

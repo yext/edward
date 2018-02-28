@@ -15,7 +15,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// Register necessary backends
-	services.RegisterDefaultBackend(&commandline.CommandLineLoader{})
+	services.RegisterDefaultBackend(&commandline.Loader{})
 
 	os.Exit(m.Run())
 }
@@ -25,7 +25,7 @@ var service1 = services.ServiceConfig{
 	Description:  "My Service 1 is magic",
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
-	BackendConfig: &commandline.CommandLineBackend{
+	BackendConfig: &commandline.Backend{
 		Commands: commandline.ServiceConfigCommands{
 			Build:  "buildCmd",
 			Launch: "launchCmd",
@@ -43,7 +43,7 @@ var service1alias = services.ServiceConfig{
 	Aliases:      []string{"service2"},
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
-	BackendConfig: &commandline.CommandLineBackend{
+	BackendConfig: &commandline.Backend{
 		Commands: commandline.ServiceConfigCommands{
 			Build:  "buildCmd",
 			Launch: "launchCmd",
@@ -77,7 +77,7 @@ var group1alias = services.ServiceGroupConfig{
 var service2 = services.ServiceConfig{
 	Name: "service2",
 	Path: common.StringToStringPointer("service2/path"),
-	BackendConfig: &commandline.CommandLineBackend{
+	BackendConfig: &commandline.Backend{
 		Commands: commandline.ServiceConfigCommands{
 			Build:  "buildCmd2",
 			Launch: "launchCmd2",
@@ -99,7 +99,7 @@ var service3 = services.ServiceConfig{
 	Name:         "service3",
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
-	BackendConfig: &commandline.CommandLineBackend{
+	BackendConfig: &commandline.Backend{
 		Commands: commandline.ServiceConfigCommands{
 			Build:  "buildCmd",
 			Launch: "launchCmd",

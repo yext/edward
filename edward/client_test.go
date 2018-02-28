@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Register necessary backends
-	services.RegisterDefaultBackend(&commandline.CommandLineLoader{})
+	services.RegisterDefaultBackend(&commandline.Loader{})
 
 	os.Exit(m.Run())
 }

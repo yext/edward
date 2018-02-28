@@ -62,7 +62,7 @@ func (v *ProcfileGenerator) VisitDir(path string) (bool, error) {
 			service := &services.ServiceConfig{
 				Name: group.Name + "-" + def[0],
 				Path: &relPath,
-				BackendConfig: &commandline.CommandLineBackend{
+				BackendConfig: &commandline.Backend{
 					Commands: commandline.ServiceConfigCommands{
 						Launch: strings.TrimSpace(def[1]),
 					},

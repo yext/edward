@@ -17,7 +17,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// Register necessary backends
-	services.RegisterDefaultBackend(&commandline.CommandLineLoader{})
+	services.RegisterDefaultBackend(&commandline.Loader{})
 
 	os.Exit(m.Run())
 }
@@ -38,7 +38,7 @@ func TestStartService(t *testing.T) {
 			expected: "Hello",
 			service: &services.ServiceConfig{
 				Path: getPath("service"),
-				BackendConfig: &commandline.CommandLineBackend{
+				BackendConfig: &commandline.Backend{
 					Commands: commandline.ServiceConfigCommands{
 						Launch: "go run main.go",
 					},
@@ -50,7 +50,7 @@ func TestStartService(t *testing.T) {
 			expected: "Hello",
 			service: &services.ServiceConfig{
 				Path: getPath("service"),
-				BackendConfig: &commandline.CommandLineBackend{
+				BackendConfig: &commandline.Backend{
 					Commands: commandline.ServiceConfigCommands{
 						Launch: "go run main.go",
 					},
@@ -128,7 +128,7 @@ func TestStartServiceFailure(t *testing.T) {
 			expected: errors.New("process exited"),
 			service: &services.ServiceConfig{
 				Path: getPath("service"),
-				BackendConfig: &commandline.CommandLineBackend{
+				BackendConfig: &commandline.Backend{
 					Commands: commandline.ServiceConfigCommands{
 						Launch: "go run missing.go",
 					},
@@ -140,7 +140,7 @@ func TestStartServiceFailure(t *testing.T) {
 			expected: errors.New("process exited"),
 			service: &services.ServiceConfig{
 				Path: getPath("service"),
-				BackendConfig: &commandline.CommandLineBackend{
+				BackendConfig: &commandline.Backend{
 					Commands: commandline.ServiceConfigCommands{
 						Launch: "go run missing.go",
 					},

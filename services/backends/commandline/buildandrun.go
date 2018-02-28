@@ -20,7 +20,7 @@ import (
 
 type buildandrun struct {
 	Service *services.ServiceConfig
-	Backend *CommandLineBackend
+	Backend *Backend
 	done    chan struct{}
 	cmd     *exec.Cmd
 

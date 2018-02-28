@@ -5,32 +5,32 @@ import (
 	"github.com/yext/edward/services"
 )
 
-type CommandLineLoader struct {
+type Loader struct {
 }
 
-func (l *CommandLineLoader) New() services.Backend {
-	return &CommandLineBackend{}
+func (l *Loader) New() services.Backend {
+	return &Backend{}
 }
 
-func (l *CommandLineLoader) Name() string {
+func (l *Loader) Name() string {
 	return "commandline"
 }
 
-func (l *CommandLineLoader) Handles(c services.Backend) bool {
-	_, ok := c.(*CommandLineBackend)
+func (l *Loader) Handles(c services.Backend) bool {
+	_, ok := c.(*Backend)
 	return ok
 }
 
-func (l *CommandLineLoader) Builder(s *services.ServiceConfig) (services.Builder, error) {
+func (l *Loader) Builder(s *services.ServiceConfig) (services.Builder, error) {
 	return l.buildandrun(s)
 }
 
-func (l *CommandLineLoader) Runner(s *services.ServiceConfig) (services.Runner, error) {
+func (l *Loader) Runner(s *services.ServiceConfig) (services.Runner, error) {
 	return l.buildandrun(s)
 }
 
-func (l *CommandLineLoader) buildandrun(s *services.ServiceConfig) (*buildandrun, error) {
-	if config, ok := s.BackendConfig.(*CommandLineBackend); ok {
+func (l *Loader) buildandrun(s *services.ServiceConfig) (*buildandrun, error) {
+	if config, ok := s.BackendConfig.(*Backend); ok {
 		return &buildandrun{
 			Service: s,
 			Backend: config,
