@@ -12,6 +12,4 @@ go get github.com/sabhiram/go-gitignore
 
 ## Usage
 
-```shell
-TODO
-```
+For a quick sample of how to use this library, check out the tests under `ignore_test.go`.
