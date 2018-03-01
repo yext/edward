@@ -9,6 +9,7 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/pkg/errors"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
+	"github.com/theothertomelliott/struct2struct"
 	"github.com/yext/edward/services"
 )
 
@@ -54,18 +55,22 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 		return errors.WithMessage(err, "finding container id")
 	}
 
-	exposedPorts, portBindings := b.formatPortMappings()
-
 	if b.containerID == "" {
+
+		backendConfig := b.Backend.ContainerConfig
+
+		var config docker.Config
+		var hostConfig docker.HostConfig
+
+		struct2struct.Marshal(&backendConfig, &config)
+		struct2struct.Marshal(&b.Backend.HostConfig, &hostConfig)
+
+		config.Image = imgID
+
 		container, err := b.client.CreateContainer(docker.CreateContainerOptions{
-			Name: b.containerName(),
-			Config: &docker.Config{
-				Image:        imgID,
-				ExposedPorts: exposedPorts,
-			},
-			HostConfig: &docker.HostConfig{
-				PortBindings: portBindings,
-			},
+			Name:       b.containerName(),
+			Config:     &config,
+			HostConfig: &hostConfig,
 		})
 		if err != nil {
 			return errors.WithMessage(err, "creating container")
@@ -104,6 +109,16 @@ func (b *buildandrun) Stop(workingDir string, getenv func(string) string) ([]byt
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+
+	if !b.Backend.Persistent {
+		err = b.client.RemoveContainer(docker.RemoveContainerOptions{
+			ID: b.containerID,
+		})
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+	}
+
 	close(b.done)
 	return nil, nil
 }
@@ -112,9 +127,22 @@ func (b *buildandrun) Status() (services.BackendStatus, error) {
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
 
+	if b.client == nil || b.containerID == "" {
+		return services.BackendStatus{}, nil
+	}
+
+	container, err := b.client.InspectContainer(b.containerID)
+	if err != nil {
+		errors.WithMessage(err, "pulling image")
+	}
+
 	var ports []string
-	for _, mappedPort := range b.Backend.Ports {
-		ports = append(ports, mappedPort)
+	if container.HostConfig != nil {
+		for _, bindings := range container.HostConfig.PortBindings {
+			for _, binding := range bindings {
+				ports = append(ports, binding.HostPort)
+			}
+		}
 	}
 
 	return services.BackendStatus{
@@ -179,29 +207,4 @@ func (b *buildandrun) findContainer() (string, bool, error) {
 		}
 	}
 	return containerID, running, nil
-}
-
-func (b *buildandrun) formatPortMappings() (exposedPorts map[docker.Port]struct{}, portBindings map[docker.Port][]docker.PortBinding) {
-	exposedPorts = make(map[docker.Port]struct{})
-	portBindings = make(map[docker.Port][]docker.PortBinding)
-
-	getDockerPort := func(port string) docker.Port {
-		if strings.Contains(port, "/") {
-			return docker.Port(port)
-		}
-		return docker.Port(fmt.Sprintf("%s/tcp", port))
-	}
-
-	for port, mapping := range b.Backend.Ports {
-		dPort := getDockerPort(port)
-		mapPort := getDockerPort(mapping)
-		exposedPorts[dPort] = struct{}{}
-		portBindings[dPort] = []docker.PortBinding{
-			docker.PortBinding{
-				HostPort: string(mapPort),
-			},
-		}
-	}
-
-	return exposedPorts, portBindings
 }

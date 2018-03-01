@@ -1,13 +1,17 @@
 package docker
 
-import "github.com/yext/edward/services"
+import (
+	"github.com/yext/edward/services"
+)
 
 var _ services.Backend = &Backend{}
 
 type Backend struct {
-	Repository string            `json:"repository"`
-	Tag        string            `json:"tag,omitempty"`
-	Ports      map[string]string `json:"ports,omitempty"`
+	Repository      string     `json:"repository"`
+	Tag             string     `json:"tag,omitempty"`
+	Persistent      bool       `json:"persistent,omitempty"`
+	ContainerConfig Config     `json:"containerConfig,omitempty"`
+	HostConfig      HostConfig `json:"hostConfig,omitempty"`
 }
 
 func (d *Backend) HasBuildStep() bool {

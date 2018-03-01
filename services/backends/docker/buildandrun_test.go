@@ -26,8 +26,19 @@ func TestStart(t *testing.T) {
 		BackendConfig: &docker.Backend{
 			Repository: "hello-world-nginx",
 			Tag:        "latest",
-			Ports: map[string]string{
-				"80": "51432",
+			ContainerConfig: docker.Config{
+				ExposedPorts: map[docker.Port]struct{}{
+					"8080/tcp": struct{}{},
+				},
+			},
+			HostConfig: docker.HostConfig{
+				PortBindings: map[docker.Port][]docker.PortBinding{
+					"80/tcp": []docker.PortBinding{
+						{
+							HostPort: "51432/tcp",
+						},
+					},
+				},
 			},
 		},
 	}
