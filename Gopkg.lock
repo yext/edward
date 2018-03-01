@@ -3,9 +3,51 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/Azure/go-ansiterm"
+  packages = [".","winterm"]
+  revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
+
+[[projects]]
+  name = "github.com/Microsoft/go-winio"
+  packages = ["."]
+  revision = "7da180ee92d8bd8bb8c37fc560e673e6557c392f"
+  version = "v0.4.7"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/Nvveen/Gotty"
+  packages = ["."]
+  revision = "cd527374f1e5bff4938207604a14f2e38a9cf512"
+
+[[projects]]
+  branch = "master"
   name = "github.com/StackExchange/wmi"
   packages = ["."]
   revision = "ea383cf3ba6ec950874b8486cd72356d007c768f"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/containerd/continuity"
+  packages = ["pathdriver"]
+  revision = "d8fb8589b0e8e85b8c8bbaa8840226d0dfeb7371"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/docker/docker"
+  packages = ["api/types","api/types/blkiodev","api/types/container","api/types/filters","api/types/mount","api/types/network","api/types/registry","api/types/strslice","api/types/swarm","api/types/swarm/runtime","api/types/versions","opts","pkg/archive","pkg/fileutils","pkg/homedir","pkg/idtools","pkg/ioutils","pkg/jsonmessage","pkg/longpath","pkg/mount","pkg/pools","pkg/stdcopy","pkg/system","pkg/term","pkg/term/windows"]
+  revision = "78efc2f38362b60d4e66a142c0c3cbadc7e89ae3"
+
+[[projects]]
+  name = "github.com/docker/go-connections"
+  packages = ["nat"]
+  revision = "3ede32e2033de7505e6500d6c868c2b9ed9f169d"
+  version = "v0.3.0"
+
+[[projects]]
+  name = "github.com/docker/go-units"
+  packages = ["."]
+  revision = "0dadbb0345b35ec7ef35e228dabb8de89a65bf52"
+  version = "v0.3.2"
 
 [[projects]]
   branch = "master"
@@ -26,10 +68,22 @@
   version = "v1.4.2"
 
 [[projects]]
+  name = "github.com/fsouza/go-dockerclient"
+  packages = ["."]
+  revision = "ca33ff277b527ce11b793e62f9ba244129b01caf"
+  version = "1.2.0"
+
+[[projects]]
   name = "github.com/go-ole/go-ole"
   packages = [".","oleutil"]
   revision = "0e87ea779d9deb219633b828a023b32e1244dd57"
   version = "v1.2.0"
+
+[[projects]]
+  name = "github.com/gogo/protobuf"
+  packages = ["proto"]
+  revision = "1adfc126b41513cc696b209667c8656ea7aac67c"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -128,6 +182,24 @@
   revision = "be7a31354aeea3f9f5efbc5c74d0a67ce132de6f"
 
 [[projects]]
+  name = "github.com/opencontainers/go-digest"
+  packages = ["."]
+  revision = "279bed98673dd5bef374d3b6e4b09e2af76183bf"
+  version = "v1.0.0-rc1"
+
+[[projects]]
+  name = "github.com/opencontainers/image-spec"
+  packages = ["specs-go","specs-go/v1"]
+  revision = "d60099175f88c47cd379c4738d158884749ed235"
+  version = "v1.0.1"
+
+[[projects]]
+  name = "github.com/opencontainers/runc"
+  packages = ["libcontainer/system","libcontainer/user"]
+  revision = "baf6536d6259209c3edfa2b22237af82942d3dfa"
+  version = "v0.1.1"
+
+[[projects]]
   name = "github.com/pelletier/go-buffruneio"
   packages = ["."]
   revision = "c37440a7cf42ac63b919c752ca73a85067e05992"
@@ -174,6 +246,12 @@
   name = "github.com/shirou/w32"
   packages = ["."]
   revision = "bb4de0191aa41b5507caa14b0650cdbddcd9280b"
+
+[[projects]]
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
+  version = "v1.0.4"
 
 [[projects]]
   branch = "master"
@@ -225,14 +303,32 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/theothertomelliott/struct2struct"
+  packages = ["."]
+  revision = "372ebe1f48e269ef1dff355509f970e6408acf53"
+
+[[projects]]
+  branch = "master"
   name = "github.com/theothertomelliott/uilive"
   packages = ["."]
   revision = "e481c8e66f15df6bab3844a4a31ba15fabe95d49"
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["ssh/terminal"]
+  revision = "91a49db82a88618983a78a06c1cbd4e00ab749ab"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/net"
+  packages = ["context","context/ctxhttp"]
+  revision = "cbe0f9307d0156177f9dd5dc85da1a31abc5f2fb"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix"]
+  packages = ["unix","windows"]
   revision = "cd2c276457edda6df7fb04895d3fd6a6add42926"
 
 [[projects]]
@@ -268,6 +364,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "24a4dc1f4861d281c112ba9cbbbc183e13351183f0d6a0cb99a9d868859db847"
+  inputs-digest = "5361913c0b7ed49bfe15e3585037d7030a747ef6d27c0f8274a8b4dff8bd25d4"
   solver-name = "gps-cdcl"
   solver-version = 1
