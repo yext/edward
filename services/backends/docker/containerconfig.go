@@ -6,41 +6,41 @@ import "time"
 // Config does not contain the options that are specific to starting a container on a
 // given host.  Those are contained in HostConfig
 type Config struct {
-	Hostname          string            `json:"hostname,omitempty" yaml:"Hostname,omitempty" toml:"Hostname,omitempty"`
-	Domainname        string            `json:"domainname,omitempty" yaml:"Domainname,omitempty" toml:"Domainname,omitempty"`
-	User              string            `json:"user,omitempty" yaml:"User,omitempty" toml:"User,omitempty"`
-	Memory            int64             `json:"memory,omitempty" yaml:"Memory,omitempty" toml:"Memory,omitempty"`
-	MemorySwap        int64             `json:"memorySwap,omitempty" yaml:"MemorySwap,omitempty" toml:"MemorySwap,omitempty"`
-	MemoryReservation int64             `json:"memoryReservation,omitempty" yaml:"MemoryReservation,omitempty" toml:"MemoryReservation,omitempty"`
-	KernelMemory      int64             `json:"kernelMemory,omitempty" yaml:"KernelMemory,omitempty" toml:"KernelMemory,omitempty"`
-	CPUShares         int64             `json:"cpuShares,omitempty" yaml:"CpuShares,omitempty" toml:"CpuShares,omitempty"`
-	CPUSet            string            `json:"cpuset,omitempty" yaml:"Cpuset,omitempty" toml:"Cpuset,omitempty"`
-	PortSpecs         []string          `json:"portSpecs,omitempty" yaml:"PortSpecs,omitempty" toml:"PortSpecs,omitempty"`
-	ExposedPorts      map[Port]struct{} `json:"exposedPorts,omitempty" yaml:"ExposedPorts,omitempty" toml:"ExposedPorts,omitempty"`
-	PublishService    string            `json:"publishService,omitempty" yaml:"PublishService,omitempty" toml:"PublishService,omitempty"`
-	StopSignal        string            `json:"stopSignal,omitempty" yaml:"StopSignal,omitempty" toml:"StopSignal,omitempty"`
-	StopTimeout       int               `json:"stopTimeout,omitempty" yaml:"StopTimeout,omitempty" toml:"StopTimeout,omitempty"`
-	Env               []string          `json:"env,omitempty" yaml:"Env,omitempty" toml:"Env,omitempty"`
-	Cmd               []string          `json:"cmd" yaml:"Cmd" toml:"Cmd"`
-	Healthcheck       *HealthConfig     `json:"healthcheck,omitempty" yaml:"Healthcheck,omitempty" toml:"Healthcheck,omitempty"`
-	DNS               []string          `json:"dns,omitempty" yaml:"Dns,omitempty" toml:"Dns,omitempty"` // For Docker API v1.9 and below only
-	Volumes           []string          `json:"volumes,omitempty" yaml:"Volumes,omitempty" toml:"Volumes,omitempty"`
-	VolumeDriver      string            `json:"volumeDriver,omitempty" yaml:"VolumeDriver,omitempty" toml:"VolumeDriver,omitempty"`
-	WorkingDir        string            `json:"workingDir,omitempty" yaml:"WorkingDir,omitempty" toml:"WorkingDir,omitempty"`
-	MacAddress        string            `json:"macAddress,omitempty" yaml:"MacAddress,omitempty" toml:"MacAddress,omitempty"`
-	Entrypoint        []string          `json:"entrypoint" yaml:"Entrypoint" toml:"Entrypoint"`
-	SecurityOpts      []string          `json:"securityOpts,omitempty" yaml:"SecurityOpts,omitempty" toml:"SecurityOpts,omitempty"`
-	OnBuild           []string          `json:"onBuild,omitempty" yaml:"OnBuild,omitempty" toml:"OnBuild,omitempty"`
-	Mounts            []Mount           `json:"mounts,omitempty" yaml:"Mounts,omitempty" toml:"Mounts,omitempty"`
-	Labels            map[string]string `json:"labels,omitempty" yaml:"Labels,omitempty" toml:"Labels,omitempty"`
-	AttachStdin       bool              `json:"attachStdin,omitempty" yaml:"AttachStdin,omitempty" toml:"AttachStdin,omitempty"`
-	AttachStdout      bool              `json:"attachStdout,omitempty" yaml:"AttachStdout,omitempty" toml:"AttachStdout,omitempty"`
-	AttachStderr      bool              `json:"attachStderr,omitempty" yaml:"AttachStderr,omitempty" toml:"AttachStderr,omitempty"`
-	ArgsEscaped       bool              `json:"argsEscaped,omitempty" yaml:"ArgsEscaped,omitempty" toml:"ArgsEscaped,omitempty"`
-	Tty               bool              `json:"tty,omitempty" yaml:"Tty,omitempty" toml:"Tty,omitempty"`
-	OpenStdin         bool              `json:"openStdin,omitempty" yaml:"OpenStdin,omitempty" toml:"OpenStdin,omitempty"`
-	StdinOnce         bool              `json:"stdinOnce,omitempty" yaml:"StdinOnce,omitempty" toml:"StdinOnce,omitempty"`
-	NetworkDisabled   bool              `json:"networkDisabled,omitempty" yaml:"NetworkDisabled,omitempty" toml:"NetworkDisabled,omitempty"`
+	Hostname          string            `json:"hostname,omitempty"`
+	Domainname        string            `json:"domainname,omitempty"`
+	User              string            `json:"user,omitempty"`
+	Memory            int64             `json:"memory,omitempty"`
+	MemorySwap        int64             `json:"memorySwap,omitempty"`
+	MemoryReservation int64             `json:"memoryReservation,omitempty"`
+	KernelMemory      int64             `json:"kernelMemory,omitempty"`
+	CPUShares         int64             `json:"cpuShares,omitempty"`
+	CPUSet            string            `json:"cpuset,omitempty"`
+	PortSpecs         []string          `json:"portSpecs,omitempty"`
+	ExposedPorts      map[Port]struct{} `json:"exposedPorts,omitempty"`
+	PublishService    string            `json:"publishService,omitempty"`
+	StopSignal        string            `json:"stopSignal,omitempty"`
+	StopTimeout       int               `json:"stopTimeout,omitempty"`
+	Env               []string          `json:"env,omitempty"`
+	Cmd               []string          `json:"cmd"`
+	Healthcheck       *HealthConfig     `json:"healthcheck,omitempty"`
+	DNS               []string          `json:"dns,omitempty"` // For Docker API v1.9 and below only
+	Volumes           []string          `json:"volumes,omitempty"`
+	VolumeDriver      string            `json:"volumeDriver,omitempty"`
+	WorkingDir        string            `json:"workingDir,omitempty"`
+	MacAddress        string            `json:"macAddress,omitempty"`
+	Entrypoint        []string          `json:"entrypoint"`
+	SecurityOpts      []string          `json:"securityOpts,omitempty"`
+	OnBuild           []string          `json:"onBuild,omitempty"`
+	Mounts            []Mount           `json:"mounts,omitempty"`
+	Labels            map[string]string `json:"labels,omitempty"`
+	AttachStdin       bool              `json:"attachStdin,omitempty"`
+	AttachStdout      bool              `json:"attachStdout,omitempty"`
+	AttachStderr      bool              `json:"attachStderr,omitempty"`
+	ArgsEscaped       bool              `json:"argsEscaped,omitempty"`
+	Tty               bool              `json:"tty,omitempty"`
+	OpenStdin         bool              `json:"openStdin,omitempty"`
+	StdinOnce         bool              `json:"stdinOnce,omitempty"`
+	NetworkDisabled   bool              `json:"networkDisabled,omitempty"`
 }
 
 // Port represents the port number and the protocol, in the form
@@ -59,16 +59,16 @@ type HealthConfig struct {
 	// {"NONE"} : disable healthcheck
 	// {"CMD", args...} : exec arguments directly
 	// {"CMD-SHELL", command} : run command with system's default shell
-	Test []string `json:"test,omitempty" yaml:"Test,omitempty" toml:"Test,omitempty"`
+	Test []string `json:"test,omitempty"`
 
 	// Zero means to inherit. Durations are expressed as integer nanoseconds.
-	Interval    time.Duration `json:"interval,omitempty" yaml:"Interval,omitempty" toml:"Interval,omitempty"`          // Interval is the time to wait between checks.
-	Timeout     time.Duration `json:"timeout,omitempty" yaml:"Timeout,omitempty" toml:"Timeout,omitempty"`             // Timeout is the time to wait before considering the check to have hung.
-	StartPeriod time.Duration `json:"startPeriod,omitempty" yaml:"StartPeriod,omitempty" toml:"StartPeriod,omitempty"` // The start period for the container to initialize before the retries starts to count down.
+	Interval    time.Duration `json:"interval,omitempty"`    // Interval is the time to wait between checks.
+	Timeout     time.Duration `json:"timeout,omitempty"`     // Timeout is the time to wait before considering the check to have hung.
+	StartPeriod time.Duration `json:"startPeriod,omitempty"` // The start period for the container to initialize before the retries starts to count down.
 
 	// Retries is the number of consecutive failures needed to consider a container as unhealthy.
 	// Zero means inherit.
-	Retries int `json:"retries,omitempty" yaml:"Retries,omitempty" toml:"Retries,omitempty"`
+	Retries int `json:"retries,omitempty"`
 }
 
 // Mount represents a mount point in the container.
