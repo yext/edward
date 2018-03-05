@@ -1,12 +1,17 @@
 package docker
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
 	"sync"
+	"time"
 
-	docker "github.com/fsouza/go-dockerclient"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
+	dockerclient "github.com/docker/docker/client"
 	"github.com/pkg/errors"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/theothertomelliott/struct2struct"
@@ -18,7 +23,7 @@ type buildandrun struct {
 	Backend *Backend
 
 	containerID string
-	client      *docker.Client
+	client      *dockerclient.Client
 
 	done chan struct{}
 
@@ -39,7 +44,7 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 	b.done = make(chan struct{})
 
 	var err error
-	b.client, err = docker.NewClientFromEnv()
+	b.client, err = dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithVersion("1.35"))
 	if err != nil {
 		return errors.WithMessage(err, "initializing client")
 	}
@@ -59,19 +64,22 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 
 		backendConfig := b.Backend.ContainerConfig
 
-		var config docker.Config
-		var hostConfig docker.HostConfig
+		var config container.Config
+		var hostConfig container.HostConfig
 
 		struct2struct.Marshal(&backendConfig, &config)
 		struct2struct.Marshal(&b.Backend.HostConfig, &hostConfig)
 
 		config.Image = imgID
 
-		container, err := b.client.CreateContainer(docker.CreateContainerOptions{
-			Name:       b.containerName(),
-			Config:     &config,
-			HostConfig: &hostConfig,
-		})
+		container, err := b.client.ContainerCreate(
+			context.TODO(),
+			&config,
+			&hostConfig,
+			&network.NetworkingConfig{},
+			b.containerName(),
+		)
+
 		if err != nil {
 			return errors.WithMessage(err, "creating container")
 		}
@@ -82,22 +90,25 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 		return errors.New("already running")
 	}
 
-	err = b.client.StartContainer(b.containerID, &docker.HostConfig{})
+	err = b.client.ContainerStart(context.TODO(), b.containerID, types.ContainerStartOptions{})
 	if err != nil {
 		return errors.WithMessage(err, "starting container")
 	}
 
-	_, err = b.client.AttachToContainerNonBlocking(docker.AttachToContainerOptions{
-		Container:    b.containerID,
-		Stream:       true,
-		Stdout:       true,
-		Stderr:       true,
-		OutputStream: standardLog,
-		ErrorStream:  errorLog,
+	response, err := b.client.ContainerAttach(context.TODO(), b.containerID, types.ContainerAttachOptions{
+		Stream: true,
+		Stdout: true,
+		Stderr: true,
 	})
 	if err != nil {
 		return errors.WithMessage(err, "attaching to container")
 	}
+	go func() {
+		// TODO: Close as appropriate
+		for true {
+			_, _ = response.Reader.WriteTo(standardLog)
+		}
+	}()
 	return nil
 }
 
@@ -105,15 +116,14 @@ func (b *buildandrun) Stop(workingDir string, getenv func(string) string) ([]byt
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
 
-	err := b.client.StopContainer(b.containerID, 0)
+	duration := time.Duration(0)
+	err := b.client.ContainerStop(context.TODO(), b.containerID, &duration)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
 	if !b.Backend.Persistent {
-		err = b.client.RemoveContainer(docker.RemoveContainerOptions{
-			ID: b.containerID,
-		})
+		err = b.client.ContainerRemove(context.TODO(), b.containerID, types.ContainerRemoveOptions{})
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -131,7 +141,7 @@ func (b *buildandrun) Status() (services.BackendStatus, error) {
 		return services.BackendStatus{}, nil
 	}
 
-	container, err := b.client.InspectContainer(b.containerID)
+	container, err := b.client.ContainerInspect(context.TODO(), b.containerID)
 	if err != nil {
 		errors.WithMessage(err, "pulling image")
 	}
@@ -165,16 +175,15 @@ func (b *buildandrun) findImage(standardLog io.Writer) (string, error) {
 		tag = "latest"
 	}
 
-	err := b.client.PullImage(docker.PullImageOptions{
-		Repository:   b.Backend.Repository,
-		Tag:          tag,
-		OutputStream: standardLog,
-	}, docker.AuthConfiguration{})
+	// TODO: Pipe to output
+	_, err := b.client.ImagePull(context.TODO(), b.Backend.Image, types.ImagePullOptions{
+		All: true,
+	})
 	if err != nil {
 		errors.WithMessage(err, "pulling image")
 	}
 
-	imgs, err := b.client.ListImages(docker.ListImagesOptions{All: false})
+	imgs, err := b.client.ImageList(context.TODO(), types.ImageListOptions{})
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
@@ -189,8 +198,7 @@ func (b *buildandrun) findImage(standardLog io.Writer) (string, error) {
 
 func (b *buildandrun) findContainer() (string, bool, error) {
 	var containerID string
-
-	containers, err := b.client.ListContainers(docker.ListContainersOptions{
+	containers, err := b.client.ContainerList(context.TODO(), types.ContainerListOptions{
 		All: true,
 	})
 	if err != nil {

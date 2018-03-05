@@ -7,6 +7,7 @@ import (
 var _ services.Backend = &Backend{}
 
 type Backend struct {
+	Image           string     `json:"image"`
 	Repository      string     `json:"repository"`
 	Tag             string     `json:"tag,omitempty"`
 	Persistent      bool       `json:"persistent,omitempty"`
