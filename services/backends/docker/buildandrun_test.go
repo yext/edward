@@ -24,8 +24,7 @@ func TestStart(t *testing.T) {
 	service := &services.ServiceConfig{
 		Name: "testservice",
 		BackendConfig: &docker.Backend{
-			Repository: "hello-world-nginx",
-			Tag:        "latest",
+			Image: "hello-world-nginx:latest",
 			ContainerConfig: docker.Config{
 				ExposedPorts: map[docker.Port]struct{}{
 					"8080/tcp": struct{}{},

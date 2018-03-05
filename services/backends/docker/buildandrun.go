@@ -11,7 +11,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
-	dockerclient "github.com/docker/docker/client"
+	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/theothertomelliott/struct2struct"
@@ -23,7 +23,7 @@ type buildandrun struct {
 	Backend *Backend
 
 	containerID string
-	client      *dockerclient.Client
+	client      *client.Client
 
 	done chan struct{}
 
@@ -44,7 +44,7 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 	b.done = make(chan struct{})
 
 	var err error
-	b.client, err = dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithVersion("1.35"))
+	b.client, err = client.NewEnvClient()
 	if err != nil {
 		return errors.WithMessage(err, "initializing client")
 	}
@@ -170,11 +170,6 @@ func (b *buildandrun) containerName() string {
 }
 
 func (b *buildandrun) findImage(standardLog io.Writer) (string, error) {
-	tag := b.Backend.Tag
-	if tag == "" {
-		tag = "latest"
-	}
-
 	// TODO: Pipe to output
 	_, err := b.client.ImagePull(context.TODO(), b.Backend.Image, types.ImagePullOptions{
 		All: true,
@@ -189,7 +184,7 @@ func (b *buildandrun) findImage(standardLog io.Writer) (string, error) {
 	}
 	var imgID string
 	for _, img := range imgs {
-		if len(img.RepoTags) > 0 && strings.Contains(img.RepoTags[0], fmt.Sprintf("%s:%s", b.Backend.Repository, tag)) {
+		if len(img.RepoTags) > 0 && strings.Contains(img.RepoTags[0], b.Backend.Image) {
 			imgID = img.ID
 		}
 	}
