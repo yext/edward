@@ -8,8 +8,13 @@ install:
 build:
 	./build.sh
 
-test:
+test: unit acceptance
+
+unit:
 	go test -timeout 3m -race -cover -count 1 $(PKGS)
+
+acceptance:
+	go test -timeout 3m -race -cover -count 1 github.com/yext/edward/test/acceptance -edward.acceptance 
 
 checkdocs:
 	./check_docs.sh
