@@ -118,13 +118,13 @@ func createWorkingDir(testName, testDataPath string) (string, func(), error) {
 	if err != nil {
 		return "", func() {}, err
 	}
-	copy_folder(testDataPath, workingDir)
+	copyFolder(testDataPath, workingDir)
 	return workingDir, func() {
 		os.RemoveAll(workingDir)
 	}, nil
 }
 
-func copy_folder(source string, dest string) (err error) {
+func copyFolder(source string, dest string) (err error) {
 
 	sourceinfo, err := os.Stat(source)
 	if err != nil {
@@ -147,12 +147,12 @@ func copy_folder(source string, dest string) (err error) {
 		destinationfilepointer := dest + "/" + obj.Name()
 
 		if obj.IsDir() {
-			err = copy_folder(sourcefilepointer, destinationfilepointer)
+			err = copyFolder(sourcefilepointer, destinationfilepointer)
 			if err != nil {
 				fmt.Println("Copying folder:", err)
 			}
 		} else {
-			err = copy_file(sourcefilepointer, destinationfilepointer)
+			err = copyFile(sourcefilepointer, destinationfilepointer)
 			if err != nil {
 				fmt.Println("Copying file:", err)
 			}
@@ -162,7 +162,7 @@ func copy_folder(source string, dest string) (err error) {
 	return
 }
 
-func copy_file(source string, dest string) (err error) {
+func copyFile(source string, dest string) (err error) {
 	sourcefile, err := os.Open(source)
 	if err != nil {
 		return err
