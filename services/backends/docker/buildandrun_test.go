@@ -57,6 +57,11 @@ func TestStart(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+
+		_, err := http.Get("http://localhost:51432/")
+		if err == nil {
+			t.Error("Did not expect request to stopped container to succeed")
+		}
 	}()
 
 	resp, err := http.Get("http://localhost:51432/")

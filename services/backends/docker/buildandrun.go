@@ -27,6 +27,8 @@ type buildandrun struct {
 
 	done chan struct{}
 
+	hijackedResponse *types.HijackedResponse
+
 	mtx sync.Mutex
 }
 
@@ -98,10 +100,10 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 	if err != nil {
 		return errors.WithMessage(err, "attaching to container")
 	}
+	b.hijackedResponse = &response
 	go func() {
-		// TODO: Close as appropriate
-		for true {
-			_, _ = response.Reader.WriteTo(standardLog)
+		if b.hijackedResponse != nil {
+			_, _ = io.Copy(standardLog, b.hijackedResponse.Reader)
 		}
 	}()
 	return nil
@@ -122,6 +124,10 @@ func (b *buildandrun) Stop(workingDir string, getenv func(string) string) ([]byt
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
+	}
+
+	if b.hijackedResponse != nil {
+		b.hijackedResponse.Close()
 	}
 
 	close(b.done)
@@ -165,14 +171,13 @@ func (b *buildandrun) containerName() string {
 }
 
 func (b *buildandrun) findImage(standardLog io.Writer) (string, error) {
-	// TODO: Pipe to output
 	output, err := b.client.ImagePull(context.TODO(), b.Backend.Image, types.ImagePullOptions{
 		All: true,
 	})
 	if err != nil {
 		return "", errors.WithMessage(err, "pulling image")
 	}
-	io.Copy(standardLog, output)
+	_, _ = io.Copy(standardLog, output)
 	output.Close()
 
 	imgs, err := b.client.ImageList(context.TODO(), types.ImageListOptions{})
