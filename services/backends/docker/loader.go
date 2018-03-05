@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 	"github.com/yext/edward/services"
 )
@@ -30,10 +31,15 @@ func (l *Loader) Runner(s *services.ServiceConfig) (services.Runner, error) {
 }
 
 func (l *Loader) buildandrun(s *services.ServiceConfig) (*buildandrun, error) {
+	client, err := client.NewEnvClient()
+	if err != nil {
+		return nil, errors.WithMessage(err, "initializing client")
+	}
 	if config, ok := s.BackendConfig.(*Backend); ok {
 		return &buildandrun{
 			Service: s,
 			Backend: config,
+			client:  client,
 		}, nil
 	}
 	return nil, errors.New("config was not of expected type")

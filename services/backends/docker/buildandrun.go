@@ -43,12 +43,6 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 
 	b.done = make(chan struct{})
 
-	var err error
-	b.client, err = client.NewEnvClient()
-	if err != nil {
-		return errors.WithMessage(err, "initializing client")
-	}
-
 	imgID, err := b.findImage(standardLog)
 	if err != nil {
 		return errors.WithMessage(err, "getting image")
