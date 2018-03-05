@@ -24,7 +24,7 @@ func TestStart(t *testing.T) {
 	service := &services.ServiceConfig{
 		Name: "testservice",
 		BackendConfig: &docker.Backend{
-			Image: "hello-world-nginx:latest",
+			Image: "kitematic/hello-world-nginx:latest",
 			ContainerConfig: docker.Config{
 				ExposedPorts: map[docker.Port]struct{}{
 					"8080/tcp": struct{}{},

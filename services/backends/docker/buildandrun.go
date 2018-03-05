@@ -71,7 +71,6 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 		struct2struct.Marshal(&b.Backend.HostConfig, &hostConfig)
 
 		config.Image = imgID
-
 		container, err := b.client.ContainerCreate(
 			context.TODO(),
 			&config,
@@ -171,12 +170,14 @@ func (b *buildandrun) containerName() string {
 
 func (b *buildandrun) findImage(standardLog io.Writer) (string, error) {
 	// TODO: Pipe to output
-	_, err := b.client.ImagePull(context.TODO(), b.Backend.Image, types.ImagePullOptions{
+	output, err := b.client.ImagePull(context.TODO(), b.Backend.Image, types.ImagePullOptions{
 		All: true,
 	})
 	if err != nil {
-		errors.WithMessage(err, "pulling image")
+		return "", errors.WithMessage(err, "pulling image")
 	}
+	io.Copy(standardLog, output)
+	output.Close()
 
 	imgs, err := b.client.ImageList(context.TODO(), types.ImageListOptions{})
 	if err != nil {
