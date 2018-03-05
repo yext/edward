@@ -66,16 +66,18 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 
 		var config container.Config
 		var hostConfig container.HostConfig
+		var networkConfig network.NetworkingConfig
 
 		struct2struct.Marshal(&backendConfig, &config)
 		struct2struct.Marshal(&b.Backend.HostConfig, &hostConfig)
+		struct2struct.Marshal(&b.Backend.NetworkConfig, &networkConfig)
 
 		config.Image = imgID
 		container, err := b.client.ContainerCreate(
 			context.TODO(),
 			&config,
 			&hostConfig,
-			&network.NetworkingConfig{},
+			&networkConfig,
 			b.containerName(),
 		)
 
