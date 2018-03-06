@@ -133,10 +133,6 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, no
 	}
 	p := worker.NewPool(poolSize)
 	p.Start()
-	defer func() {
-		p.Stop()
-		_ = <-p.Complete()
-	}()
 	var err error
 	err = services.DoForServices(sgs, task, func(s *services.ServiceConfig, overrides services.ContextOverride, task tracker.Task) error {
 		if skipBuild {
@@ -161,7 +157,13 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, no
 		}
 		return nil
 	})
-	return errors.WithStack(err)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	p.Stop()
+	_ = <-p.Complete()
+	return p.Err()
 }
 
 func (c *Client) askForConfirmation(question string) bool {

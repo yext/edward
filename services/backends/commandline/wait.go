@@ -13,50 +13,25 @@ import (
 // An error will be returned if the command exits before reaching RUNNING.
 func (b *buildandrun) waitUntilLive() error {
 	pid := int32(b.cmd.Process.Pid)
-
-	var startCheck func(cancel <-chan struct{}) error
 	if b.Backend.LaunchChecks != nil && len(b.Backend.LaunchChecks.LogText) > 0 {
-		startCheck = func(cancel <-chan struct{}) error {
-			select {
-			case <-b.launchConditionMet:
-				return nil
-			case <-cancel:
-				return nil
-			}
-		}
+		<-b.launchConditionMet
+		return nil
 	} else if b.Backend.LaunchChecks != nil && len(b.Backend.LaunchChecks.Ports) > 0 {
-		startCheck = func(cancel <-chan struct{}) error {
-			return errors.WithStack(
-				waitForListeningPorts(b.Backend.LaunchChecks.Ports, cancel, pid),
-			)
-		}
+		return errors.WithStack(
+			waitForListeningPorts(b.Backend.LaunchChecks.Ports, pid),
+		)
 	} else if b.Backend.LaunchChecks != nil && b.Backend.LaunchChecks.Wait != 0 {
-		startCheck = func(cancel <-chan struct{}) error {
-			delay := time.NewTimer(time.Duration(b.Backend.LaunchChecks.Wait) * time.Millisecond)
-			defer delay.Stop()
-			select {
-			case <-cancel:
-				return nil
-			case <-delay.C:
-				return nil
-			}
-		}
-	} else {
-		startCheck = func(cancel <-chan struct{}) error {
-			return errors.WithStack(
-				waitForAnyPort(cancel, pid),
-			)
+		delay := time.NewTimer(time.Duration(b.Backend.LaunchChecks.Wait) * time.Millisecond)
+		defer delay.Stop()
+		select {
+		case <-delay.C:
+			return nil
 		}
 	}
 
-	done := make(chan struct{})
-	defer close(done)
-
-	select {
-	case result := <-cancelableWait(done, startCheck):
-		return errors.WithStack(result.error)
-	}
-
+	return errors.WithStack(
+		waitForAnyPort(pid),
+	)
 }
 
 const portStatusListen = "LISTEN"
@@ -81,15 +56,9 @@ func areAnyListeningPortsOpen(c *instance.Instance, ports []int) (bool, error) {
 	return false, nil
 }
 
-func waitForListeningPorts(ports []int, cancel <-chan struct{}, pid int32) error {
+func waitForListeningPorts(ports []int, pid int32) error {
 	for true {
 		time.Sleep(100 * time.Millisecond)
-
-		select {
-		case <-cancel:
-			return nil
-		default:
-		}
 
 		var matchedPorts = make(map[int]struct{})
 
@@ -115,15 +84,9 @@ func waitForListeningPorts(ports []int, cancel <-chan struct{}, pid int32) error
 	return errors.New("exited check loop unexpectedly")
 }
 
-func waitForAnyPort(cancel <-chan struct{}, pid int32) error {
+func waitForAnyPort(pid int32) error {
 	for true {
 		time.Sleep(100 * time.Millisecond)
-
-		select {
-		case <-cancel:
-			return nil
-		default:
-		}
 
 		connections, err := net.Connections("all")
 		if err != nil {
@@ -157,14 +120,4 @@ func hasPort(proc *process.Process, connections []net.ConnectionStat) bool {
 		}
 	}
 	return false
-}
-
-func cancelableWait(cancel chan struct{}, task func(cancel <-chan struct{}) error) <-chan struct{ error } {
-	finished := make(chan struct{ error })
-	go func() {
-		defer close(finished)
-		err := task(cancel)
-		finished <- struct{ error }{err}
-	}()
-	return finished
 }

@@ -92,12 +92,8 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 	case <-b.done:
 		return errors.New("process exited")
 	case e := <-live:
-		if e == nil {
-			return errors.WithStack(err)
-		}
+		return errors.WithStack(e)
 	}
-
-	return nil
 }
 
 func (b *buildandrun) Status() (services.BackendStatus, error) {
