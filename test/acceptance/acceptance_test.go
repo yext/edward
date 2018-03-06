@@ -72,6 +72,18 @@ func executeCommand(t *testing.T, workingDir string, command string, arg ...stri
 	}
 }
 
+func executeCommandExpectFailure(t *testing.T, workingDir string, command string, arg ...string) {
+	t.Helper()
+
+	cmd := exec.Command(command, arg...)
+	cmd.Dir = workingDir
+	out, err := cmd.CombinedOutput()
+	t.Log(string(out))
+	if err == nil {
+		t.Error("Expected an error in command")
+	}
+}
+
 func expectErrorFromURL(t *testing.T, url string) {
 	t.Helper()
 

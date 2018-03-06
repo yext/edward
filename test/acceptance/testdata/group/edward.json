@@ -1,0 +1,36 @@
+{
+    "groups": [
+        {
+            "name": "group",
+            "aliases": ["groupalias"],
+            "children": ["service1","service2","service3"]
+        }
+    ],
+    "services": [
+        {
+            "name": "service1",
+            "aliases": ["service1alias"],
+            "path": "edward-test-service",
+            "commands": {
+                "build": "go build",
+                "launch": "./edward-test-service 51936"
+            }
+        },
+        {
+            "name": "service2",
+            "path": "edward-test-service",
+            "commands": {
+                "build": "go build -o edward-test-service2",
+                "launch": "./edward-test-service2 51937"
+            }
+        },
+        {
+            "name": "service3",
+            "path": "edward-test-service",
+            "commands": {
+                "build": "go build -o edward-test-service3",
+                "launch": "./edward-test-service3 51938"
+            }
+        }
+    ]
+}
