@@ -24,8 +24,7 @@
             "name": "broken",
             "path": "edward-test-service-broken",
             "commands": {
-                "build": "go build -o edward-test-service-broken",
-                "launch": "./edward-test-service-broken 51937"
+                "launch": "go run main.go 51937"
             }
         },
         {
