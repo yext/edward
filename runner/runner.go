@@ -276,7 +276,7 @@ func (r *Runner) startService() error {
 
 	err := r.backendRunner.Start(r.standardLog, r.errorLog)
 	if err != nil {
-		errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 	go func() {
 		r.backendRunner.Wait()
