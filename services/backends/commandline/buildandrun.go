@@ -64,26 +64,24 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 	b.cmd.Stdout = b.newWatchingWriter(standardLog)
 	b.cmd.Stderr = b.newWatchingWriter(errorLog)
 
-	var started = make(chan struct{})
-	var failure error
+	var started = make(chan error)
 	go func() {
 		err := b.cmd.Start()
-		close(started)
 		defer close(b.done)
 		if err != nil {
-			failure = err
-			return
+			started <- err
 		}
+		close(started)
 		err = b.cmd.Wait()
 		if err != nil {
-			failure = err
+			fmt.Fprint(errorLog, err)
 		}
 	}()
-	<-started
 
-	if failure != nil {
-		fmt.Println("Returning failure:", failure)
-		return errors.WithStack(failure)
+	err = <-started
+	if err != nil {
+		fmt.Println("Returning failure:", err)
+		return errors.WithStack(err)
 	}
 
 	var live = make(chan error)

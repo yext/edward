@@ -2,11 +2,6 @@ package acceptance
 
 import (
 	"testing"
-
-	"github.com/yext/edward/home"
-	"github.com/yext/edward/services"
-
-	"github.com/yext/edward/instance"
 )
 
 func TestRunFailure(t *testing.T) {
@@ -36,17 +31,6 @@ func TestRunFailure(t *testing.T) {
 			for _, url := range test.expectedURLs {
 				expectErrorFromURL(t, url)
 			}
-			dirCfg, err := home.NewConfiguration()
-			if err != nil {
-				t.Fatal(err)
-			}
-			statuses, err := instance.LoadStatusForService(&services.ServiceConfig{
-				Name: "broken",
-			}, dirCfg.StateDir)
-			if err != nil {
-				t.Fatal(err)
-			}
-			t.Log(statuses)
 		})
 	}
 }
