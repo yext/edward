@@ -10,8 +10,8 @@ before_install:
   - go get github.com/mitchellh/gox
 
 go:
-  - 1.9
-  - 1.10
+  - "1.9"
+  - "1.10"
 deploy:
   skip_cleanup: true
   provider: releases
