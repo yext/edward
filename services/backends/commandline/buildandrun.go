@@ -68,14 +68,15 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 	go func() {
 		err := b.cmd.Start()
 		close(started)
+		defer close(b.done)
 		if err != nil {
 			errorLog.Write([]byte(fmt.Sprintf("start error: %v\n", err)))
+			return
 		}
 		err = b.cmd.Wait()
 		if err != nil {
 			errorLog.Write([]byte(fmt.Sprintf("start error: %v\n", err)))
 		}
-		close(b.done)
 	}()
 	<-started
 
