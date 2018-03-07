@@ -124,6 +124,18 @@ func TestStartServiceFailure(t *testing.T) {
 		expected error
 	}{
 		{
+			name:     "service panic",
+			expected: errors.New("process exited"),
+			service: &services.ServiceConfig{
+				Path: getPath("launchfailure"),
+				BackendConfig: &commandline.Backend{
+					Commands: commandline.ServiceConfigCommands{
+						Launch: "go run main.go",
+					},
+				},
+			},
+		},
+		{
 			name:     "default launch check",
 			expected: errors.New("process exited"),
 			service: &services.ServiceConfig{
