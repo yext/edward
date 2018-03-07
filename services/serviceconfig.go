@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/warmup"
+	"github.com/yext/errgo"
 )
 
 var _ ServiceOrGroup = &ServiceConfig{}
@@ -50,7 +51,69 @@ type ServiceConfig struct {
 	// Logger for actions on this service
 	Logger common.Logger `json:"-"`
 
-	BackendConfig Backend `json:"-"`
+	Backends []*BackendConfig `json:"backends"`
+}
+
+// Backend returns the default backend for this service
+func (c *ServiceConfig) Backend() Backend {
+	for _, backendConfig := range c.Backends {
+		return backendConfig.Config
+	}
+	return nil
+}
+
+// BackendConfig provides backend configuration for json
+type BackendConfig struct {
+	Name   string  `json:"name"`
+	Type   string  `json:"type"`
+	Config Backend `json:"-"`
+
+	ConfigByte []byte `json:"config"`
+}
+
+var _ json.Marshaler = &BackendConfig{}
+var _ json.Unmarshaler = &BackendConfig{}
+
+func (c *BackendConfig) UnmarshalJSON(data []byte) error {
+	type Alias BackendConfig
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(c),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return errors.Wrap(err, "could not parse backend entry")
+	}
+	var (
+		loader BackendLoader
+		ok     bool
+	)
+	if loader, ok = loaders[aux.Type]; !ok {
+		return fmt.Errorf("unknown config type: %s", aux.Type)
+	}
+	c.Config = loader.New()
+	if err := json.Unmarshal(c.ConfigByte, &c.Config); err != nil {
+		return errors.Wrap(err, "could not parse backend config")
+	}
+	return nil
+}
+
+func (c *BackendConfig) MarshalJSON() ([]byte, error) {
+	if c.Type == "" {
+		return nil, errors.New("no type specified for backend")
+	}
+	type Alias BackendConfig
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(c),
+	}
+	var err error
+	aux.ConfigByte, err = json.Marshal(c.Config)
+	if err != nil {
+		return nil, errgo.Mask(err)
+	}
+	return json.Marshal(aux)
 }
 
 // Matches returns true if the service name or an alias matches the provided name.
@@ -79,81 +142,7 @@ func (c *ServiceConfig) UnmarshalJSON(data []byte) error {
 		return errors.Wrap(err, "could not parse service config")
 	}
 
-	if err := c.unmarshalType(data); err != nil {
-		return errors.WithStack(err)
-	}
-
 	return nil
-}
-
-func (c *ServiceConfig) MarshalJSON() ([]byte, error) {
-	type Alias ServiceConfig
-	aux := &struct {
-		*Alias
-	}{
-		Alias: (*Alias)(c),
-	}
-	auxMap, err := toMapViaJson(aux)
-	if err != nil {
-		return nil, errors.WithMessage(err, "config")
-	}
-	typeMap, err := toMapViaJson(c.BackendConfig)
-	if err != nil {
-		return nil, errors.WithMessage(err, "type config")
-	}
-
-	for key, value := range typeMap {
-		auxMap[key] = value
-	}
-	for typeName, loader := range loaders {
-		if loader.Handles(c.BackendConfig) {
-			auxMap["backend"] = typeName
-		}
-	}
-
-	return json.Marshal(auxMap)
-}
-
-func toMapViaJson(v interface{}) (map[string]interface{}, error) {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return nil, errors.WithMessage(err, "initial marshal")
-	}
-	var dmap = make(map[string]interface{})
-	err = json.Unmarshal(data, &dmap)
-	if err != nil {
-		return nil, errors.WithMessage(err, "unmarshalling to map")
-	}
-	return dmap, nil
-}
-
-func (c *ServiceConfig) unmarshalType(data []byte) error {
-	aux := &struct {
-		// Backend of service, controlling how this service is built and launched.
-		// Defaults to the command line type.
-		Backend string `json:"backend"`
-	}{}
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return errors.Wrap(err, "could not parse legacy properties")
-	}
-	if aux.Backend == "" {
-		aux.Backend = defaultType
-	}
-
-	var (
-		loader BackendLoader
-		ok     bool
-	)
-	if loader, ok = loaders[aux.Backend]; !ok {
-		return fmt.Errorf("unknown config type: %s", aux.Backend)
-	}
-	config := loader.New()
-	if err := json.Unmarshal(data, config); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("could not parse config of type '%s'", aux.Backend))
-	}
-	c.BackendConfig = config
-	return nil
-
 }
 
 // SetWatch sets the watch configuration for this service

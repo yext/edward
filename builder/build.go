@@ -36,7 +36,7 @@ func (b *builder) Build(dirConfig *home.EdwardConfiguration, task tracker.Task, 
 // BuildWithTracker builds a service.
 // If force is false, the build will be skipped if the service is already running.
 func (b *builder) BuildWithTracker(dirConfig *home.EdwardConfiguration, task tracker.Task, service *services.ServiceConfig, force bool) error {
-	if !service.BackendConfig.HasBuildStep() {
+	if !service.Backend().HasBuildStep() {
 		return nil
 	}
 	if task == nil {

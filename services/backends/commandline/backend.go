@@ -113,7 +113,7 @@ func (c *Backend) HasLaunchStep() bool {
 }
 
 func GetConfigCommandLine(s *services.ServiceConfig) (*Backend, error) {
-	if cl, ok := s.BackendConfig.(*Backend); ok {
+	if cl, ok := s.Backend().(*Backend); ok {
 		return cl, nil
 	}
 	return nil, errors.New("service was not a command line service")

@@ -29,16 +29,28 @@ func TestJsonMarshal(t *testing.T) {
 		{
 			name: "simple command line",
 			serviceConfig: &services.ServiceConfig{
-				Name:          "simple service",
-				BackendConfig: &configTest{},
+				Name: "simple service",
+				Backends: []*services.BackendConfig{
+					{
+						Name:   "backend1",
+						Type:   "testTypeLoading",
+						Config: &configTest{},
+					},
+				},
 			},
 		},
 		{
 			name: "command line with commands",
 			serviceConfig: &services.ServiceConfig{
 				Name: "command line service",
-				BackendConfig: &configTest{
-					Field: "field_value",
+				Backends: []*services.BackendConfig{
+					{
+						Name: "backend1",
+						Type: "testTypeLoading",
+						Config: &configTest{
+							Field: "field_value",
+						},
+					},
 				},
 			},
 		},
@@ -51,6 +63,7 @@ func TestJsonMarshal(t *testing.T) {
 				return
 			}
 			var out *services.ServiceConfig = &services.ServiceConfig{}
+			t.Log(string(jsonData))
 			err = json.Unmarshal(jsonData, out)
 			if err != nil {
 				t.Error(err)

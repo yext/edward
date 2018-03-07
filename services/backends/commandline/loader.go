@@ -30,7 +30,7 @@ func (l *Loader) Runner(s *services.ServiceConfig) (services.Runner, error) {
 }
 
 func (l *Loader) buildandrun(s *services.ServiceConfig) (*buildandrun, error) {
-	if config, ok := s.BackendConfig.(*Backend); ok {
+	if config, ok := s.Backend().(*Backend); ok {
 		return &buildandrun{
 			Service: s,
 			Backend: config,

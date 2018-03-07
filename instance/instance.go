@@ -296,7 +296,7 @@ func (c *Instance) StopSync(cfg services.OperationConfig, overrides services.Con
 		return nil
 	}
 
-	if !c.Service.BackendConfig.HasLaunchStep() {
+	if !c.Service.Backend().HasLaunchStep() {
 		return nil
 	}
 

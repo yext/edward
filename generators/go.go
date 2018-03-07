@@ -78,10 +78,15 @@ func (v *GoGenerator) goService(name, packagePath string) (*services.ServiceConf
 		Name: name,
 		Path: &packagePath,
 		Env:  []string{},
-		BackendConfig: &commandline.Backend{
-			Commands: commandline.ServiceConfigCommands{
-				Build:  "go install",
-				Launch: name,
+		Backends: []*services.BackendConfig{
+			{
+				Type: "commandline",
+				Config: &commandline.Backend{
+					Commands: commandline.ServiceConfigCommands{
+						Build:  "go install",
+						Launch: name,
+					},
+				},
 			},
 		},
 	}

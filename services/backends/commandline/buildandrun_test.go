@@ -38,9 +38,15 @@ func TestStartService(t *testing.T) {
 			expected: "Hello",
 			service: &services.ServiceConfig{
 				Path: getPath("service"),
-				BackendConfig: &commandline.Backend{
-					Commands: commandline.ServiceConfigCommands{
-						Launch: "go run main.go",
+				Backends: []*services.BackendConfig{
+					{
+						Name: "backend1",
+						Type: "commandline",
+						Config: &commandline.Backend{
+							Commands: commandline.ServiceConfigCommands{
+								Launch: "go run main.go",
+							},
+						},
 					},
 				},
 			},
@@ -50,12 +56,18 @@ func TestStartService(t *testing.T) {
 			expected: "Hello",
 			service: &services.ServiceConfig{
 				Path: getPath("service"),
-				BackendConfig: &commandline.Backend{
-					Commands: commandline.ServiceConfigCommands{
-						Launch: "go run main.go",
-					},
-					LaunchChecks: &commandline.LaunchChecks{
-						LogText: "Started",
+				Backends: []*services.BackendConfig{
+					{
+						Name: "backend1",
+						Type: "commandline",
+						Config: &commandline.Backend{
+							Commands: commandline.ServiceConfigCommands{
+								Launch: "go run main.go",
+							},
+							LaunchChecks: &commandline.LaunchChecks{
+								LogText: "Started",
+							},
+						},
 					},
 				},
 			},
@@ -128,9 +140,15 @@ func TestStartServiceFailure(t *testing.T) {
 			expected: errors.New("process exited"),
 			service: &services.ServiceConfig{
 				Path: getPath("launchfailure"),
-				BackendConfig: &commandline.Backend{
-					Commands: commandline.ServiceConfigCommands{
-						Launch: "go run main.go",
+				Backends: []*services.BackendConfig{
+					{
+						Name: "backend1",
+						Type: "commandline",
+						Config: &commandline.Backend{
+							Commands: commandline.ServiceConfigCommands{
+								Launch: "go run main.go",
+							},
+						},
 					},
 				},
 			},
@@ -140,9 +158,15 @@ func TestStartServiceFailure(t *testing.T) {
 			expected: errors.New("process exited"),
 			service: &services.ServiceConfig{
 				Path: getPath("service"),
-				BackendConfig: &commandline.Backend{
-					Commands: commandline.ServiceConfigCommands{
-						Launch: "go run missing.go",
+				Backends: []*services.BackendConfig{
+					{
+						Name: "backend1",
+						Type: "commandline",
+						Config: &commandline.Backend{
+							Commands: commandline.ServiceConfigCommands{
+								Launch: "go run missing.go",
+							},
+						},
 					},
 				},
 			},
@@ -152,12 +176,18 @@ func TestStartServiceFailure(t *testing.T) {
 			expected: errors.New("process exited"),
 			service: &services.ServiceConfig{
 				Path: getPath("service"),
-				BackendConfig: &commandline.Backend{
-					Commands: commandline.ServiceConfigCommands{
-						Launch: "go run missing.go",
-					},
-					LaunchChecks: &commandline.LaunchChecks{
-						LogText: "Started",
+				Backends: []*services.BackendConfig{
+					{
+						Name: "backend1",
+						Type: "commandline",
+						Config: &commandline.Backend{
+							Commands: commandline.ServiceConfigCommands{
+								Launch: "go run missing.go",
+							},
+							LaunchChecks: &commandline.LaunchChecks{
+								LogText: "Started",
+							},
+						},
 					},
 				},
 			},

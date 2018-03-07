@@ -56,13 +56,18 @@ func (v *DockerGenerator) VisitDir(path string) (bool, error) {
 			Name: name,
 			Path: &dockerPath,
 			Env:  []string{},
-			BackendConfig: &commandline.Backend{
-				Commands: commandline.ServiceConfigCommands{
-					Build:  "docker build -t " + tag + " .",
-					Launch: "docker run " + strings.Join(portCommands, " ") + " " + tag,
-				},
-				LaunchChecks: &commandline.LaunchChecks{
-					Ports: expectedPorts,
+			Backends: []*services.BackendConfig{
+				{
+					Type: "commandline",
+					Config: &commandline.Backend{
+						Commands: commandline.ServiceConfigCommands{
+							Build:  "docker build -t " + tag + " .",
+							Launch: "docker run " + strings.Join(portCommands, " ") + " " + tag,
+						},
+						LaunchChecks: &commandline.LaunchChecks{
+							Ports: expectedPorts,
+						},
+					},
 				},
 			},
 		}
