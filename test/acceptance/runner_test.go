@@ -9,10 +9,6 @@ import (
 	"github.com/yext/edward/instance"
 )
 
-func TestRunSuccess(t *testing.T) {
-
-}
-
 func TestRunFailure(t *testing.T) {
 	var tests = []struct {
 		name         string
