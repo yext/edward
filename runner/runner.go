@@ -122,7 +122,6 @@ func (r *Runner) Run(args []string) error {
 
 	err = r.startService()
 	if err != nil {
-		r.updateServiceState(instance.StateDied)
 		return errors.WithStack(err)
 	}
 
