@@ -65,20 +65,26 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 	b.cmd.Stderr = b.newWatchingWriter(errorLog)
 
 	var started = make(chan struct{})
+	var failure error
 	go func() {
 		err := b.cmd.Start()
 		close(started)
 		defer close(b.done)
 		if err != nil {
-			errorLog.Write([]byte(fmt.Sprintf("start error: %v\n", err)))
+			failure = err
 			return
 		}
 		err = b.cmd.Wait()
 		if err != nil {
-			errorLog.Write([]byte(fmt.Sprintf("start error: %v\n", err)))
+			failure = err
 		}
 	}()
 	<-started
+
+	if failure != nil {
+		fmt.Println("Returning failure:", failure)
+		return errors.WithStack(failure)
+	}
 
 	var live = make(chan error)
 	go func() {
