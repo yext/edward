@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/warmup"
-	"github.com/yext/errgo"
 )
 
 var _ ServiceOrGroup = &ServiceConfig{}
@@ -111,7 +110,7 @@ func (c *BackendConfig) MarshalJSON() ([]byte, error) {
 	var err error
 	aux.ConfigByte, err = json.Marshal(c.Config)
 	if err != nil {
-		return nil, errgo.Mask(err)
+		return nil, errors.WithStack(err)
 	}
 	return json.Marshal(aux)
 }
