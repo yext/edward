@@ -17,7 +17,8 @@ import (
 
 func TestMain(m *testing.M) {
 	// Register necessary backends
-	services.RegisterDefaultBackend(&commandline.Loader{})
+	services.RegisterLegacyMarshaler(&commandline.LegacyUnmarshaler{})
+	services.RegisterBackend(&commandline.Loader{})
 
 	os.Exit(m.Run())
 }

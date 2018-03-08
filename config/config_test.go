@@ -15,7 +15,8 @@ import (
 
 func TestMain(m *testing.M) {
 	// Register necessary backends
-	services.RegisterDefaultBackend(&commandline.Loader{})
+	services.RegisterLegacyMarshaler(&commandline.LegacyUnmarshaler{})
+	services.RegisterBackend(&commandline.Loader{})
 
 	os.Exit(m.Run())
 }
@@ -27,7 +28,6 @@ var service1 = services.ServiceConfig{
 	RequiresSudo: true,
 	Backends: []*services.BackendConfig{
 		{
-			Name: "backend1",
 			Type: "commandline",
 			Config: &commandline.Backend{
 				Commands: commandline.ServiceConfigCommands{
@@ -51,7 +51,6 @@ var service1alias = services.ServiceConfig{
 	RequiresSudo: true,
 	Backends: []*services.BackendConfig{
 		{
-			Name: "backend1",
 			Type: "commandline",
 			Config: &commandline.Backend{
 				Commands: commandline.ServiceConfigCommands{
@@ -91,7 +90,6 @@ var service2 = services.ServiceConfig{
 	Path: common.StringToStringPointer("service2/path"),
 	Backends: []*services.BackendConfig{
 		{
-			Name: "backend1",
 			Type: "commandline",
 			Config: &commandline.Backend{
 				Commands: commandline.ServiceConfigCommands{
@@ -119,7 +117,6 @@ var service3 = services.ServiceConfig{
 	RequiresSudo: true,
 	Backends: []*services.BackendConfig{
 		{
-			Name: "backend1",
 			Type: "commandline",
 			Config: &commandline.Backend{
 				Commands: commandline.ServiceConfigCommands{

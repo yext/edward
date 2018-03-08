@@ -8,6 +8,7 @@ import (
 
 // RegisterBackends configures all supported service backends.
 func RegisterBackends() {
-	services.RegisterDefaultBackend(&commandline.Loader{})
+	services.RegisterLegacyMarshaler(&commandline.LegacyUnmarshaler{})
+	services.RegisterBackend(&commandline.Loader{})
 	services.RegisterBackend(&docker.Loader{})
 }

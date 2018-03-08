@@ -70,7 +70,7 @@ func followGroupLog(logDir string, group *services.ServiceGroupConfig, logChanne
 
 func followServiceLog(logDir string, service *services.ServiceConfig, logChannel chan runner.LogLine) ([]runner.LogLine, error) {
 	// Skip services that don't include a launch step
-	if !service.BackendConfig.HasLaunchStep() {
+	if !service.Backend().HasLaunchStep() {
 		return nil, nil
 	}
 

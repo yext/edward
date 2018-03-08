@@ -1,4 +1,4 @@
-// +build docker
+// +build acceptance
 
 package docker_test
 
@@ -15,26 +15,30 @@ import (
 
 func TestMain(m *testing.M) {
 	// Register necessary backends
-	services.RegisterDefaultBackend(&docker.Loader{})
-
+	services.RegisterBackend(&docker.Loader{})
 	os.Exit(m.Run())
 }
 
 func TestStart(t *testing.T) {
 	service := &services.ServiceConfig{
 		Name: "testservice",
-		BackendConfig: &docker.Backend{
-			Image: "kitematic/hello-world-nginx:latest",
-			ContainerConfig: docker.Config{
-				ExposedPorts: map[docker.Port]struct{}{
-					"8080/tcp": struct{}{},
-				},
-			},
-			HostConfig: docker.HostConfig{
-				PortBindings: map[docker.Port][]docker.PortBinding{
-					"80/tcp": []docker.PortBinding{
-						{
-							HostPort: "51432/tcp",
+		Backends: []*services.BackendConfig{
+			{
+				Type: "docker",
+				Config: &docker.Backend{
+					Image: "kitematic/hello-world-nginx:latest",
+					ContainerConfig: docker.Config{
+						ExposedPorts: map[docker.Port]struct{}{
+							"8080/tcp": struct{}{},
+						},
+					},
+					HostConfig: docker.HostConfig{
+						PortBindings: map[docker.Port][]docker.PortBinding{
+							"80/tcp": []docker.PortBinding{
+								{
+									HostPort: "51432/tcp",
+								},
+							},
 						},
 					},
 				},

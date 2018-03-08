@@ -138,8 +138,13 @@ func (c *ServiceConfig) UnmarshalJSON(data []byte) error {
 	}{
 		Alias: (*Alias)(c),
 	}
-	if err := json.Unmarshal(data, &aux); err != nil {
+	if err := json.Unmarshal(data, aux); err != nil {
 		return errors.Wrap(err, "could not parse service config")
+	}
+	for _, m := range legacyUnmarshalers {
+		if err := m.Unmarshal(data, c); err != nil {
+			return errors.Wrap(err, "could not parse legacy configuration")
+		}
 	}
 
 	return nil

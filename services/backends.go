@@ -43,14 +43,9 @@ func RegisterBackend(loader BackendLoader) {
 	loaders[loader.Name()] = loader
 }
 
-func RegisterDefaultBackend(loader BackendLoader) {
-	loaders[loader.Name()] = loader
-	defaultType = loader.Name()
-}
-
 func GetBuilder(s *ServiceConfig) (Builder, error) {
 	for _, backend := range s.Backends {
-		if loader, ok := loaders[backend.Type]; !ok {
+		if loader, ok := loaders[backend.Type]; ok {
 			return loader.Builder(s)
 		}
 	}
@@ -59,7 +54,7 @@ func GetBuilder(s *ServiceConfig) (Builder, error) {
 
 func GetRunner(s *ServiceConfig) (Runner, error) {
 	for _, backend := range s.Backends {
-		if loader, ok := loaders[backend.Type]; !ok {
+		if loader, ok := loaders[backend.Type]; ok {
 			return loader.Runner(s)
 		}
 	}
