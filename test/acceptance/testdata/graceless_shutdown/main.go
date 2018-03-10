@@ -4,6 +4,8 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,6 +15,14 @@ import (
 func main() {
 
 	fmt.Println("Graceless shutdown service")
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello: %s!", r.URL.Path[1:])
+	})
+
+	go func() {
+		log.Fatal(http.ListenAndServe(":51234", nil))
+	}()
 
 	sigs := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
