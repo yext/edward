@@ -125,6 +125,7 @@ func (r *Runner) Run(args []string) error {
 		return errors.WithStack(err)
 	}
 
+	r.updateStatusDetail()
 	r.updateServiceState(instance.StateRunning)
 
 	closeWatchers := r.configureWatch()
