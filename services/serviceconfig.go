@@ -146,6 +146,10 @@ func (c *ServiceConfig) UnmarshalJSON(data []byte) error {
 		}
 	}
 
+	if len(c.Backends) == 0 {
+		return errors.New("no backends specified in config")
+	}
+
 	return nil
 }
 
