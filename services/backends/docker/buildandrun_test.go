@@ -1,9 +1,9 @@
-// +build acceptance
-
 package docker_test
 
 import (
+	"flag"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -14,6 +14,14 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	// Enable docker tests with a flag
+	dockerEnabled := flag.Bool("edward.docker", false, "Enable docker tests for Edward.")
+	flag.Parse()
+	if dockerEnabled == nil || !*dockerEnabled {
+		log.Println("Docker tests disabled")
+		return
+	}
+
 	// Register necessary backends
 	services.RegisterBackend(&docker.Loader{})
 	os.Exit(m.Run())
