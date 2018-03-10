@@ -72,6 +72,17 @@ func executeCommand(t *testing.T, workingDir string, command string, arg ...stri
 	}
 }
 
+func executeCommandGetOutput(t *testing.T, workingDir string, command string, arg ...string) string {
+	t.Helper()
+	cmd := exec.Command(command, arg...)
+	cmd.Dir = workingDir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Error(err)
+	}
+	return string(out)
+}
+
 func executeCommandExpectFailure(t *testing.T, workingDir string, command string, arg ...string) {
 	t.Helper()
 
