@@ -2,20 +2,26 @@
     "services": [
         {
             "name": "nginxhello",
-            "backend": "docker",
-            "repository": "hello-world-nginx",
-            "containerConfig": {
-                "exposedPorts": {
-                    "8080/tcp": {}
+            "backends": [
+                {
+                   "type": "docker",
+                   "config": {
+                        "image": "kitematic/hello-world-nginx",
+                        "containerConfig": {
+                            "exposedPorts": {
+                                "8080/tcp": {}
+                            }
+                        },
+                        "hostConfig": {
+                        "portBindings": {
+                            "80/tcp": [
+                                    {"HostPort": "8080/tcp"}
+                                ]
+                            }
+                        }
+                    }
                 }
-            },
-            "hostConfig": {
-                "portBindings": {
-                    "80/tcp": [
-                        {"HostPort": "8080/tcp"}
-                    ]
-                }
-            }
+            ]
         }
     ]
 }

@@ -67,7 +67,7 @@ type BackendConfig struct {
 	Type   string  `json:"type"`
 	Config Backend `json:"-"`
 
-	ConfigByte []byte `json:"config"`
+	ConfigByte json.RawMessage `json:"config"`
 }
 
 var _ json.Marshaler = &BackendConfig{}
