@@ -2,10 +2,25 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/Azure/go-ansiterm"
+  packages = [
+    ".",
+    "winterm"
+  ]
+  revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
+
+[[projects]]
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
   revision = "7da180ee92d8bd8bb8c37fc560e673e6557c392f"
   version = "v0.4.7"
+
+[[projects]]
+  name = "github.com/Sirupsen/logrus"
+  packages = ["."]
+  revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
+  version = "v1.0.5"
 
 [[projects]]
   name = "github.com/StackExchange/wmi"
@@ -40,6 +55,10 @@
     "api/types/versions",
     "api/types/volume",
     "client",
+    "pkg/jsonlog",
+    "pkg/jsonmessage",
+    "pkg/term",
+    "pkg/term/windows",
     "pkg/tlsconfig"
   ]
   revision = "092cba3727bb9b4a2f0e922cd6c0f93ea270e363"
@@ -320,6 +339,12 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["ssh/terminal"]
+  revision = "374053ea96cb300f8671b8d3b07edeeb06e203b4"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -377,6 +402,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5ef2a39bb4bf436b516d8af6eeb3c2aa2dac97576aba640829ec5b9fe38e666d"
+  inputs-digest = "473f829b2f9ae14536c0d10eab1caf7b2f210f6e2231d09a2b94459d88525c5c"
   solver-name = "gps-cdcl"
   solver-version = 1
