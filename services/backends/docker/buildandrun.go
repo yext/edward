@@ -1,9 +1,12 @@
 package docker
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -35,8 +38,43 @@ type buildandrun struct {
 var _ services.Builder = &buildandrun{}
 var _ services.Runner = &buildandrun{}
 
-func (b *buildandrun) Build(string, func(string) string) ([]byte, error) {
-	return nil, errors.New("no build step for docker")
+func (b *buildandrun) Build(workingDir string, getenv func(string) string) ([]byte, error) {
+	b.mtx.Lock()
+	defer b.mtx.Unlock()
+
+	if b.Backend.Build != "" {
+		r, w := io.Pipe()
+
+		go func() {
+			p := workingDir
+			if b.Service.Path != nil {
+				p = path.Join(p, *b.Service.Path)
+			}
+			err := tarDir(p, w)
+			if err != nil {
+				fmt.Println(err)
+			}
+			w.Close()
+		}()
+
+		tag := b.imageTag()
+		response, err := b.client.ImageBuild(context.Background(), r, types.ImageBuildOptions{
+			Tags: []string{
+				tag,
+			},
+			Dockerfile: "Dockerfile",
+		})
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		var b bytes.Buffer
+		_, err = io.Copy(&b, response.Body)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		return b.Bytes(), nil
+	}
+	return nil, nil
 }
 
 func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
@@ -170,23 +208,40 @@ func (b *buildandrun) containerName() string {
 	return fmt.Sprintf("edward-%s", b.Service.Name)
 }
 
-func (b *buildandrun) findImage(standardLog io.Writer) (string, error) {
-	output, err := b.client.ImagePull(context.TODO(), b.Backend.Image, types.ImagePullOptions{
-		All: true,
-	})
-	if err != nil {
-		return "", errors.WithMessage(err, "pulling image")
+func (b *buildandrun) imageTag() string {
+	if b.Backend.Build != "" {
+		return fmt.Sprintf(
+			"edward/%s",
+			strings.ToLower(
+				b.Service.IdentifyingFilenameWithEncoding(
+					base64.RawURLEncoding,
+				),
+			),
+		)
 	}
-	_, _ = io.Copy(standardLog, output)
-	output.Close()
+	return b.Backend.Image
+}
 
-	imgs, err := b.client.ImageList(context.TODO(), types.ImageListOptions{})
+func (b *buildandrun) findImage(standardLog io.Writer) (string, error) {
+	ctx := context.Background()
+	if b.Backend.Image != "" {
+		output, err := b.client.ImagePull(ctx, b.Backend.Image, types.ImagePullOptions{
+			All: true,
+		})
+		if err != nil {
+			return "", errors.WithMessage(err, "pulling image")
+		}
+		_, _ = io.Copy(standardLog, output)
+		output.Close()
+	}
+
+	imgs, err := b.client.ImageList(ctx, types.ImageListOptions{})
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
 	var imgID string
 	for _, img := range imgs {
-		if len(img.RepoTags) > 0 && strings.Contains(img.RepoTags[0], b.Backend.Image) {
+		if len(img.RepoTags) > 0 && strings.HasPrefix(img.RepoTags[0], b.imageTag()) {
 			imgID = img.ID
 		}
 	}

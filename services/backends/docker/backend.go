@@ -13,7 +13,8 @@ import (
 var _ services.Backend = &Backend{}
 
 type Backend struct {
-	Image           string           `json:"image"`
+	Build           string           `json:"build,omitempty"`
+	Image           string           `json:"image,omitempty"`
 	Persistent      bool             `json:"persistent,omitempty"`
 	Ports           []*PortMapping   `json:"ports,omitempty"`
 	ContainerConfig Config           `json:"containerConfig,omitempty"`
@@ -78,7 +79,7 @@ func (d *Backend) UnmarshalJSON(data []byte) error {
 }
 
 func (d *Backend) HasBuildStep() bool {
-	return false
+	return d.Build != ""
 }
 
 func (d *Backend) HasLaunchStep() bool {

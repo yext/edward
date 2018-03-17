@@ -27,6 +27,51 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestBuild(t *testing.T) {
+	service := &services.ServiceConfig{
+		Name: "testservice",
+		Path: func(in string) *string {
+			return &in
+		}("testdata"),
+		Backends: []*services.BackendConfig{
+			{
+				Type: "docker",
+				Config: &docker.Backend{
+					Build: ".",
+					ContainerConfig: docker.Config{
+						ExposedPorts: map[docker.Port]struct{}{
+							"8080/tcp": struct{}{},
+						},
+					},
+					HostConfig: docker.HostConfig{
+						PortBindings: map[docker.Port][]docker.PortBinding{
+							"80/tcp": []docker.PortBinding{
+								{
+									HostPort: "51432/tcp",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	b, err := services.GetBuilder(service)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	out, err := b.Build("", nil)
+	t.Log(string(out))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	doStartTest(t, service)
+}
+
 func TestStart(t *testing.T) {
 	service := &services.ServiceConfig{
 		Name: "testservice",
@@ -53,6 +98,10 @@ func TestStart(t *testing.T) {
 			},
 		},
 	}
+	doStartTest(t, service)
+}
+
+func doStartTest(t *testing.T, service *services.ServiceConfig) {
 	b, err := services.GetRunner(service)
 	if err != nil {
 		t.Error(err)
@@ -90,5 +139,4 @@ func TestStart(t *testing.T) {
 	if !strings.Contains(string(body), "nginx container") {
 		t.Errorf("Response was not as expected:\n%s", string(body))
 	}
-
 }

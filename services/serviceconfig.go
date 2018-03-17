@@ -236,11 +236,21 @@ func (c *ServiceConfig) GetRunLog(logDir string) string {
 // that may be configured on a machine.
 // The filename will be based on the service name and the path to its Edward config. It does not include an extension.
 func (c *ServiceConfig) IdentifyingFilename() string {
+	return c.IdentifyingFilenameWithEncoding(base64.URLEncoding)
+}
+
+// IdentifyingFilenameWithEncoding is equivalent to IdentifyingFilenameWithEncoding
+func (c *ServiceConfig) IdentifyingFilenameWithEncoding(encoding *base64.Encoding) string {
 	name := c.Name
+	sha := encoding.EncodeToString(c.configHash())
+	return fmt.Sprintf("%v.%v", sha, name)
+}
+
+// configHash returns a sha1 hash representing the config file for this service
+func (c *ServiceConfig) configHash() []byte {
 	hasher := sha1.New()
 	hasher.Write([]byte(c.ConfigFile))
-	sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
-	return fmt.Sprintf("%v.%v", sha, name)
+	return hasher.Sum(nil)
 }
 
 func (c *ServiceConfig) GetPid(pidFile string) (int, error) {
