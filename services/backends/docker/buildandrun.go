@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/pkg/errors"
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/theothertomelliott/struct2struct"
@@ -67,12 +68,13 @@ func (b *buildandrun) Build(workingDir string, getenv func(string) string) ([]by
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-		var b bytes.Buffer
-		_, err = io.Copy(&b, response.Body)
+
+		var buf bytes.Buffer
+		err = jsonmessage.DisplayJSONMessagesStream(response.Body, &buf, 0, false, nil)
 		if err != nil {
-			return nil, errors.WithStack(err)
+			return nil, errors.WithMessage(err, "reading messages")
 		}
-		return b.Bytes(), nil
+		return buf.Bytes(), nil
 	}
 	return nil, nil
 }
@@ -231,7 +233,10 @@ func (b *buildandrun) findImage(standardLog io.Writer) (string, error) {
 		if err != nil {
 			return "", errors.WithMessage(err, "pulling image")
 		}
-		_, _ = io.Copy(standardLog, output)
+		err = jsonmessage.DisplayJSONMessagesStream(output, standardLog, 0, false, nil)
+		if err != nil {
+			return "", errors.WithMessage(err, "reading messages")
+		}
 		output.Close()
 	}
 
