@@ -15,6 +15,7 @@ type OperationConfig struct {
 	SkipBuild        bool
 	Tags             []string // Tags to pass to `edward run`
 	LogFile          string
+	Backends         map[string]string // Service overrides for backends
 }
 
 // IsExcluded returns true if the given service/group is excluded by this OperationConfig.

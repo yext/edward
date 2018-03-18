@@ -21,16 +21,16 @@ func (l *Loader) Handles(c services.Backend) bool {
 	return ok
 }
 
-func (l *Loader) Builder(s *services.ServiceConfig) (services.Builder, error) {
-	return l.buildandrun(s)
+func (l *Loader) Builder(s *services.ServiceConfig, b services.Backend) (services.Builder, error) {
+	return l.buildandrun(s, b)
 }
 
-func (l *Loader) Runner(s *services.ServiceConfig) (services.Runner, error) {
-	return l.buildandrun(s)
+func (l *Loader) Runner(s *services.ServiceConfig, b services.Backend) (services.Runner, error) {
+	return l.buildandrun(s, b)
 }
 
-func (l *Loader) buildandrun(s *services.ServiceConfig) (*buildandrun, error) {
-	if config, ok := s.Backend().(*Backend); ok {
+func (l *Loader) buildandrun(s *services.ServiceConfig, b services.Backend) (*buildandrun, error) {
+	if config, ok := b.(*Backend); ok {
 		return &buildandrun{
 			Service: s,
 			Backend: config,

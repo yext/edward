@@ -22,20 +22,20 @@ func (l *Loader) Handles(c services.Backend) bool {
 	return ok
 }
 
-func (l *Loader) Builder(s *services.ServiceConfig) (services.Builder, error) {
-	return l.buildandrun(s)
+func (l *Loader) Builder(s *services.ServiceConfig, backend services.Backend) (services.Builder, error) {
+	return l.buildandrun(s, backend)
 }
 
-func (l *Loader) Runner(s *services.ServiceConfig) (services.Runner, error) {
-	return l.buildandrun(s)
+func (l *Loader) Runner(s *services.ServiceConfig, backend services.Backend) (services.Runner, error) {
+	return l.buildandrun(s, backend)
 }
 
-func (l *Loader) buildandrun(s *services.ServiceConfig) (*buildandrun, error) {
+func (l *Loader) buildandrun(s *services.ServiceConfig, backend services.Backend) (*buildandrun, error) {
 	client, err := client.NewEnvClient()
 	if err != nil {
 		return nil, errors.WithMessage(err, "initializing client")
 	}
-	if config, ok := s.Backend().(*Backend); ok {
+	if config, ok := backend.(*Backend); ok {
 		return &buildandrun{
 			Service: s,
 			Backend: config,

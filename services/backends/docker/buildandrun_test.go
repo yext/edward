@@ -56,7 +56,7 @@ func TestBuild(t *testing.T) {
 			},
 		},
 	}
-	b, err := services.GetBuilder(service)
+	b, err := services.GetBuilder(services.OperationConfig{}, service)
 	if err != nil {
 		t.Error(err)
 		return
@@ -102,7 +102,7 @@ func TestStart(t *testing.T) {
 }
 
 func doStartTest(t *testing.T, service *services.ServiceConfig) {
-	b, err := services.GetRunner(service)
+	b, err := services.GetRunner(services.OperationConfig{}, service)
 	if err != nil {
 		t.Error(err)
 		return

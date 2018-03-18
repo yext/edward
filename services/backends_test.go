@@ -18,10 +18,12 @@ type loaderProto struct {
 func (l *loaderProto) New() services.Backend           { return l.new() }
 func (l *loaderProto) Name() string                    { return l.name }
 func (l *loaderProto) Handles(c services.Backend) bool { return l.handles(c) }
-func (l *loaderProto) Builder(s *services.ServiceConfig) (services.Builder, error) {
+func (l *loaderProto) Builder(s *services.ServiceConfig, b services.Backend) (services.Builder, error) {
 	return l.builder(s)
 }
-func (l *loaderProto) Runner(s *services.ServiceConfig) (services.Runner, error) { return l.runner(s) }
+func (l *loaderProto) Runner(s *services.ServiceConfig, b services.Backend) (services.Runner, error) {
+	return l.runner(s)
+}
 
 type configTest struct {
 	Field string `json:"field"`

@@ -76,7 +76,7 @@ func TestStartService(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			runner, err := services.GetRunner(test.service)
+			runner, err := services.GetRunner(services.OperationConfig{}, test.service)
 			if err != nil {
 				t.Error(err)
 				return
@@ -196,7 +196,7 @@ func TestStartServiceFailure(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			runner, err := services.GetRunner(test.service)
+			runner, err := services.GetRunner(services.OperationConfig{}, test.service)
 			if err != nil {
 				t.Error(err)
 				return

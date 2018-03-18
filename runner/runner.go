@@ -39,6 +39,7 @@ type Runner struct {
 }
 
 func NewRunner(
+	cfg services.OperationConfig,
 	service *services.ServiceConfig,
 	dirConfig *home.EdwardConfiguration,
 	noWatch bool,
@@ -53,7 +54,7 @@ func NewRunner(
 		Logger:     logger,
 	}
 	var err error
-	r.backendRunner, err = services.GetRunner(service)
+	r.backendRunner, err = services.GetRunner(cfg, service)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

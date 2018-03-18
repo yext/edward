@@ -47,6 +47,8 @@ type Client struct {
 	Tags []string // Tags to distinguish runners started by this instance of edward
 
 	DirConfig *home.EdwardConfiguration
+
+	Backends map[string]string // Service overrides for backends
 }
 
 type TaskFollower interface {
@@ -122,6 +124,7 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, no
 		NoWatch:          noWatch,
 		Tags:             c.Tags,
 		LogFile:          c.LogFile,
+		Backends:         c.Backends,
 	}
 
 	task := tracker.NewTask(c.Follower.Handle)

@@ -59,7 +59,7 @@ func (b *builder) BuildWithTracker(dirConfig *home.EdwardConfiguration, task tra
 		return errors.WithStack(err)
 	}
 
-	builder, err := services.GetBuilder(service)
+	builder, err := services.GetBuilder(b.Cfg, service)
 	if err != nil {
 		return errors.WithStack(err)
 	}
