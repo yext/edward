@@ -63,11 +63,10 @@ func (c *ServiceConfig) Backend() Backend {
 
 // BackendConfig provides backend configuration for json
 type BackendConfig struct {
-	Name   string  `json:"name"`
-	Type   string  `json:"type"`
-	Config Backend `json:"-"`
+	Name string `json:"name"`
+	Type string `json:"type"`
 
-	ConfigByte json.RawMessage `json:"config"`
+	Config Backend `json:"-"`
 }
 
 var _ json.Marshaler = &BackendConfig{}
@@ -91,9 +90,10 @@ func (c *BackendConfig) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("unknown config type: %s", aux.Type)
 	}
 	c.Config = loader.New()
-	if err := json.Unmarshal(c.ConfigByte, &c.Config); err != nil {
+	if err := json.Unmarshal(data, &c.Config); err != nil {
 		return errors.Wrap(err, "could not parse backend config")
 	}
+
 	return nil
 }
 
@@ -101,18 +101,29 @@ func (c *BackendConfig) MarshalJSON() ([]byte, error) {
 	if c.Type == "" {
 		return nil, errors.New("no type specified for backend")
 	}
-	type Alias BackendConfig
-	aux := &struct {
-		*Alias
-	}{
-		Alias: (*Alias)(c),
-	}
-	var err error
-	aux.ConfigByte, err = json.Marshal(c.Config)
+
+	data, err := json.Marshal(c.Config)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return json.Marshal(aux)
+
+	var m = make(map[string]interface{})
+	err = json.Unmarshal(data, &m)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	if m == nil {
+		m = make(map[string]interface{})
+	}
+	m["name"] = c.Name
+	m["type"] = c.Type
+
+	d, err := json.Marshal(&m)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return d, nil
 }
 
 // Matches returns true if the service name or an alias matches the provided name.

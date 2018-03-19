@@ -5,10 +5,8 @@
             "backends": [
                 {
                    "type": "docker",
-                   "config": {
-                        "image": "kitematic/hello-world-nginx",
-                        "ports": ["80:8081"]
-                    }
+                   "image": "kitematic/hello-world-nginx",
+                   "ports": ["80:8081"]
                 }
             ]
         }
