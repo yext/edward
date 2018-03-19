@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"os"
 	"path"
 	"strings"
 	"sync"
@@ -45,25 +46,34 @@ func (b *buildandrun) Build(workingDir string, getenv func(string) string) ([]by
 
 	if b.Backend.Build != "" {
 		r, w := io.Pipe()
+		servicePath := workingDir
+		if b.Service.Path != nil {
+			servicePath = path.Join(servicePath, *b.Service.Path)
+		}
 
 		go func() {
-			p := workingDir
-			if b.Service.Path != nil {
-				p = path.Join(p, *b.Service.Path)
-			}
-			err := tarDir(p, w)
+			err := tarDir(servicePath, w)
 			if err != nil {
 				fmt.Println(err)
 			}
 			w.Close()
 		}()
 
+		relativeBuild := b.Backend.Build
+		buildPath := path.Join(servicePath, relativeBuild)
+		fi, err := os.Stat(buildPath)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		if fi.IsDir() {
+			relativeBuild = path.Join(relativeBuild, "Dockerfile")
+		}
 		tag := b.imageTag()
 		response, err := b.client.ImageBuild(context.Background(), r, types.ImageBuildOptions{
 			Tags: []string{
 				tag,
 			},
-			Dockerfile: "Dockerfile",
+			Dockerfile: relativeBuild,
 		})
 		if err != nil {
 			return nil, errors.WithStack(err)

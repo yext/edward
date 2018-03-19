@@ -32,12 +32,57 @@ func TestBuild(t *testing.T) {
 		Name: "testservice",
 		Path: func(in string) *string {
 			return &in
-		}("testdata"),
+		}("testdata/simple"),
 		Backends: []*services.BackendConfig{
 			{
 				Type: "docker",
 				Config: &docker.Backend{
 					Build: ".",
+					ContainerConfig: docker.Config{
+						ExposedPorts: map[docker.Port]struct{}{
+							"8080/tcp": struct{}{},
+						},
+					},
+					HostConfig: docker.HostConfig{
+						PortBindings: map[docker.Port][]docker.PortBinding{
+							"80/tcp": []docker.PortBinding{
+								{
+									HostPort: "51432/tcp",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	b, err := services.GetBuilder(services.OperationConfig{}, service)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	out, err := b.Build("", nil)
+	t.Log(string(out))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	doStartTest(t, service)
+}
+
+func TestBuildAltFile(t *testing.T) {
+	service := &services.ServiceConfig{
+		Name: "testservice",
+		Path: func(in string) *string {
+			return &in
+		}("testdata/alternate_filename"),
+		Backends: []*services.BackendConfig{
+			{
+				Type: "docker",
+				Config: &docker.Backend{
+					Build: "AltDocker",
 					ContainerConfig: docker.Config{
 						ExposedPorts: map[docker.Port]struct{}{
 							"8080/tcp": struct{}{},
