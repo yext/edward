@@ -17,6 +17,7 @@ type Backend struct {
 	Image           string           `json:"image,omitempty"`
 	Persistent      bool             `json:"persistent,omitempty"`
 	Ports           []*PortMapping   `json:"ports,omitempty"`
+	ContainerName   string           `json:"containerName,omitempty"`
 	ContainerConfig Config           `json:"containerConfig,omitempty"`
 	HostConfig      HostConfig       `json:"hostConfig,omitempty"`
 	NetworkConfig   NetworkingConfig `json:"networkConfig,omitempty"`

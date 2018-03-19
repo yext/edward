@@ -217,6 +217,9 @@ func (b *buildandrun) Wait() {
 }
 
 func (b *buildandrun) containerName() string {
+	if b.Backend.ContainerName != "" {
+		return b.Backend.ContainerName
+	}
 	return fmt.Sprintf("edward-%s", b.Service.Name)
 }
 
