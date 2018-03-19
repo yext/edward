@@ -121,3 +121,18 @@ func TestStartFailure(t *testing.T) {
 		})
 	}
 }
+
+func TestStartMultipleBackends(t *testing.T) {
+	workingDir, cleanup, err := createWorkingDir("testStartMultipleBackends", "testdata/multiple_backends")
+	defer cleanup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Expect that the broken backend fails
+	executeCommandExpectFailure(t, workingDir, edwardExecutable, "start", "-b", "service:broken_build", "service")
+	executeCommandExpectFailure(t, workingDir, edwardExecutable, "start", "-b", "service:broken_launch", "service")
+	// Expect that the default backend succeeds
+	executeCommand(t, workingDir, edwardExecutable, "start", "service")
+	// Expect that the working backend succeeds when explicitly specified
+	executeCommand(t, workingDir, edwardExecutable, "start", "-b", "service:working", "service")
+}

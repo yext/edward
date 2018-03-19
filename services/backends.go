@@ -58,7 +58,11 @@ func GetBuilder(cfg OperationConfig, s *ServiceConfig) (Builder, error) {
 }
 
 func GetRunner(cfg OperationConfig, s *ServiceConfig) (Runner, error) {
+	expectedBackend := cfg.Backends[s.Name]
 	for _, backend := range s.Backends {
+		if expectedBackend != "" && backend.Name != expectedBackend {
+			continue
+		}
 		if loader, ok := loaders[backend.Type]; ok {
 			return loader.Runner(s, backend.Config)
 		}

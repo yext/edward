@@ -194,6 +194,9 @@ func (c *Instance) getLaunchCommand(cfg services.OperationConfig) (*exec.Cmd, er
 	if cfg.LogFile != "" {
 		cmdArgs = append(cmdArgs, "--logfile", cfg.LogFile)
 	}
+	for service, backend := range cfg.Backends {
+		cmdArgs = append(cmdArgs, "-b", fmt.Sprintf("%s:%s", service, backend))
+	}
 
 	cmdArgs = append(cmdArgs, "--edward_home", c.dirConfig.Dir)
 
