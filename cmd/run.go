@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/yext/edward/runner"
+	"github.com/yext/edward/services"
 )
 
 // runCmd represents the run command
@@ -17,15 +18,28 @@ var runCmd = &cobra.Command{
 		if service == nil {
 			return fmt.Errorf("service not found: %s", args[0])
 		}
-		r := &runner.Runner{
-			Service:   service,
-			DirConfig: edwardClient.DirConfig,
+		c := edwardClient
+		r, err := runner.NewRunner(
+			services.OperationConfig{
+				WorkingDir:       c.WorkingDir,
+				EdwardExecutable: c.EdwardExecutable,
+				Tags:             c.Tags,
+				LogFile:          c.LogFile,
+				Backends:         c.Backends,
+			},
+			service,
+			edwardClient.DirConfig,
+			*runFlags.noWatch,
+			*runFlags.directory,
+			edwardClient.Logger,
+		)
+		if err != nil {
+			return errors.WithStack(err)
 		}
-		r.NoWatch = *runFlags.noWatch
-		r.WorkingDir = *runFlags.directory
-		r.Logger = edwardClient.Logger
-		err := r.Run(args)
-		return errors.WithStack(err)
+
+		return errors.WithStack(
+			r.Run(args),
+		)
 	},
 }
 

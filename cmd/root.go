@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
@@ -115,6 +116,10 @@ Build, start and manage service instances with a single command.`,
 		}
 
 		edwardClient.DirConfig = dirConfig
+		edwardClient.Backends, err = buildBackendOverrides()
+		if err != nil {
+			return errors.WithStack(err)
+		}
 
 		// Set service checks to restart the client on sudo as needed
 		edwardClient.ServiceChecks = func(sgs []services.ServiceOrGroup) error {
@@ -158,6 +163,21 @@ Build, start and manage service instances with a single command.`,
 	},
 }
 
+func buildBackendOverrides() (map[string]string, error) {
+	var overrides = make(map[string]string)
+	for _, backend := range backends {
+		separated := strings.Split(backend, ":")
+		if len(separated) != 2 {
+			return nil, errors.New("backend definition should be of the form '<service>:<backend>'")
+		}
+		if _, exists := overrides[separated[0]]; exists {
+			return nil, fmt.Errorf("multiple backend selections specified for service or group: %s", separated[0])
+		}
+		overrides[separated[0]] = separated[1]
+	}
+	return overrides, nil
+}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
@@ -197,6 +217,7 @@ var configPath string
 var redirectLogs bool
 var logFile string
 var edwardHome string
+var backends []string
 
 func init() {
 	cobra.OnInitialize(initConfig)
@@ -205,6 +226,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "Use service configuration file at `PATH`")
 	RootCmd.PersistentFlags().BoolVar(&redirectLogs, "redirect_logs", false, "Redirect edward logs to the console")
 	RootCmd.PersistentFlags().StringVar(&edwardHome, "edward_home", "", "")
+	RootCmd.PersistentFlags().StringSliceVarP(&backends, "backend", "b", nil, "Choose a specific backend for a service or group, of the form '<service>:<backend name>'")
 	err := RootCmd.PersistentFlags().MarkHidden("redirect_logs")
 	if err != nil {
 		panic(err)

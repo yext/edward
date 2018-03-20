@@ -2,17 +2,12 @@ package runner
 
 import (
 	"os"
-	"os/exec"
 	"os/signal"
-	"strconv"
 	"sync"
-	"syscall"
 	"time"
 
+	"github.com/kylelemons/godebug/pretty"
 	"github.com/pkg/errors"
-	"github.com/theothertomelliott/gopsutil-nocgo/net"
-	"github.com/theothertomelliott/gopsutil-nocgo/process"
-	"github.com/yext/edward/commandline"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
@@ -20,9 +15,10 @@ import (
 
 // Runner provides state and functions for running a given service
 type Runner struct {
-	Service    *services.ServiceConfig
-	DirConfig  *home.EdwardConfiguration
-	command    *RunningCommand
+	Service       *services.ServiceConfig
+	backendRunner services.Runner
+	DirConfig     *home.EdwardConfiguration
+
 	logFile    *os.File
 	messageLog *Log
 
@@ -40,6 +36,29 @@ type Runner struct {
 	errorLog    *Log
 
 	shutdownChan chan struct{}
+}
+
+func NewRunner(
+	cfg services.OperationConfig,
+	service *services.ServiceConfig,
+	dirConfig *home.EdwardConfiguration,
+	noWatch bool,
+	workingDir string,
+	logger Logger,
+) (*Runner, error) {
+	r := &Runner{
+		Service:    service,
+		DirConfig:  dirConfig,
+		NoWatch:    noWatch,
+		WorkingDir: workingDir,
+		Logger:     logger,
+	}
+	var err error
+	r.backendRunner, err = services.GetRunner(cfg, service)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return r, nil
 }
 
 func (r *Runner) Messagef(format string, a ...interface{}) {
@@ -73,6 +92,8 @@ func (r *Runner) Run(args []string) error {
 		}
 	}
 
+	r.Logger.Printf("Service config: %s", pretty.Sprint(r.Service))
+
 	// Set the instance id
 	command, err := instance.Load(r.DirConfig, r.Service, services.ContextOverride{})
 	if err != nil {
@@ -82,6 +103,7 @@ func (r *Runner) Run(args []string) error {
 
 	err = r.configureLogs()
 	if err != nil {
+		r.updateServiceState(instance.StateDied)
 		return errors.WithStack(err)
 	}
 
@@ -103,20 +125,9 @@ func (r *Runner) Run(args []string) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	pid := r.command.Pid()
-	if pid == 0 {
-		return errors.New("no pid")
-	}
 
-	go func() {
-		r.Messagef("Waiting for live")
-		err = WaitUntilLive(r.DirConfig, int32(pid), r.Service)
-		if err != nil {
-			r.Messagef("Startup failed: %v", err)
-			return
-		}
-		r.updateServiceState(instance.StateRunning)
-	}()
+	r.updateStatusDetail()
+	r.updateServiceState(instance.StateRunning)
 
 	closeWatchers := r.configureWatch()
 	if closeWatchers != nil {
@@ -153,58 +164,19 @@ func (r *Runner) updateStatusDetail() {
 	r.status.StdoutLines = r.standardLog.Len()
 	r.status.StderrLines = r.errorLog.Len()
 
-	pid := r.command.Pid()
-	if pid != 0 {
-		proc, err := process.NewProcess(int32(pid))
-		if err != nil {
-			r.Messagef("could not get process:", err)
-			return
-		}
-		r.status.MemoryInfo, err = proc.MemoryInfo()
-		if err != nil {
-			r.Messagef("could not get memory information: %v", err)
-			return
-		}
-		ports, err := doGetPorts(proc)
-		if err != nil {
-			r.Messagef("could not get ports:", err)
-			return
-		}
-		r.status.Ports = ports
+	backendStatus, err := r.backendRunner.Status()
+	if err != nil {
+		r.Messagef("could not save state: %v", err)
+		return
 	}
+	r.status.Ports = backendStatus.Ports
+	r.status.MemoryInfo = backendStatus.MemoryInfo
 
 	dir := r.DirConfig.StateDir
-	err := instance.SaveStatusForService(r.Service, r.instanceId, r.status, dir)
+	err = instance.SaveStatusForService(r.Service, r.instanceId, r.status, dir)
 	if err != nil {
 		r.Messagef("could not save state: %v", err)
 	}
-}
-
-func doGetPorts(proc *process.Process) ([]string, error) {
-	connections, err := net.Connections("all")
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	var ports []string
-	for _, connection := range connections {
-		if connection.Status == "LISTEN" && connection.Pid == proc.Pid {
-			ports = append(ports, strconv.Itoa(int(connection.Laddr.Port)))
-		}
-	}
-
-	children, err := proc.Children()
-	// This will error out if the process has finished or has no children
-	if err != nil {
-		return ports, nil
-	}
-	for _, child := range children {
-		childPorts, err := doGetPorts(child)
-		if err == nil {
-			ports = append(ports, childPorts...)
-		}
-	}
-	return ports, nil
 }
 
 func (r *Runner) configureLogs() error {
@@ -278,64 +250,16 @@ func (r *Runner) stopService() error {
 		return errors.WithStack(err)
 	}
 
-	command, err := instance.Load(r.DirConfig, r.Service, services.ContextOverride{})
-	if err != nil {
-		r.Messagef("Could not get service command: %v\n", err)
-	}
-
 	var scriptErr error
 	var scriptOutput []byte
-	if r.Service.Commands.Stop != "" {
-		r.Messagef("Running stop script for %v.\n", r.Service.Name)
-		scriptOutput, scriptErr = command.RunStopScript(wd)
-		if scriptErr != nil {
-			r.Messagef("%v\n", string(scriptOutput))
-			r.Messagef("Stop script failed: %v\n", scriptErr)
-		}
-		if r.waitForCompletionWithTimeout(1 * time.Second) {
-			return nil
-		}
-		r.Messagef("Stop script did not effectively stop service, sending interrupt\n")
-	}
 
-	err = r.command.Interrupt()
-	if err != nil {
+	// TODO: Get the right env function from the client
+	scriptOutput, scriptErr = r.backendRunner.Stop(wd, nil)
+	if scriptErr != nil {
+		r.Messagef("Stop failed:\n%v\n", string(scriptOutput))
 		return errors.WithStack(err)
 	}
-
-	if r.waitForCompletionWithTimeout(2 * time.Second) {
-		return nil
-	}
-	r.Messagef("Interrupt did not effectively stop service, sending kill\n")
-
-	err = r.command.Kill()
-	if err != nil {
-		return errors.WithMessage(err, "Kill failed")
-	}
-
-	if r.waitForCompletionWithTimeout(2 * time.Second) {
-		return nil
-	}
-	return errors.New("kill did not stop service")
-}
-
-func (r *Runner) waitForCompletionWithTimeout(timeout time.Duration) bool {
-	var completed = make(chan struct{})
-	defer close(completed)
-	timer := time.NewTimer(timeout)
-	defer timer.Stop()
-
-	go func() {
-		r.command.Wait()
-		completed <- struct{}{}
-	}()
-
-	select {
-	case <-completed:
-		return true
-	case <-timer.C:
-		return false
-	}
+	return nil
 }
 
 func (r *Runner) startService() error {
@@ -352,20 +276,13 @@ func (r *Runner) startService() error {
 		stream: "stderr",
 	}
 
-	command, cmdArgs, err := commandline.ParseCommand(os.ExpandEnv(r.Service.Commands.Launch))
+	err := r.backendRunner.Start(r.standardLog, r.errorLog)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	cmd := exec.Command(command, cmdArgs...)
-	if r.Service.Path != nil {
-		cmd.Dir = os.ExpandEnv(*r.Service.Path)
-	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Stdout = r.standardLog
-	cmd.Stderr = r.errorLog
-
-	r.command = NewRunningCommand(r.Service, cmd, &r.commandWait)
-	r.command.Start(r.errorLog)
-
+	go func() {
+		r.backendRunner.Wait()
+		r.commandWait.Done()
+	}()
 	return nil
 }

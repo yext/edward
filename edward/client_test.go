@@ -14,6 +14,8 @@ import (
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/edward"
 	"github.com/yext/edward/home"
+	"github.com/yext/edward/services"
+	"github.com/yext/edward/services/backends/commandline"
 	"github.com/yext/edward/tracker"
 )
 
@@ -36,6 +38,10 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Register necessary backends
+	services.RegisterLegacyMarshaler(&commandline.LegacyUnmarshaler{})
+	services.RegisterBackend(&commandline.Loader{})
 
 	os.Exit(m.Run())
 }

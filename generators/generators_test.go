@@ -2,12 +2,22 @@ package generators
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	must "github.com/theothertomelliott/must"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
+	"github.com/yext/edward/services/backends/commandline"
 )
+
+func TestMain(m *testing.M) {
+	// Register necessary backends
+	services.RegisterLegacyMarshaler(&commandline.LegacyUnmarshaler{})
+	services.RegisterBackend(&commandline.Loader{})
+
+	os.Exit(m.Run())
+}
 
 func TestInvalidPaths(t *testing.T) {
 	var goTests = []struct {
@@ -71,9 +81,16 @@ func TestEdwardGenerator(t *testing.T) {
 					Name: "goproject",
 					Path: common.StringToStringPointer("goproject"),
 					Env:  []string{},
-					Commands: services.ServiceConfigCommands{
-						Build:  "go install",
-						Launch: "goproject",
+					Backends: []*services.BackendConfig{
+						{
+							Type: "commandline",
+							Config: &commandline.Backend{
+								Commands: commandline.ServiceConfigCommands{
+									Build:  "go install",
+									Launch: "goproject",
+								},
+							},
+						},
 					},
 				},
 			},
@@ -120,9 +137,16 @@ func TestGoGenerator(t *testing.T) {
 					Name: "simple",
 					Path: common.StringToStringPointer("gocode/src/yext/simple"),
 					Env:  []string{},
-					Commands: services.ServiceConfigCommands{
-						Build:  "go install",
-						Launch: "simple",
+					Backends: []*services.BackendConfig{
+						{
+							Type: "commandline",
+							Config: &commandline.Backend{
+								Commands: commandline.ServiceConfigCommands{
+									Build:  "go install",
+									Launch: "simple",
+								},
+							},
+						},
 					},
 				},
 			},
@@ -136,18 +160,32 @@ func TestGoGenerator(t *testing.T) {
 					Name: "service1",
 					Path: common.StringToStringPointer("service1"),
 					Env:  []string{},
-					Commands: services.ServiceConfigCommands{
-						Build:  "go install",
-						Launch: "service1",
+					Backends: []*services.BackendConfig{
+						{
+							Type: "commandline",
+							Config: &commandline.Backend{
+								Commands: commandline.ServiceConfigCommands{
+									Build:  "go install",
+									Launch: "service1",
+								},
+							},
+						},
 					},
 				},
 				{
 					Name: "service2",
 					Path: common.StringToStringPointer("service2"),
 					Env:  []string{},
-					Commands: services.ServiceConfigCommands{
-						Build:  "go install",
-						Launch: "service2",
+					Backends: []*services.BackendConfig{
+						{
+							Type: "commandline",
+							Config: &commandline.Backend{
+								Commands: commandline.ServiceConfigCommands{
+									Build:  "go install",
+									Launch: "service2",
+								},
+							},
+						},
 					},
 				},
 			},
@@ -162,9 +200,16 @@ func TestGoGenerator(t *testing.T) {
 					Name: "service1",
 					Path: common.StringToStringPointer("service1"),
 					Env:  []string{},
-					Commands: services.ServiceConfigCommands{
-						Build:  "go install",
-						Launch: "service1",
+					Backends: []*services.BackendConfig{
+						{
+							Type: "commandline",
+							Config: &commandline.Backend{
+								Commands: commandline.ServiceConfigCommands{
+									Build:  "go install",
+									Launch: "service1",
+								},
+							},
+						},
 					},
 				},
 			},
@@ -178,9 +223,16 @@ func TestGoGenerator(t *testing.T) {
 					Name: "simple",
 					Path: common.StringToStringPointer("project/simple"),
 					Env:  []string{},
-					Commands: services.ServiceConfigCommands{
-						Build:  "go install",
-						Launch: "simple",
+					Backends: []*services.BackendConfig{
+						{
+							Type: "commandline",
+							Config: &commandline.Backend{
+								Commands: commandline.ServiceConfigCommands{
+									Build:  "go install",
+									Launch: "simple",
+								},
+							},
+						},
 					},
 				},
 			},
@@ -225,12 +277,19 @@ func TestDockerGenerator(t *testing.T) {
 					Name: "service",
 					Path: common.StringToStringPointer("service"),
 					Env:  []string{},
-					Commands: services.ServiceConfigCommands{
-						Build:  "docker build -t service:edward .",
-						Launch: "docker run -p 80:80 service:edward",
-					},
-					LaunchChecks: &services.LaunchChecks{
-						Ports: []int{80},
+					Backends: []*services.BackendConfig{
+						{
+							Type: "commandline",
+							Config: &commandline.Backend{
+								Commands: commandline.ServiceConfigCommands{
+									Build:  "docker build -t service:edward .",
+									Launch: "docker run -p 80:80 service:edward",
+								},
+								LaunchChecks: &commandline.LaunchChecks{
+									Ports: []int{80},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -243,24 +302,38 @@ func TestDockerGenerator(t *testing.T) {
 					Name: "child",
 					Path: common.StringToStringPointer("parent/child"),
 					Env:  []string{},
-					Commands: services.ServiceConfigCommands{
-						Build:  "docker build -t child:edward .",
-						Launch: "docker run -p 80:80 child:edward",
-					},
-					LaunchChecks: &services.LaunchChecks{
-						Ports: []int{80},
+					Backends: []*services.BackendConfig{
+						{
+							Type: "commandline",
+							Config: &commandline.Backend{
+								Commands: commandline.ServiceConfigCommands{
+									Build:  "docker build -t child:edward .",
+									Launch: "docker run -p 80:80 child:edward",
+								},
+								LaunchChecks: &commandline.LaunchChecks{
+									Ports: []int{80},
+								},
+							},
+						},
 					},
 				},
 				{
 					Name: "parent",
 					Path: common.StringToStringPointer("parent"),
 					Env:  []string{},
-					Commands: services.ServiceConfigCommands{
-						Build:  "docker build -t parent:edward .",
-						Launch: "docker run -p 80:80 parent:edward",
-					},
-					LaunchChecks: &services.LaunchChecks{
-						Ports: []int{80},
+					Backends: []*services.BackendConfig{
+						{
+							Type: "commandline",
+							Config: &commandline.Backend{
+								Commands: commandline.ServiceConfigCommands{
+									Build:  "docker build -t parent:edward .",
+									Launch: "docker run -p 80:80 parent:edward",
+								},
+								LaunchChecks: &commandline.LaunchChecks{
+									Ports: []int{80},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -273,21 +346,35 @@ func TestDockerGenerator(t *testing.T) {
 					Name: "child",
 					Path: common.StringToStringPointer("parent/child"),
 					Env:  []string{},
-					Commands: services.ServiceConfigCommands{
-						Build:  "go install",
-						Launch: "child",
+					Backends: []*services.BackendConfig{
+						{
+							Type: "commandline",
+							Config: &commandline.Backend{
+								Commands: commandline.ServiceConfigCommands{
+									Build:  "go install",
+									Launch: "child",
+								},
+							},
+						},
 					},
 				},
 				{
 					Name: "parent",
 					Path: common.StringToStringPointer("parent"),
 					Env:  []string{},
-					Commands: services.ServiceConfigCommands{
-						Build:  "docker build -t parent:edward .",
-						Launch: "docker run -p 80:80 parent:edward",
-					},
-					LaunchChecks: &services.LaunchChecks{
-						Ports: []int{80},
+					Backends: []*services.BackendConfig{
+						{
+							Type: "commandline",
+							Config: &commandline.Backend{
+								Commands: commandline.ServiceConfigCommands{
+									Build:  "docker build -t parent:edward .",
+									Launch: "docker run -p 80:80 parent:edward",
+								},
+								LaunchChecks: &commandline.LaunchChecks{
+									Ports: []int{80},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -334,16 +421,30 @@ func TestProcfileGenerator(t *testing.T) {
 					Name: "service-database",
 					Path: common.StringToStringPointer("service"),
 					Env:  []string{},
-					Commands: services.ServiceConfigCommands{
-						Launch: "db launch command",
+					Backends: []*services.BackendConfig{
+						{
+							Type: "commandline",
+							Config: &commandline.Backend{
+								Commands: commandline.ServiceConfigCommands{
+									Launch: "db launch command",
+								},
+							},
+						},
 					},
 				},
 				{
 					Name: "service-web",
 					Path: common.StringToStringPointer("service"),
 					Env:  []string{},
-					Commands: services.ServiceConfigCommands{
-						Launch: "web launch command",
+					Backends: []*services.BackendConfig{
+						{
+							Type: "commandline",
+							Config: &commandline.Backend{
+								Commands: commandline.ServiceConfigCommands{
+									Launch: "web launch command",
+								},
+							},
+						},
 					},
 				},
 			},
@@ -355,16 +456,30 @@ func TestProcfileGenerator(t *testing.T) {
 							Name: "service-web",
 							Path: common.StringToStringPointer("service"),
 							Env:  []string{},
-							Commands: services.ServiceConfigCommands{
-								Launch: "web launch command",
+							Backends: []*services.BackendConfig{
+								{
+									Type: "commandline",
+									Config: &commandline.Backend{
+										Commands: commandline.ServiceConfigCommands{
+											Launch: "web launch command",
+										},
+									},
+								},
 							},
 						},
 						{
 							Name: "service-database",
 							Path: common.StringToStringPointer("service"),
 							Env:  []string{},
-							Commands: services.ServiceConfigCommands{
-								Launch: "db launch command",
+							Backends: []*services.BackendConfig{
+								{
+									Type: "commandline",
+									Config: &commandline.Backend{
+										Commands: commandline.ServiceConfigCommands{
+											Launch: "db launch command",
+										},
+									},
+								},
 							},
 						},
 					},

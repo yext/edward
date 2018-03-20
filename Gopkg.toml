@@ -1,7 +1,6 @@
-
 # Gopkg.toml example
 #
-# Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
+# Refer to https://golang.github.io/dep/docs/Gopkg.toml.html
 # for detailed Gopkg.toml documentation.
 #
 # required = ["github.com/user/thing/cmd/thing"]
@@ -17,17 +16,30 @@
 #   source = "github.com/myfork/project2"
 #
 # [[override]]
-#  name = "github.com/x/y"
-#  version = "2.4.0"
+#   name = "github.com/x/y"
+#   version = "2.4.0"
+#
+# [prune]
+#   non-go = false
+#   go-tests = true
+#   unused-packages = true
 
-
-[[constraint]]
-  name = "github.com/fatih/color"
-  version = "1.5.0"
 
 [[constraint]]
   branch = "master"
-  name = "github.com/gosuri/uilive"
+  name = "github.com/dustin/go-humanize"
+
+[[constraint]]
+  name = "github.com/fatih/color"
+  version = "1.6.0"
+
+[[constraint]]
+  name = "github.com/google/go-github"
+  version = "15.0.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/gregjones/httpcache"
 
 [[constraint]]
   branch = "master"
@@ -36,6 +48,14 @@
 [[constraint]]
   name = "github.com/hpcloud/tail"
   version = "1.0.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/kylelemons/godebug"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/mitchellh/go-homedir"
 
 [[constraint]]
   branch = "master"
@@ -50,17 +70,41 @@
   name = "github.com/sabhiram/go-git-ignore"
 
 [[constraint]]
+  name = "github.com/satori/go.uuid"
+  version = "1.2.0"
+
+[[constraint]]
+  name = "github.com/spf13/cobra"
+  version = "0.0.1"
+
+[[constraint]]
+  name = "github.com/spf13/viper"
+  version = "1.0.0"
+
+[[constraint]]
+  name = "github.com/theothertomelliott/gopsutil-nocgo"
+  version = "2.18.0"
+
+[[constraint]]
   branch = "master"
   name = "github.com/theothertomelliott/must"
 
 [[constraint]]
-  name = "github.com/urfave/cli"
-  version = "1.19.1"
+  branch = "master"
+  name = "github.com/theothertomelliott/struct2struct"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/theothertomelliott/uilive"
 
 [[constraint]]
   name = "gopkg.in/fsnotify.v1"
-  version = "1.4.2"
+  version = "1.4.7"
 
 [[constraint]]
   name = "gopkg.in/natefinch/lumberjack.v2"
   version = "2.1.0"
+
+[prune]
+  go-tests = true
+  unused-packages = true

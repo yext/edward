@@ -1,0 +1,34 @@
+{
+    "services": [
+        {
+            "name": "service",
+            "backends": [
+                {
+                    "name": "working",
+                    "type": "commandline",
+                    "commands": {
+                        "launch": "go run main.go"
+                    },
+                    "launch_checks": {
+                        "log_text": "Success"
+                    }
+                },
+                {
+                    "name": "broken_build",
+                    "type": "commandline",
+                    "commands": {
+                        "build": "fails",
+                        "launch": "go run main.go"
+                    }
+                },
+                {
+                    "name": "broken_launch",
+                    "type": "commandline",
+                    "commands": {
+                        "launch": "go run missing.go"
+                    }
+                }
+            ]
+        }
+    ]
+}

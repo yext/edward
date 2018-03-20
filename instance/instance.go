@@ -194,6 +194,9 @@ func (c *Instance) getLaunchCommand(cfg services.OperationConfig) (*exec.Cmd, er
 	if cfg.LogFile != "" {
 		cmdArgs = append(cmdArgs, "--logfile", cfg.LogFile)
 	}
+	for service, backend := range cfg.Backends {
+		cmdArgs = append(cmdArgs, "-b", fmt.Sprintf("%s:%s", service, backend))
+	}
 
 	cmdArgs = append(cmdArgs, "--edward_home", c.dirConfig.Dir)
 
@@ -202,23 +205,6 @@ func (c *Instance) getLaunchCommand(cfg services.OperationConfig) (*exec.Cmd, er
 	cmd.Dir = commandline.BuildAbsPath(cfg.WorkingDir, c.Service.Path)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	return cmd, nil
-}
-
-// RunStopScript will execute the stop script for this command, returning full output
-// from running the script.
-// Assumes the service has a stop script configured.
-func (c *Instance) RunStopScript(workingDir string) ([]byte, error) {
-	c.printf("Running stop script for %v\n", c.Service.Name)
-	cmd, err := commandline.ConstructCommand(workingDir, c.Service.Path, c.Service.Commands.Stop, c.Getenv)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return out, errors.WithStack(err)
-	}
-	return nil, nil
 }
 
 func (c *Instance) clearPid() {
@@ -313,7 +299,7 @@ func (c *Instance) StopSync(cfg services.OperationConfig, overrides services.Con
 		return nil
 	}
 
-	if c.Service.Commands.Launch == "" {
+	if !c.Service.Backend().HasLaunchStep() {
 		return nil
 	}
 

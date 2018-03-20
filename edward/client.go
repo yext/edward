@@ -47,6 +47,8 @@ type Client struct {
 	Tags []string // Tags to distinguish runners started by this instance of edward
 
 	DirConfig *home.EdwardConfiguration
+
+	Backends map[string]string // Service overrides for backends
 }
 
 type TaskFollower interface {
@@ -122,6 +124,7 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, no
 		NoWatch:          noWatch,
 		Tags:             c.Tags,
 		LogFile:          c.LogFile,
+		Backends:         c.Backends,
 	}
 
 	task := tracker.NewTask(c.Follower.Handle)
@@ -133,10 +136,6 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, no
 	}
 	p := worker.NewPool(poolSize)
 	p.Start()
-	defer func() {
-		p.Stop()
-		_ = <-p.Complete()
-	}()
 	var err error
 	err = services.DoForServices(sgs, task, func(s *services.ServiceConfig, overrides services.ContextOverride, task tracker.Task) error {
 		if skipBuild {
@@ -161,7 +160,13 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, no
 		}
 		return nil
 	})
-	return errors.WithStack(err)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	p.Stop()
+	_ = <-p.Complete()
+	return p.Err()
 }
 
 func (c *Client) askForConfirmation(question string) bool {

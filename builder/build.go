@@ -2,7 +2,6 @@ package builder
 
 import (
 	"github.com/pkg/errors"
-	"github.com/yext/edward/commandline"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
@@ -37,7 +36,7 @@ func (b *builder) Build(dirConfig *home.EdwardConfiguration, task tracker.Task, 
 // BuildWithTracker builds a service.
 // If force is false, the build will be skipped if the service is already running.
 func (b *builder) BuildWithTracker(dirConfig *home.EdwardConfiguration, task tracker.Task, service *services.ServiceConfig, force bool) error {
-	if service.Commands.Build == "" {
+	if !service.Backend().HasBuildStep() {
 		return nil
 	}
 	if task == nil {
@@ -60,18 +59,15 @@ func (b *builder) BuildWithTracker(dirConfig *home.EdwardConfiguration, task tra
 		return errors.WithStack(err)
 	}
 
-	cmd, err := commandline.ConstructCommand(b.Cfg.WorkingDir, service.Path, service.Commands.Build, c.Getenv)
+	builder, err := services.GetBuilder(b.Cfg, service)
 	if err != nil {
-		job.SetState(tracker.TaskStateFailed, err.Error())
 		return errors.WithStack(err)
 	}
-
-	out, err := cmd.CombinedOutput()
+	out, err := builder.Build(b.Cfg.WorkingDir, c.Getenv)
 	if err != nil {
 		job.SetState(tracker.TaskStateFailed, err.Error(), string(out))
 		return errors.WithMessage(err, "running build command")
 	}
-
 	job.SetState(tracker.TaskStateSuccess)
 	return nil
 }

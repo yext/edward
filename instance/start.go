@@ -33,7 +33,7 @@ func Launch(dirConfig *home.EdwardConfiguration, c *services.ServiceConfig, cfg 
 // Will block until the service is known to have started successfully.
 // If the service fails to launch, an error will be returned.
 func (c *Instance) StartAsync(cfg services.OperationConfig, task tracker.Task) error {
-	if c.Service.Commands.Launch == "" {
+	if !c.Service.Backend().HasLaunchStep() {
 		return nil
 	}
 
@@ -49,19 +49,6 @@ func (c *Instance) StartAsync(cfg services.OperationConfig, task tracker.Task) e
 	err := DeleteAllStatusesForService(c.Service, c.dirConfig.StateDir)
 	if err != nil {
 		return errors.WithStack(err)
-	}
-
-	if c.Service.LaunchChecks != nil && len(c.Service.LaunchChecks.Ports) > 0 {
-		inUse, err := c.areAnyListeningPortsOpen(c.Service.LaunchChecks.Ports)
-		if err != nil {
-			startTask.SetState(tracker.TaskStateFailed, err.Error())
-			return errors.WithStack(err)
-		}
-		if inUse {
-			inUseErr := errors.New("one or more of the ports required by this service are in use")
-			startTask.SetState(tracker.TaskStateFailed, inUseErr.Error())
-			return errors.WithStack(inUseErr)
-		}
 	}
 
 	os.Remove(c.Service.GetRunLog(c.dirConfig.LogDir))
@@ -96,6 +83,7 @@ func (c *Instance) StartAsync(cfg services.OperationConfig, task tracker.Task) e
 		warmup.Run(c.Service.Name, c.Service.Warmup, task)
 		return nil
 	}
+	c.printf("%v failed to start: %s", c.Service.Name, err)
 
 	log, readingErr := logToStringSlice(c.Service.GetRunLog(c.dirConfig.LogDir))
 	if readingErr != nil {

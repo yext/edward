@@ -1,7 +1,6 @@
 package edward_test
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/theothertomelliott/must"
@@ -27,64 +26,6 @@ func TestStart(t *testing.T) {
 		err              error
 	}{
 		{
-			name:     "single service",
-			path:     "testdata/single",
-			config:   "edward.json",
-			services: []string{"service"},
-			expectedStates: map[string]string{
-				"service":         "Pending", // This isn't technically right
-				"service > Build": "Success",
-				"service > Start": "Success",
-			},
-			expectedServices: 1,
-		},
-		{
-			name:     "single service - alternate",
-			path:     "testdata/single",
-			config:   "alternate.json",
-			services: []string{"alternate"},
-			expectedStates: map[string]string{
-				"alternate":         "Pending", // This isn't technically right
-				"alternate > Build": "Success",
-				"alternate > Start": "Success",
-			},
-			expectedServices: 1,
-		},
-		{
-			name:     "two services",
-			path:     "testdata/multiple",
-			config:   "edward.json",
-			services: []string{"service1", "service2"},
-			expectedStates: map[string]string{
-				"service1":         "Pending", // This isn't technically right
-				"service1 > Build": "Success",
-				"service1 > Start": "Success",
-				"service2":         "Pending", // This isn't technically right
-				"service2 > Build": "Success",
-				"service2 > Start": "Success",
-			},
-			expectedServices: 2,
-		},
-		{
-			name:     "group",
-			path:     "testdata/group",
-			config:   "edward.json",
-			services: []string{"group"},
-			expectedStates: map[string]string{
-				"group":                    "Pending",
-				"group > service1":         "Pending",
-				"group > service1 > Build": "Success",
-				"group > service1 > Start": "Success",
-				"group > service2":         "Pending",
-				"group > service2 > Build": "Success",
-				"group > service2 > Start": "Success",
-				"group > service3":         "Pending",
-				"group > service3 > Build": "Success",
-				"group > service3 > Start": "Success",
-			},
-			expectedServices: 3,
-		},
-		{
 			name:     "nested group",
 			path:     "testdata/subgroup",
 			config:   "edward.json",
@@ -105,25 +46,6 @@ func TestStart(t *testing.T) {
 			expectedServices: 3,
 		},
 		{
-			name:     "groupalias",
-			path:     "testdata/group",
-			config:   "edward.json",
-			services: []string{"groupalias"},
-			expectedStates: map[string]string{
-				"group":                    "Pending",
-				"group > service1":         "Pending",
-				"group > service1 > Build": "Success",
-				"group > service1 > Start": "Success",
-				"group > service2":         "Pending",
-				"group > service2 > Build": "Success",
-				"group > service2 > Start": "Success",
-				"group > service3":         "Pending",
-				"group > service3 > Build": "Success",
-				"group > service3 > Start": "Success",
-			},
-			expectedServices: 3,
-		},
-		{
 			name:     "one service of two",
 			path:     "testdata/multiple",
 			config:   "edward.json",
@@ -132,26 +54,6 @@ func TestStart(t *testing.T) {
 				"service2":         "Pending", // This isn't technically right
 				"service2 > Build": "Success",
 				"service2 > Start": "Success",
-			},
-			expectedServices: 1,
-		},
-		{
-			name:     "service not found",
-			path:     "testdata/single",
-			config:   "edward.json",
-			services: []string{"missing"},
-			err:      errors.New("Service or group not found"),
-		},
-		{
-			name:     "warmup",
-			path:     "testdata/features",
-			config:   "edward.json",
-			services: []string{"warmup"},
-			expectedStates: map[string]string{
-				"warmup":          "Pending", // This isn't technically right
-				"warmup > Build":  "Success",
-				"warmup > Start":  "Success",
-				"warmup > Warmup": "Success",
 			},
 			expectedServices: 1,
 		},
@@ -221,160 +123,6 @@ func TestStart(t *testing.T) {
 			err = client.Start(test.services, test.skipBuild, test.noWatch, test.exclude)
 			must.BeEqual(t, test.expectedStates, tf.states)
 			must.BeEqual(t, test.expectedMessages, tf.messages)
-			must.BeEqualErrors(t, test.err, err)
-
-			// Verify that the process actually started
-			verifyAndStopRunners(t, client, test.expectedServices)
-		})
-	}
-}
-
-func TestStartOrder(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode.")
-	}
-
-	var tests = []struct {
-		name               string
-		path               string
-		config             string
-		services           []string
-		skipBuild          bool
-		tail               bool
-		noWatch            bool
-		exclude            []string
-		expectedStateOrder []string
-		expectedServices   int
-		err                error
-	}{
-		{
-			name:     "group",
-			path:     "testdata/group",
-			config:   "edward.json",
-			services: []string{"group"},
-			expectedStateOrder: []string{
-				"group",
-				"group > service1",
-				"group > service1 > Build",
-				"group > service1 > Start",
-				"group > service2",
-				"group > service2 > Build",
-				"group > service2 > Start",
-				"group > service3",
-				"group > service3 > Build",
-				"group > service3 > Start",
-			},
-			expectedServices: 3,
-		},
-		{
-			name:     "nested group",
-			path:     "testdata/subgroup",
-			config:   "edward.json",
-			services: []string{"parentgroup"},
-			expectedStateOrder: []string{
-				"parentgroup",
-				"parentgroup > service1",
-				"parentgroup > service1 > Build",
-				"parentgroup > service1 > Start",
-				"parentgroup > childgroup",
-				"parentgroup > childgroup > service2",
-				"parentgroup > childgroup > service2 > Build",
-				"parentgroup > childgroup > service2 > Start",
-				"parentgroup > service3",
-				"parentgroup > service3 > Build",
-				"parentgroup > service3 > Start",
-			},
-			expectedServices: 3,
-		},
-		{
-			name:     "build failure stops other services",
-			path:     "testdata/buildfailure",
-			config:   "edward.json",
-			services: []string{"broken", "working"},
-			expectedStateOrder: []string{
-				"broken",
-				"broken > Build",
-			},
-			expectedServices: 0,
-			err:              errors.New("Error starting broken: build: running build command: exit status 2"),
-		},
-		{
-			name:     "launch failure stops other services",
-			path:     "testdata/launchfailure",
-			config:   "edward.json",
-			services: []string{"broken", "working"},
-			expectedStateOrder: []string{
-				"broken",
-				"broken > Build",
-				"broken > Start",
-				"Cleanup",
-				"Cleanup > broken",
-				"Cleanup > broken > Stop",
-			},
-			expectedServices: 0,
-			err:              errors.New("Error starting broken: launch: exited with state: DIED"),
-		},
-		{
-			name:     "launch failure stops other services - bad command",
-			path:     "testdata/launchfailure",
-			config:   "edward.json",
-			services: []string{"badcommand", "working"},
-			expectedStateOrder: []string{
-				"badcommand",
-				"badcommand > Start",
-				"Cleanup",
-				"Cleanup > badcommand",
-				"Cleanup > badcommand > Stop",
-			},
-			expectedServices: 0,
-			err:              errors.New("Error starting badcommand: launch: runner process exited"),
-		},
-		{
-			name:     "build failure in group stops other services",
-			path:     "testdata/buildfailure",
-			config:   "edward.json",
-			services: []string{"fail-first"},
-			expectedStateOrder: []string{
-				"fail-first",
-				"fail-first > broken",
-				"fail-first > broken > Build",
-			},
-			expectedServices: 0,
-			err:              errors.New("Error starting broken: build: running build command: exit status 2"),
-		},
-		{
-			name:     "launch failure in group stops other services",
-			path:     "testdata/launchfailure",
-			config:   "edward.json",
-			services: []string{"fail-first"},
-			expectedStateOrder: []string{
-				"fail-first",
-				"fail-first > broken",
-				"fail-first > broken > Build",
-				"fail-first > broken > Start",
-				"fail-first > Cleanup",
-				"fail-first > Cleanup > broken",
-				"fail-first > Cleanup > broken > Stop",
-			},
-			expectedServices: 0,
-			err:              errors.New("Error starting broken: launch: exited with state: DIED"),
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			var err error
-
-			// Copy test content into a temp dir on the GOPATH & defer deletion
-			client, wd, cleanup, err := createClient(test.config, test.name, test.path)
-			defer cleanup()
-
-			tf := newTestFollower()
-			client.Follower = tf
-
-			defer showLogsIfFailed(t, test.name, wd, client)
-
-			err = client.Start(test.services, test.skipBuild, test.noWatch, test.exclude)
-			must.BeEqual(t, test.expectedStateOrder, tf.stateOrder)
 			must.BeEqualErrors(t, test.err, err)
 
 			// Verify that the process actually started

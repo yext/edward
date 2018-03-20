@@ -70,7 +70,6 @@ func (r *Log) Write(p []byte) (int, error) {
 	line := fmt.Sprintln(string(jsonContent))
 	count, err := r.file.Write([]byte(line))
 	if err != nil {
-		fmt.Println("Error")
 		return count, errors.Wrap(err, "could not write log line")
 	}
 	return len(p), nil

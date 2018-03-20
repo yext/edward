@@ -5,5 +5,8 @@ import (
 )
 
 func main() {
+	// Initialization
+	RegisterBackends()
+
 	cmd.Execute()
 }

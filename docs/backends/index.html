@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+  
+  
+  
+  
+   <html class="no-js"> 
+
+  <head lang="en-us">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=10" />
+    <title>Backends (experimental) - Edward Docs</title>
+    <meta name="generator" content="Hugo 0.32.3" />
+
+    
+    <meta name="description" content="A command line tool for managing local instances of microservices.">
+    
+    <link rel="canonical" href="http://engblog.yext.com/edward/backends/">
+    
+    <meta name="author" content="Tom Elliott">
+    
+
+    <meta property="og:url" content="http://engblog.yext.com/edward/backends/">
+    <meta property="og:title" content="Edward Docs">
+    
+    <meta name="apple-mobile-web-app-title" content="Edward Docs">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link rel="shortcut icon" type="image/x-icon" href="http://engblog.yext.com/edward/images/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="http://engblog.yext.com/edward/images/favicon.ico">
+
+    <style>
+      @font-face {
+        font-family: 'Icon';
+        src: url('http://engblog.yext.com/edward/fonts/icon.eot');
+        src: url('http://engblog.yext.com/edward/fonts/icon.eot')
+               format('embedded-opentype'),
+             url('http://engblog.yext.com/edward/fonts/icon.woff')
+               format('woff'),
+             url('http://engblog.yext.com/edward/fonts/icon.ttf')
+               format('truetype'),
+             url('http://engblog.yext.com/edward/fonts/icon.svg')
+               format('svg');
+        font-weight: normal;
+        font-style: normal;
+      }
+    </style>
+
+    <link rel="stylesheet" href="http://engblog.yext.com/edward/stylesheets/application.css">
+    <link rel="stylesheet" href="http://engblog.yext.com/edward/stylesheets/temporary.css">
+    <link rel="stylesheet" href="http://engblog.yext.com/edward/stylesheets/palettes.css">
+    <link rel="stylesheet" href="http://engblog.yext.com/edward/stylesheets/highlight/highlight.css">
+
+    
+    
+    
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Ubuntu:400,700|Ubuntu&#43;Mono">
+    <style>
+      body, input {
+        font-family: 'Ubuntu', Helvetica, Arial, sans-serif;
+      }
+      pre, code {
+        font-family: 'Ubuntu Mono', 'Courier New', 'Courier', monospace;
+      }
+    </style>
+
+    
+    <script src="http://engblog.yext.com/edward/javascripts/modernizr.js"></script>
+
+    
+
+  </head>
+  <body class="palette-primary-indigo palette-accent-blue">
+
+
+
+	
+	
+
+
+<div class="backdrop">
+	<div class="backdrop-paper"></div>
+</div>
+
+<input class="toggle" type="checkbox" id="toggle-drawer">
+<input class="toggle" type="checkbox" id="toggle-search">
+<label class="toggle-button overlay" for="toggle-drawer"></label>
+
+<header class="header">
+	<nav aria-label="Header">
+  <div class="bar default">
+    <div class="button button-menu" role="button" aria-label="Menu">
+      <label class="toggle-button icon icon-menu" for="toggle-drawer">
+        <span></span>
+      </label>
+    </div>
+    <div class="stretch">
+      <div class="title">
+        Backends (experimental)
+      </div>
+    </div>
+
+    
+
+    
+    <div class="button button-github" role="button" aria-label="GitHub">
+      <a href="https://github.com/yext" title="@yext on GitHub" target="_blank" class="toggle-button icon icon-github"></a>
+    </div>
+    
+    
+        
+  </div>
+  <div class="bar search">
+    <div class="button button-close" role="button" aria-label="Close">
+      <label class="toggle-button icon icon-back" for="toggle-search"></label>
+    </div>
+    <div class="stretch">
+      <div class="field">
+        <input class="query" type="text" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck>
+      </div>
+    </div>
+    <div class="button button-reset" role="button" aria-label="Search">
+      <button class="toggle-button icon icon-close" id="reset-search"></button>
+    </div>
+  </div>
+</nav>
+</header>
+
+<main class="main">
+	<div class="drawer">
+		<nav aria-label="Navigation">
+  <a href="https://github.com/yext/edward" class="project">
+    <div class="banner">
+      
+      <div class="name">
+        <strong>Edward Docs <span class="version">1.8.9</span></strong>
+        
+          <br>
+          yext/edward
+        
+      </div>
+    </div>
+  </a>
+
+  <div class="scrollable">
+    <div class="wrapper">
+      
+        <ul class="repo">
+          <li class="repo-download">
+            <a href="https://github.com/yext/edward/archive/master.zip" target="_blank" title="Download" data-action="download">
+              <i class="icon icon-download"></i> Download
+            </a>
+          </li>
+          <li class="repo-stars">
+            <a href="https://github.com/yext/edward/stargazers" target="_blank" title="Stargazers" data-action="star">
+              <i class="icon icon-star"></i> Stars
+              <span class="count">&ndash;</span>
+            </a>
+          </li>
+        </ul>
+        <hr>
+      
+
+      <div class="toc">
+        
+        <ul>
+          
+
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="Installation" href="http://engblog.yext.com/edward/installation/">
+	
+	Installation
+</a>
+
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="Quickstart" href="http://engblog.yext.com/edward/quickstart/">
+	
+	Quickstart
+</a>
+
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="Commands" href="http://engblog.yext.com/edward/commands/">
+	
+	Commands
+</a>
+
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="Project Configuration" href="http://engblog.yext.com/edward/projectconfig/">
+	
+	Project Configuration
+</a>
+
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a class="current" title="Backends (experimental)" href="http://engblog.yext.com/edward/backends/">
+	
+	Backends (experimental)
+</a>
+
+
+<ul id="scrollspy">
+</ul>
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="Autocompletion" href="http://engblog.yext.com/edward/autocompletion/">
+	
+	Autocompletion
+</a>
+
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="Sudo" href="http://engblog.yext.com/edward/sudo/">
+	
+	Sudo
+</a>
+
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="Roadmap" href="http://engblog.yext.com/edward/roadmap/">
+	
+	Roadmap
+</a>
+
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="License" href="http://engblog.yext.com/edward/license/">
+	
+	License
+</a>
+
+
+
+  
+</li>
+
+
+
+<li>
+  
+    
+
+
+
+<a  title="About Edward" href="http://engblog.yext.com/edward/">
+	
+	About Edward
+</a>
+
+
+
+  
+</li>
+
+
+        </ul>
+        
+
+        
+        <hr>
+        <span class="section">The author</span>
+        
+        <ul>
+          
+
+          
+          <li>
+            <a href="https://github.com/yext" target="_blank" title="@yext on GitHub">
+              @yext on GitHub
+            </a>
+          </li>
+          
+
+          
+          <li>
+            <a href="mailto:telliott@yext.com" title="Email of telliott@yext.com">
+              Contact via email
+            </a>
+          </li>
+          
+        </ul>
+        
+      </div>
+    </div>
+  </div>
+</nav>
+
+	</div>
+
+	<article class="article">
+		<div class="wrapper">
+			<h1>Backends (experimental) </h1>
+
+			
+
+<p>Docker 1.8.9 introduces an experimental new feature: Backends.
+A backend provides the functionality to build and run services on a particular platform.
+A single service may specify multiple backends to be used in different situations.</p>
+
+<p>Edward has built-in backends for the command line and Docker.</p>
+
+<div class="admonition warning">
+<p class="admonition-title">Experimental feature</p>
+<p>Backends are an experimental feature, and may be subject to breaking changes between releases of Edward.</p>
+</div>
+
+<h2 id="configuration">Configuration</h2>
+
+<p>Backends are specified in an array under a service definition.
+Each backend is specified by a type, and a set of fields providing configuration for that backend.</p>
+
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;myservice&quot;,
+    &quot;path&quot;: &quot;path/to/myservice&quot;,
+    &quot;backends&quot;: [
+        {
+            &quot;type&quot;: &quot;&lt;backend type&gt;&quot;,
+            &quot;&lt;field1&gt;&quot;: &quot;&lt;value1&gt;&quot;,
+            &quot;&lt;field2&gt;&quot;: &quot;&lt;value2&gt;&quot;
+        }
+    ]
+}
+</code></pre>
+
+<h2 id="command-line">Command line</h2>
+
+<p>The command line backend provides the same functionality as detailed in the <a href="../projectconfig/#services">Project Configuration</a> section.</p>
+
+<p>Command line backends have the <code>type</code> &ldquo;commandline&rdquo;, and accept the <code>commands</code> and <code>launch_checks</code> properties:</p>
+
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;myservice&quot;,
+    &quot;path&quot;: &quot;path/to/myservice&quot;,
+    &quot;backends&quot;: [
+        {
+            &quot;type&quot;: &quot;commandline&quot;,
+            &quot;commands&quot;: {
+                &quot;build&quot;: &quot;make install&quot;,
+                &quot;launch&quot;: &quot;myservice&quot;
+            },
+            &quot;launch_checks&quot;: {
+                &quot;log_text&quot;: &quot;Finished startup&quot;
+            }
+        }
+    ]
+}
+</code></pre>
+
+<h2 id="docker">Docker</h2>
+
+<p>The Docker backend provides the ability to create and launch Docker containers.
+Docker backends have the <code>type</code> &ldquo;docker&rdquo;, and may use an existing image, or build from a Dockerfile.</p>
+
+<h3 id="using-an-existing-image">Using an existing image</h3>
+
+<p>To use an existing image, specify the <code>image</code> property using a tag of the form you would use with <code>docker pull</code>.</p>
+
+<pre><code class="language-json">&quot;backends&quot;: [
+    {
+        &quot;type&quot;: &quot;docker&quot;,
+        &quot;image&quot;: &quot;kitematic/hello-world-nginx:latest&quot;,
+        &quot;ports&quot;: [&quot;80:8080&quot;]
+    }
+]
+</code></pre>
+
+<p>The above configuration will create a container from the latest version of the <a href="https://hub.docker.com/r/kitematic/hello-world-nginx/">Kitematic hello world nginx example</a>.
+Port 80 on the container will be mapped to port 8080 on the host, so you can browse to the service at <a href="http://localhost:8080">http://localhost:8080</a>.</p>
+
+<h3 id="building-from-a-dockerfile">Building from a Dockerfile</h3>
+
+<p>To build a dockerfile, specify the <code>dockerfile</code> property as a path to a Dockerfile relative to the service&rsquo;s path.
+If the provided path is a directory, the default filename &ldquo;Dockerfile&rdquo; will be assumed.</p>
+
+<pre><code class="language-json">&quot;backends&quot;: [
+    {
+        &quot;type&quot;: &quot;docker&quot;,
+        &quot;dockerfile&quot;: &quot;.&quot;
+    }
+]
+</code></pre>
+
+<p>The above example will build and launch a Dockerfile in the service&rsquo;s working directory.</p>
+
+<h3 id="additional-configuration">Additional Configuration</h3>
+
+<p>Port mappings are provided as a convenience via the <code>ports</code> property.
+Additional configuration of a Docker container can be provided using the <code>containerConfig</code>, <code>hostConfig</code> and <code>networkConfig</code> properties with a structure corresponding to the parameters for <a href="https://docs.docker.com/engine/api/v1.30/#operation/ContainerCreate">ContainerCreate</a> in the Docker Engine API.</p>
+
+<pre><code class="language-json">&quot;backends&quot;: [
+    {
+        &quot;type&quot;: &quot;docker&quot;,
+        &quot;dockerfile&quot;: &quot;.&quot;,
+        &quot;containerConfig&quot;: {...},
+        &quot;hostConfig&quot;: {...},
+        &quot;networkConfig&quot;: {...},
+    }
+]
+</code></pre>
+
+<p><code>containerConfig</code> corresponds to the root paramters of the ContainerCreate command, with <code>hostConfig</code> and <code>networkConfig</code>
+corresponding to <code>HostConfig</code> and <code>NetworkingConfig</code> respectively.</p>
+
+<p>Field names in each of these objects match those in the Docker Engine API, with the exception that their names are lowerCamelCase in Edward config, instead of the CamelCase of the Docker Engine API.</p>
+
+<h2 id="multiple-backends">Multiple Backends</h2>
+
+<p>Sometimes, you may want to use one backend in one situation, and another for a different situation.
+For example, you may want to default to building a service locally for most services, but also have the option
+of launching the most recent Docker image from your repository.</p>
+
+<h3 id="defining-multiple-backends">Defining multiple backends</h3>
+
+<p>You can distinguish between backends using the <code>name</code> property.</p>
+
+<pre><code class="language-json">&quot;backends&quot;: [
+    {
+        &quot;name&quot;: &quot;default&quot;,
+        &quot;type&quot;: &quot;commandline&quot;,
+        ...
+    },
+    {
+        &quot;name&quot;: &quot;prebuilt&quot;,
+        &quot;type&quot;: &quot;docker&quot;,
+        ...
+    }
+]
+</code></pre>
+
+<h3 id="selecting-a-backend">Selecting a Backend</h3>
+
+<p>By default, Edward will use the first backend in the list for each service.</p>
+
+<p>To start a service with a specific backend, you can use the <code>--backend</code>, or <code>-b</code> flag at the command line to tell Edward which
+backend to use.</p>
+
+<pre><code>$ edward start -b &lt;service&gt;:&lt;backend&gt; &lt;group&gt;
+</code></pre>
+
+<p>Will start the service group <group> using the backend <backend> for the service <service>.
+Any other services launched as part of the group will use their default backend.</p>
+
+
+			<aside class="copyright" role="note">
+				
+				&copy; 2018 Released under the MIT license &ndash;
+				
+				Documentation built with
+				<a href="https://www.gohugo.io" target="_blank">Hugo</a>
+				using the
+				<a href="http://github.com/digitalcraftsman/hugo-material-docs" target="_blank">Material</a> theme.
+			</aside>
+
+			<footer class="footer">
+				
+
+<nav class="pagination" aria-label="Footer">
+  <div class="previous">
+  
+      <a href="http://engblog.yext.com/edward/license/" title="License">
+        <span class="direction">
+          Previous
+        </span>
+        <div class="page">
+          <div class="button button-previous" role="button" aria-label="Previous">
+            <i class="icon icon-back"></i>
+          </div>
+          <div class="stretch">
+            <div class="title">
+              License
+            </div>
+          </div>
+        </div>
+      </a>
+  
+  </div>
+
+  <div class="next">
+  
+      <a href="http://engblog.yext.com/edward/commands/" title="Commands">
+        <span class="direction">
+          Next
+        </span>
+        <div class="page">
+          <div class="stretch">
+            <div class="title">
+              Commands
+            </div>
+          </div>
+          <div class="button button-next" role="button" aria-label="Next">
+            <i class="icon icon-forward"></i>
+          </div>
+        </div>
+      </a>
+  
+  </div>
+</nav>
+
+
+
+
+
+			</footer>
+		</div>
+	</article>
+
+	<div class="results" role="status" aria-live="polite">
+		<div class="scrollable">
+			<div class="wrapper">
+				<div class="meta"></div>
+				<div class="list"></div>
+			</div>
+		</div>
+	</div>
+</main>
+
+    <script>
+    
+      var base_url = 'http:\/\/engblog.yext.com\/edward\/';
+      var repo_id  = 'yext\/edward';
+    
+    </script>
+
+    <script src="http://engblog.yext.com/edward/javascripts/application.js"></script>
+    
+
+    <script>
+      /* Add headers to scrollspy */
+      var headers   = document.getElementsByTagName("h2");
+      var scrollspy = document.getElementById('scrollspy');
+
+      if(scrollspy) {
+        if(headers.length > 0) {
+          for(var i = 0; i < headers.length; i++) {
+            var li = document.createElement("li");
+            li.setAttribute("class", "anchor");
+
+            var a  = document.createElement("a");
+            a.setAttribute("href", "#" + headers[i].id);
+            a.setAttribute("title", headers[i].innerHTML);
+            a.innerHTML = headers[i].innerHTML;
+
+            li.appendChild(a)
+            scrollspy.appendChild(li);
+          }
+        } else {
+          scrollspy.parentElement.removeChild(scrollspy)
+        }
+
+
+        /* Add permanent link next to the headers */
+        var headers = document.querySelectorAll("h1, h2, h3, h4, h5, h6");
+
+        for(var i = 0; i < headers.length; i++) {
+            var a = document.createElement("a");
+            a.setAttribute("class", "headerlink");
+            a.setAttribute("href", "#" + headers[i].id);
+            a.setAttribute("title", "Permanent link")
+            a.innerHTML = "#";
+            headers[i].appendChild(a);
+        }
+      }
+    </script>
+
+    
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+  </body>
+</html>
+

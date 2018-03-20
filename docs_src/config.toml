@@ -18,7 +18,7 @@ publishDir = "../docs"
 	provider = "GitHub"
 	repo_url = "https://github.com/yext/edward"
 
-	version = "1.8.8"
+	version = "1.8.9"
 	#logo = "images/logo.png"
 	favicon = ""
 
@@ -70,6 +70,11 @@ publishDir = "../docs"
   name   = "Project Configuration"
   url    = "projectconfig/"
   weight = 40
+
+[[menu.main]]
+  name   = "Backends (experimental)"
+  url    = "backends/"
+  weight = 45
 
 [[menu.main]]
   name   = "Autocompletion"

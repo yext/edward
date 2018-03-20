@@ -10,20 +10,36 @@ import (
 
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
+	"github.com/yext/edward/services/backends/commandline"
 )
+
+func TestMain(m *testing.M) {
+	// Register necessary backends
+	services.RegisterLegacyMarshaler(&commandline.LegacyUnmarshaler{})
+	services.RegisterBackend(&commandline.Loader{})
+
+	os.Exit(m.Run())
+}
 
 var service1 = services.ServiceConfig{
 	Name:         "service1",
 	Description:  "My Service 1 is magic",
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
-	Commands: services.ServiceConfigCommands{
-		Build:  "buildCmd",
-		Launch: "launchCmd",
-		Stop:   "stopCmd",
-	},
-	LaunchChecks: &services.LaunchChecks{
-		LogText: "startedProperty",
+	Backends: []*services.BackendConfig{
+		{
+			Type: "commandline",
+			Config: &commandline.Backend{
+				Commands: commandline.ServiceConfigCommands{
+					Build:  "buildCmd",
+					Launch: "launchCmd",
+					Stop:   "stopCmd",
+				},
+				LaunchChecks: &commandline.LaunchChecks{
+					LogText: "startedProperty",
+				},
+			},
+		},
 	},
 	Logger: common.NullLogger{},
 }
@@ -33,13 +49,20 @@ var service1alias = services.ServiceConfig{
 	Aliases:      []string{"service2"},
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
-	Commands: services.ServiceConfigCommands{
-		Build:  "buildCmd",
-		Launch: "launchCmd",
-		Stop:   "stopCmd",
-	},
-	LaunchChecks: &services.LaunchChecks{
-		LogText: "startedProperty",
+	Backends: []*services.BackendConfig{
+		{
+			Type: "commandline",
+			Config: &commandline.Backend{
+				Commands: commandline.ServiceConfigCommands{
+					Build:  "buildCmd",
+					Launch: "launchCmd",
+					Stop:   "stopCmd",
+				},
+				LaunchChecks: &commandline.LaunchChecks{
+					LogText: "startedProperty",
+				},
+			},
+		},
 	},
 	Logger: common.NullLogger{},
 }
@@ -65,10 +88,17 @@ var group1alias = services.ServiceGroupConfig{
 var service2 = services.ServiceConfig{
 	Name: "service2",
 	Path: common.StringToStringPointer("service2/path"),
-	Commands: services.ServiceConfigCommands{
-		Build:  "buildCmd2",
-		Launch: "launchCmd2",
-		Stop:   "stopCmd2",
+	Backends: []*services.BackendConfig{
+		{
+			Type: "commandline",
+			Config: &commandline.Backend{
+				Commands: commandline.ServiceConfigCommands{
+					Build:  "buildCmd2",
+					Launch: "launchCmd2",
+					Stop:   "stopCmd2",
+				},
+			},
+		},
 	},
 	Logger: common.NullLogger{},
 }
@@ -85,13 +115,20 @@ var service3 = services.ServiceConfig{
 	Name:         "service3",
 	Path:         common.StringToStringPointer("."),
 	RequiresSudo: true,
-	Commands: services.ServiceConfigCommands{
-		Build:  "buildCmd",
-		Launch: "launchCmd",
-		Stop:   "stopCmd",
-	},
-	LaunchChecks: &services.LaunchChecks{
-		LogText: "startedProperty",
+	Backends: []*services.BackendConfig{
+		{
+			Type: "commandline",
+			Config: &commandline.Backend{
+				Commands: commandline.ServiceConfigCommands{
+					Build:  "buildCmd",
+					Launch: "launchCmd",
+					Stop:   "stopCmd",
+				},
+				LaunchChecks: &commandline.LaunchChecks{
+					LogText: "startedProperty",
+				},
+			},
+		},
 	},
 	Logger: common.NullLogger{},
 }
