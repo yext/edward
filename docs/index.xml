@@ -57,6 +57,19 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
     </item>
     
     <item>
+      <title>Backends (experimental)</title>
+      <link>http://engblog.yext.com/edward/backends/</link>
+      <pubDate>Wed, 01 Feb 2017 17:24:55 -0500</pubDate>
+      
+      <guid>http://engblog.yext.com/edward/backends/</guid>
+      <description>Docker 1.8.9 introduces an experimental new feature: Backends. A backend provides the functionality to build and run services on a particular platform. A single service may specify multiple backends to be used in different situations.
+Edward has built-in backends for the command line and Docker.
+Experimental feature
+Backends are an experimental feature, and may be subject to breaking changes between releases of Edward.
+ Configuration Backends are specified in an array under a service definition.</description>
+    </item>
+    
+    <item>
       <title>Commands</title>
       <link>http://engblog.yext.com/edward/commands/</link>
       <pubDate>Wed, 01 Feb 2017 17:24:55 -0500</pubDate>

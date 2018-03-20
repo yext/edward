@@ -44,7 +44,7 @@ func (b *buildandrun) Build(workingDir string, getenv func(string) string) ([]by
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
 
-	if b.Backend.Build != "" {
+	if b.Backend.Dockerfile != "" {
 		r, w := io.Pipe()
 		servicePath := workingDir
 		if b.Service.Path != nil {
@@ -59,7 +59,7 @@ func (b *buildandrun) Build(workingDir string, getenv func(string) string) ([]by
 			w.Close()
 		}()
 
-		relativeBuild := b.Backend.Build
+		relativeBuild := b.Backend.Dockerfile
 		buildPath := path.Join(servicePath, relativeBuild)
 		fi, err := os.Stat(buildPath)
 		if err != nil {
@@ -224,7 +224,7 @@ func (b *buildandrun) containerName() string {
 }
 
 func (b *buildandrun) imageTag() string {
-	if b.Backend.Build != "" {
+	if b.Backend.Dockerfile != "" {
 		return fmt.Sprintf(
 			"edward/%s",
 			strings.ToLower(

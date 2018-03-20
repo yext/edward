@@ -9,18 +9,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=10" />
-    <title>Sudo - Edward Docs</title>
+    <title>Backends (experimental) - Edward Docs</title>
     <meta name="generator" content="Hugo 0.32.3" />
 
     
     <meta name="description" content="A command line tool for managing local instances of microservices.">
     
-    <link rel="canonical" href="http://engblog.yext.com/edward/sudo/">
+    <link rel="canonical" href="http://engblog.yext.com/edward/backends/">
     
     <meta name="author" content="Tom Elliott">
     
 
-    <meta property="og:url" content="http://engblog.yext.com/edward/sudo/">
+    <meta property="og:url" content="http://engblog.yext.com/edward/backends/">
     <meta property="og:title" content="Edward Docs">
     
     <meta name="apple-mobile-web-app-title" content="Edward Docs">
@@ -97,7 +97,7 @@
     </div>
     <div class="stretch">
       <div class="title">
-        Sudo
+        Backends (experimental)
       </div>
     </div>
 
@@ -248,11 +248,14 @@
 
 
 
-<a  title="Backends (experimental)" href="http://engblog.yext.com/edward/backends/">
+<a class="current" title="Backends (experimental)" href="http://engblog.yext.com/edward/backends/">
 	
 	Backends (experimental)
 </a>
 
+
+<ul id="scrollspy">
+</ul>
 
 
   
@@ -284,14 +287,11 @@
 
 
 
-<a class="current" title="Sudo" href="http://engblog.yext.com/edward/sudo/">
+<a  title="Sudo" href="http://engblog.yext.com/edward/sudo/">
 	
 	Sudo
 </a>
 
-
-<ul id="scrollspy">
-</ul>
 
 
   
@@ -388,11 +388,156 @@
 
 	<article class="article">
 		<div class="wrapper">
-			<h1>Sudo </h1>
+			<h1>Backends (experimental) </h1>
 
-			<p>Edward will not run if you try to launch it with sudo, but it may ask you to provide your password so that certain services can be run with elevated priviledges. The password request is triggered through a bash script that calls a command with sudo, to ensure that your bash session can make further sudo calls without prompting.</p>
+			
 
-<p>This has only been tested in one bash environment, so your mileage may vary. If services hang when starting (waiting for their log), this may be an indicator that they are waiting for a password prompt that isn&rsquo;t redirected anywhere.</p>
+<p>Docker 1.8.9 introduces an experimental new feature: Backends.
+A backend provides the functionality to build and run services on a particular platform.
+A single service may specify multiple backends to be used in different situations.</p>
+
+<p>Edward has built-in backends for the command line and Docker.</p>
+
+<div class="admonition warning">
+<p class="admonition-title">Experimental feature</p>
+<p>Backends are an experimental feature, and may be subject to breaking changes between releases of Edward.</p>
+</div>
+
+<h2 id="configuration">Configuration</h2>
+
+<p>Backends are specified in an array under a service definition.
+Each backend is specified by a type, and a set of fields providing configuration for that backend.</p>
+
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;myservice&quot;,
+    &quot;path&quot;: &quot;path/to/myservice&quot;,
+    &quot;backends&quot;: [
+        {
+            &quot;type&quot;: &quot;&lt;backend type&gt;&quot;,
+            &quot;&lt;field1&gt;&quot;: &quot;&lt;value1&gt;&quot;,
+            &quot;&lt;field2&gt;&quot;: &quot;&lt;value2&gt;&quot;
+        }
+    ]
+}
+</code></pre>
+
+<h2 id="command-line">Command line</h2>
+
+<p>The command line backend provides the same functionality as detailed in the <a href="../projectconfig/#services">Project Configuration</a> section.</p>
+
+<p>Command line backends have the <code>type</code> &ldquo;commandline&rdquo;, and accept the <code>commands</code> and <code>launch_checks</code> properties:</p>
+
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;myservice&quot;,
+    &quot;path&quot;: &quot;path/to/myservice&quot;,
+    &quot;backends&quot;: [
+        {
+            &quot;type&quot;: &quot;commandline&quot;,
+            &quot;commands&quot;: {
+                &quot;build&quot;: &quot;make install&quot;,
+                &quot;launch&quot;: &quot;myservice&quot;
+            },
+            &quot;launch_checks&quot;: {
+                &quot;log_text&quot;: &quot;Finished startup&quot;
+            }
+        }
+    ]
+}
+</code></pre>
+
+<h2 id="docker">Docker</h2>
+
+<p>The Docker backend provides the ability to create and launch Docker containers.
+Docker backends have the <code>type</code> &ldquo;docker&rdquo;, and may use an existing image, or build from a Dockerfile.</p>
+
+<h3 id="using-an-existing-image">Using an existing image</h3>
+
+<p>To use an existing image, specify the <code>image</code> property using a tag of the form you would use with <code>docker pull</code>.</p>
+
+<pre><code class="language-json">&quot;backends&quot;: [
+    {
+        &quot;type&quot;: &quot;docker&quot;,
+        &quot;image&quot;: &quot;kitematic/hello-world-nginx:latest&quot;,
+        &quot;ports&quot;: [&quot;80:8080&quot;]
+    }
+]
+</code></pre>
+
+<p>The above configuration will create a container from the latest version of the <a href="https://hub.docker.com/r/kitematic/hello-world-nginx/">Kitematic hello world nginx example</a>.
+Port 80 on the container will be mapped to port 8080 on the host, so you can browse to the service at <a href="http://localhost:8080">http://localhost:8080</a>.</p>
+
+<h3 id="building-from-a-dockerfile">Building from a Dockerfile</h3>
+
+<p>To build a dockerfile, specify the <code>dockerfile</code> property as a path to a Dockerfile relative to the service&rsquo;s path.
+If the provided path is a directory, the default filename &ldquo;Dockerfile&rdquo; will be assumed.</p>
+
+<pre><code class="language-json">&quot;backends&quot;: [
+    {
+        &quot;type&quot;: &quot;docker&quot;,
+        &quot;dockerfile&quot;: &quot;.&quot;
+    }
+]
+</code></pre>
+
+<p>The above example will build and launch a Dockerfile in the service&rsquo;s working directory.</p>
+
+<h3 id="additional-configuration">Additional Configuration</h3>
+
+<p>Port mappings are provided as a convenience via the <code>ports</code> property.
+Additional configuration of a Docker container can be provided using the <code>containerConfig</code>, <code>hostConfig</code> and <code>networkConfig</code> properties with a structure corresponding to the parameters for <a href="https://docs.docker.com/engine/api/v1.30/#operation/ContainerCreate">ContainerCreate</a> in the Docker Engine API.</p>
+
+<pre><code class="language-json">&quot;backends&quot;: [
+    {
+        &quot;type&quot;: &quot;docker&quot;,
+        &quot;dockerfile&quot;: &quot;.&quot;,
+        &quot;containerConfig&quot;: {...},
+        &quot;hostConfig&quot;: {...},
+        &quot;networkConfig&quot;: {...},
+    }
+]
+</code></pre>
+
+<p><code>containerConfig</code> corresponds to the root paramters of the ContainerCreate command, with <code>hostConfig</code> and <code>networkConfig</code>
+corresponding to <code>HostConfig</code> and <code>NetworkingConfig</code> respectively.</p>
+
+<p>Field names in each of these objects match those in the Docker Engine API, with the exception that their names are lowerCamelCase in Edward config, instead of the CamelCase of the Docker Engine API.</p>
+
+<h2 id="multiple-backends">Multiple Backends</h2>
+
+<p>Sometimes, you may want to use one backend in one situation, and another for a different situation.
+For example, you may want to default to building a service locally for most services, but also have the option
+of launching the most recent Docker image from your repository.</p>
+
+<h3 id="defining-multiple-backends">Defining multiple backends</h3>
+
+<p>You can distinguish between backends using the <code>name</code> property.</p>
+
+<pre><code class="language-json">&quot;backends&quot;: [
+    {
+        &quot;name&quot;: &quot;default&quot;,
+        &quot;type&quot;: &quot;commandline&quot;,
+        ...
+    },
+    {
+        &quot;name&quot;: &quot;prebuilt&quot;,
+        &quot;type&quot;: &quot;docker&quot;,
+        ...
+    }
+]
+</code></pre>
+
+<h3 id="selecting-a-backend">Selecting a Backend</h3>
+
+<p>By default, Edward will use the first backend in the list for each service.</p>
+
+<p>To start a service with a specific backend, you can use the <code>--backend</code>, or <code>-b</code> flag at the command line to tell Edward which
+backend to use.</p>
+
+<pre><code>$ edward start -b &lt;service&gt;:&lt;backend&gt; &lt;group&gt;
+</code></pre>
+
+<p>Will start the service group <group> using the backend <backend> for the service <service>.
+Any other services launched as part of the group will use their default backend.</p>
 
 
 			<aside class="copyright" role="note">
@@ -411,7 +556,7 @@
 <nav class="pagination" aria-label="Footer">
   <div class="previous">
   
-      <a href="http://engblog.yext.com/edward/autocompletion/" title="Autocompletion">
+      <a href="http://engblog.yext.com/edward/license/" title="License">
         <span class="direction">
           Previous
         </span>
@@ -421,7 +566,7 @@
           </div>
           <div class="stretch">
             <div class="title">
-              Autocompletion
+              License
             </div>
           </div>
         </div>
@@ -430,6 +575,22 @@
   </div>
 
   <div class="next">
+  
+      <a href="http://engblog.yext.com/edward/commands/" title="Commands">
+        <span class="direction">
+          Next
+        </span>
+        <div class="page">
+          <div class="stretch">
+            <div class="title">
+              Commands
+            </div>
+          </div>
+          <div class="button button-next" role="button" aria-label="Next">
+            <i class="icon icon-forward"></i>
+          </div>
+        </div>
+      </a>
   
   </div>
 </nav>

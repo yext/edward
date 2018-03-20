@@ -37,7 +37,7 @@ func TestBuild(t *testing.T) {
 			{
 				Type: "docker",
 				Config: &docker.Backend{
-					Build: ".",
+					Dockerfile: ".",
 					ContainerConfig: docker.Config{
 						ExposedPorts: map[docker.Port]struct{}{
 							"8080/tcp": struct{}{},
@@ -82,7 +82,7 @@ func TestBuildAltFile(t *testing.T) {
 			{
 				Type: "docker",
 				Config: &docker.Backend{
-					Build: "AltDocker",
+					Dockerfile: "AltDocker",
 					ContainerConfig: docker.Config{
 						ExposedPorts: map[docker.Port]struct{}{
 							"8080/tcp": struct{}{},

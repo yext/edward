@@ -72,6 +72,11 @@ publishDir = "../docs"
   weight = 40
 
 [[menu.main]]
+  name   = "Backends (experimental)"
+  url    = "backends/"
+  weight = 45
+
+[[menu.main]]
   name   = "Autocompletion"
 	url    = "autocompletion/"
 	weight = 50
