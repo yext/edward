@@ -239,6 +239,13 @@ func (b *buildandrun) imageTag() string {
 
 func (b *buildandrun) findImage(standardLog io.Writer) (string, error) {
 	ctx := context.Background()
+	imgID, err := b.getImageId(ctx)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	if imgID != "" {
+		return imgID, nil
+	}
 	if b.Backend.Image != "" {
 		output, err := b.client.ImagePull(ctx, b.Backend.Image, types.ImagePullOptions{
 			All: true,
@@ -252,18 +259,24 @@ func (b *buildandrun) findImage(standardLog io.Writer) (string, error) {
 		}
 		output.Close()
 	}
+	imgID, err = b.getImageId(ctx)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	return imgID, nil
+}
 
+func (b *buildandrun) getImageId(ctx context.Context) (string, error) {
 	imgs, err := b.client.ImageList(ctx, types.ImageListOptions{})
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
-	var imgID string
 	for _, img := range imgs {
 		if len(img.RepoTags) > 0 && strings.HasPrefix(img.RepoTags[0], b.imageTag()) {
-			imgID = img.ID
+			return img.ID, nil
 		}
 	}
-	return imgID, nil
+	return "", nil
 }
 
 func (b *buildandrun) findContainer() (string, bool, error) {
