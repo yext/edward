@@ -99,20 +99,13 @@ func (c *Client) getStates(service *services.ServiceConfig) ([]statusCommandTupl
 
 	statuses, _ := instance.LoadStatusForService(service, c.DirConfig.StateDir)
 	if status, ok := statuses[command.InstanceId]; ok {
-		if command.Pid != 0 {
-			return []statusCommandTuple{
-				statusCommandTuple{
-					status:  status,
-					command: command,
-				},
-			}, nil
-		}
 		// If the PID has been set to zero, the runner has died
+		if command.Pid == 0 {
+			status.State = instance.StateDied
+		}
 		return []statusCommandTuple{
 			statusCommandTuple{
-				status: instance.Status{
-					State: instance.StateDied,
-				},
+				status:  status,
 				command: command,
 			},
 		}, nil
