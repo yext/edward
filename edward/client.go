@@ -63,7 +63,7 @@ func NewClient() (*Client, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	dirCfg, err := home.NewConfiguration()
+	dirCfg, err := home.NewConfiguration("")
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -87,7 +87,7 @@ func NewClientWithConfig(configPath, version string, logger *log.Logger) (*Clien
 		return nil, errors.WithStack(err)
 	}
 
-	dirCfg, err := home.NewConfiguration()
+	dirCfg, err := home.NewConfiguration("")
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

@@ -24,9 +24,16 @@ func createDirIfNeeded(path string) {
 	}
 }
 
-func NewConfiguration() (*EdwardConfiguration, error) {
+// NewConfiguration will build an Edward directory config with either the specified edward home dir, or the default
+// if the input string is empty.
+func NewConfiguration(edwardHome string) (*EdwardConfiguration, error) {
 	cfg := &EdwardConfiguration{}
-	err := cfg.Initialize()
+	var err error
+	if edwardHome != "" {
+		err = cfg.InitializeWithDir(edwardHome)
+	} else {
+		err = cfg.Initialize()
+	}
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

@@ -40,14 +40,7 @@ Build, start and manage service instances with a single command.`,
 	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 
-		var dirConfig *home.EdwardConfiguration
-		var err error
-		dirConfig = &home.EdwardConfiguration{}
-		if edwardHome != "" {
-			err = dirConfig.InitializeWithDir(edwardHome)
-		} else {
-			err = dirConfig.Initialize()
-		}
+		var dirConfig, err = home.NewConfiguration(edwardHome)
 		if err != nil {
 			return errors.WithStack(err)
 		}
