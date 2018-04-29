@@ -1,7 +1,10 @@
 package acceptance
 
 import (
+	"net/http"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestStartSuccess(t *testing.T) {
@@ -135,4 +138,32 @@ func TestStartMultipleBackends(t *testing.T) {
 	executeCommand(t, workingDir, edwardExecutable, "start", "service")
 	// Expect that the working backend succeeds when explicitly specified
 	executeCommand(t, workingDir, edwardExecutable, "start", "-b", "service:working", "service")
+}
+
+func TestDied(t *testing.T) {
+	workingDir, cleanup, err := createWorkingDir("testStart", "testdata/single")
+	defer cleanup()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	executeCommand(t, workingDir, edwardExecutable, "start", "service")
+
+	status := executeCommandGetOutput(t, workingDir, edwardExecutable, "status", "service")
+	if !strings.Contains(status, "RUNNING") {
+		t.Errorf("service was not running after start")
+	}
+	_, err = http.Get("http://127.0.0.1:51234/")
+	if err != nil {
+		t.Error(err)
+	}
+	// Test died state
+	for strings.Contains(status, "RUNNING") {
+		time.Sleep(time.Millisecond * 50)
+		status = executeCommandGetOutput(t, workingDir, edwardExecutable, "status", "service")
+		if strings.Contains(status, "DIED") {
+			break
+		}
+	}
+	executeCommand(t, workingDir, edwardExecutable, "stop", "service")
 }
