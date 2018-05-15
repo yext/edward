@@ -1,9 +1,5 @@
 package services
 
-import (
-	"github.com/yext/edward/common"
-)
-
 var _ ServiceOrGroup = &ServiceGroupConfig{}
 
 // ServiceGroupConfig is a group of services that can be managed together
@@ -24,8 +20,6 @@ type ServiceGroupConfig struct {
 
 	// Environment variables to be passed to all child services
 	Env []string
-
-	Logger common.Logger
 }
 
 // Matches returns true if the group name or an alias matches the provided name.
@@ -39,13 +33,6 @@ func (c *ServiceGroupConfig) Matches(name string) bool {
 		}
 	}
 	return false
-}
-
-func (c *ServiceGroupConfig) printf(format string, v ...interface{}) {
-	if c.Logger == nil {
-		return
-	}
-	c.Logger.Printf(format, v...)
 }
 
 // GetName returns the name for this group

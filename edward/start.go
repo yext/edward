@@ -1,11 +1,13 @@
 package edward
 
 import (
+	"log"
+
 	"github.com/pkg/errors"
 )
 
 func (c *Client) Start(names []string, skipBuild bool, noWatch bool, exclude []string) error {
-	c.Logger.Println("Start:", names, skipBuild, noWatch, exclude)
+	log.Println("Start:", names, skipBuild, noWatch, exclude)
 	if len(names) == 0 {
 		return errors.New("At least one service or group must be specified")
 	}

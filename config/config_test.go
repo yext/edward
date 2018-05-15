@@ -41,7 +41,6 @@ var service1 = services.ServiceConfig{
 			},
 		},
 	},
-	Logger: common.NullLogger{},
 }
 
 var service1alias = services.ServiceConfig{
@@ -64,7 +63,6 @@ var service1alias = services.ServiceConfig{
 			},
 		},
 	},
-	Logger: common.NullLogger{},
 }
 
 var group1 = services.ServiceGroupConfig{
@@ -73,7 +71,6 @@ var group1 = services.ServiceGroupConfig{
 	Services:    []*services.ServiceConfig{&service1},
 	Groups:      []*services.ServiceGroupConfig{},
 	ChildOrder:  []string{"service1"},
-	Logger:      common.NullLogger{},
 }
 
 var group1alias = services.ServiceGroupConfig{
@@ -82,7 +79,6 @@ var group1alias = services.ServiceGroupConfig{
 	Services:   []*services.ServiceConfig{&service1alias},
 	Groups:     []*services.ServiceGroupConfig{},
 	ChildOrder: []string{"service1"},
-	Logger:     common.NullLogger{},
 }
 
 var service2 = services.ServiceConfig{
@@ -100,14 +96,12 @@ var service2 = services.ServiceConfig{
 			},
 		},
 	},
-	Logger: common.NullLogger{},
 }
 
 var group2 = services.ServiceGroupConfig{
 	Name:       "group2",
 	Services:   []*services.ServiceConfig{&service2},
 	Groups:     []*services.ServiceGroupConfig{},
-	Logger:     common.NullLogger{},
 	ChildOrder: []string{"service2"},
 }
 
@@ -130,14 +124,12 @@ var service3 = services.ServiceConfig{
 			},
 		},
 	},
-	Logger: common.NullLogger{},
 }
 
 var group3 = services.ServiceGroupConfig{
 	Name:       "group3",
 	Services:   []*services.ServiceConfig{&service3},
 	Groups:     []*services.ServiceGroupConfig{},
-	Logger:     common.NullLogger{},
 	ChildOrder: []string{"service3"},
 }
 
@@ -222,7 +214,7 @@ func TestLoadConfigWithImports(t *testing.T) {
 		return
 	}
 	for _, test := range fileBasedTests {
-		cfg, err := LoadConfig(test.inFile, "", nil)
+		cfg, err := LoadConfig(test.inFile, "")
 		validateTestResults(cfg, err, test.inFile, test.outServiceMap, test.outGroupMap, test.outErr, test.name, t)
 	}
 }

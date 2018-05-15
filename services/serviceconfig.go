@@ -11,7 +11,6 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/yext/edward/common"
 	"github.com/yext/edward/warmup"
 )
 
@@ -46,9 +45,6 @@ type ServiceConfig struct {
 	// Path to config file from which this service was loaded
 	// This may be the file that imported the config containing the service definition.
 	ConfigFile string `json:"-"`
-
-	// Logger for actions on this service
-	Logger common.Logger `json:"-"`
 
 	Backends []*BackendConfig `json:"backends"`
 }

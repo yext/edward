@@ -1,6 +1,8 @@
 package runner
 
 import (
+	"io"
+	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -19,14 +21,11 @@ type Runner struct {
 	backendRunner services.Runner
 	DirConfig     *home.EdwardConfiguration
 
-	logFile    *os.File
-	messageLog *Log
+	logFile *os.File
 
 	commandWait sync.WaitGroup
 	NoWatch     bool
 	WorkingDir  string
-
-	Logger Logger
 
 	status instance.Status
 
@@ -44,14 +43,12 @@ func NewRunner(
 	dirConfig *home.EdwardConfiguration,
 	noWatch bool,
 	workingDir string,
-	logger Logger,
 ) (*Runner, error) {
 	r := &Runner{
 		Service:    service,
 		DirConfig:  dirConfig,
 		NoWatch:    noWatch,
 		WorkingDir: workingDir,
-		Logger:     logger,
 	}
 	var err error
 	r.backendRunner, err = services.GetRunner(cfg, service)
@@ -61,22 +58,13 @@ func NewRunner(
 	return r, nil
 }
 
-func (r *Runner) Messagef(format string, a ...interface{}) {
-	if r.messageLog != nil {
-		r.messageLog.Printf(format, a...)
-	}
-	if r.Logger != nil {
-		r.Logger.Printf(format, a...)
-	}
-}
-
 func (r *Runner) Run(args []string) error {
 	r.updateServiceState(instance.StateStarting)
 
 	// Allow shutdown through signals
 	r.configureSignals()
 
-	r.Messagef("Signals configured")
+	log.Printf("Signals configured")
 
 	r.shutdownChan = make(chan struct{})
 
@@ -92,12 +80,12 @@ func (r *Runner) Run(args []string) error {
 		}
 	}
 
-	r.Logger.Printf("Service config: %s", pretty.Sprint(r.Service))
+	log.Printf("Service config: %s", pretty.Sprint(r.Service))
 
 	// Set the instance id
 	command, err := instance.Load(r.DirConfig, r.Service, services.ContextOverride{})
 	if err != nil {
-		r.Messagef("Could not get service command: %v\n", err)
+		log.Printf("Could not get service command: %v\n", err)
 	}
 	r.instanceId = command.InstanceId
 
@@ -141,7 +129,7 @@ func (r *Runner) Run(args []string) error {
 	select {
 	case <-r.shutdownChan:
 		r.updateServiceState(instance.StateStopped)
-		r.Messagef("Service stopped\n")
+		log.Printf("Service stopped\n")
 		return nil
 	default:
 		r.updateServiceState(instance.StateDied)
@@ -156,7 +144,7 @@ func (r *Runner) updateServiceState(newState instance.State) {
 	r.status.State = newState
 	err := instance.SaveStatusForService(r.Service, r.instanceId, r.status, r.DirConfig.StateDir)
 	if err != nil {
-		r.Messagef("could not save state: %v", err)
+		log.Printf("could not save state: %v", err)
 	}
 }
 
@@ -166,7 +154,7 @@ func (r *Runner) updateStatusDetail() {
 
 	backendStatus, err := r.backendRunner.Status()
 	if err != nil {
-		r.Messagef("could not save state: %v", err)
+		log.Printf("could not save state: %v", err)
 		return
 	}
 	r.status.Ports = backendStatus.Ports
@@ -175,7 +163,7 @@ func (r *Runner) updateStatusDetail() {
 	dir := r.DirConfig.StateDir
 	err = instance.SaveStatusForService(r.Service, r.instanceId, r.status, dir)
 	if err != nil {
-		r.Messagef("could not save state: %v", err)
+		log.Printf("could not save state: %v", err)
 	}
 }
 
@@ -189,11 +177,16 @@ func (r *Runner) configureLogs() error {
 		return errors.WithStack(err)
 	}
 
-	r.messageLog = &Log{
-		file:   r.logFile,
-		name:   r.Service.Name,
-		stream: "messages",
-	}
+	// Tee the logs to stdout and the service log file
+	log.SetOutput(io.MultiWriter(
+		os.Stdout,
+		&Log{
+			file:   r.logFile,
+			name:   r.Service.Name,
+			stream: "messages",
+		},
+	))
+	log.SetPrefix("Edward> ")
 	return nil
 }
 
@@ -202,10 +195,10 @@ func (r *Runner) configureSignals() {
 	signal.Notify(signalChan, os.Interrupt)
 	go func() {
 		for range signalChan {
-			r.Messagef("Received interrupt\n")
+			log.Printf("Received interrupt\n")
 			err := r.stopService()
 			if err != nil {
-				r.Messagef("Could not stop service: %v", err)
+				log.Printf("Could not stop service: %v", err)
 			}
 			close(r.shutdownChan)
 		}
@@ -214,13 +207,13 @@ func (r *Runner) configureSignals() {
 
 func (r *Runner) configureWatch() func() {
 	if !r.NoWatch {
-		closeWatchers, err := BeginWatch(r.DirConfig, r.Service, r.restartService, r.messageLog)
+		closeWatchers, err := BeginWatch(r.DirConfig, r.Service, r.restartService)
 		if err != nil {
-			r.Messagef("Could not enable auto-restart: %v\n", err)
+			log.Printf("Could not enable auto-restart: %v\n", err)
 			return nil
 		}
 		if closeWatchers != nil {
-			r.Messagef("Auto-restart enabled. This service will restart when files in its watch directories are edited.\nThis can be disabled using the --no-watch flag.\n")
+			log.Printf("Auto-restart enabled. This service will restart when files in its watch directories are edited.\nThis can be disabled using the --no-watch flag.\n")
 		}
 		return closeWatchers
 	}
@@ -228,7 +221,7 @@ func (r *Runner) configureWatch() func() {
 }
 
 func (r *Runner) restartService() error {
-	r.Messagef("Restarting service\n")
+	log.Printf("Restarting service\n")
 
 	// Increment the counter to prevent exiting unexpectedly
 	r.commandWait.Add(1)
@@ -256,14 +249,14 @@ func (r *Runner) stopService() error {
 	// TODO: Get the right env function from the client
 	scriptOutput, scriptErr = r.backendRunner.Stop(wd, nil)
 	if scriptErr != nil {
-		r.Messagef("Stop failed:\n%v\n", string(scriptOutput))
+		log.Printf("Stop failed:\n%v\n", string(scriptOutput))
 		return errors.WithStack(err)
 	}
 	return nil
 }
 
 func (r *Runner) startService() error {
-	r.Messagef("Service starting\n")
+	log.Printf("Service starting\n")
 
 	r.standardLog = &Log{
 		file:   r.logFile,

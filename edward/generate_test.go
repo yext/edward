@@ -186,7 +186,7 @@ Do you wish to continue? [y/n]? Wrote to: ${TMP_PATH}/edward.json
 			expectedOutput := strings.Replace(test.expectedOutput, "${TMP_PATH}", wd, 1)
 			must.BeEqual(t, expectedOutput, output)
 
-			cfg, err := config.LoadConfig(filepath.Join(client.WorkingDir, test.config), common.EdwardVersion, client.Logger)
+			cfg, err := config.LoadConfig(filepath.Join(client.WorkingDir, test.config), common.EdwardVersion)
 			if err != nil {
 				t.Error(err)
 				return

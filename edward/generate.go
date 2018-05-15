@@ -23,12 +23,12 @@ func (c *Client) Generate(names []string, force bool, group string, targets []st
 	configPath = filepath.Join(c.WorkingDir, configPath)
 
 	if f, err := os.Stat(configPath); err == nil && f.Size() != 0 {
-		cfg, err = config.LoadConfig(configPath, common.EdwardVersion, c.Logger)
+		cfg, err = config.LoadConfig(configPath, common.EdwardVersion)
 		if err != nil {
 			return errors.WithMessage(err, configPath)
 		}
 	} else {
-		cfg = config.EmptyConfig(filepath.Dir(configPath), c.Logger)
+		cfg = config.EmptyConfig(filepath.Dir(configPath))
 	}
 
 	targetedGenerators, err := generatorsMatchingTargets(targets)

@@ -31,7 +31,6 @@ var runCmd = &cobra.Command{
 			edwardClient.DirConfig,
 			*runFlags.noWatch,
 			*runFlags.directory,
-			edwardClient.Logger,
 		)
 		if err != nil {
 			return errors.WithStack(err)

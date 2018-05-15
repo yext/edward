@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,7 +14,6 @@ import (
 
 	version "github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
-	"github.com/yext/edward/common"
 	"github.com/yext/edward/services"
 )
 
@@ -31,8 +31,7 @@ type Config struct {
 	ServiceMap map[string]*services.ServiceConfig      `json:"-"`
 	GroupMap   map[string]*services.ServiceGroupConfig `json:"-"`
 
-	Logger   common.Logger `json:"-"`
-	FilePath string        `json:"-"`
+	FilePath string `json:"-"`
 }
 
 // GroupDef defines a group based on a list of children specified by name
@@ -45,16 +44,13 @@ type GroupDef struct {
 }
 
 // LoadConfig loads configuration from an io.Reader with the working directory explicitly specified
-func LoadConfig(filePath string, edwardVersion string, logger common.Logger) (Config, error) {
-	if logger != nil {
-		logger.Printf("Loading config from: %s\n", filePath)
-	}
+func LoadConfig(filePath string, edwardVersion string) (Config, error) {
 	reader, err := os.Open(filePath)
 	if err != nil {
 		return Config{}, errors.WithStack(err)
 	}
 	workingDir := path.Dir(filePath)
-	config, err := loadConfigContents(reader, workingDir, logger)
+	config, err := loadConfigContents(reader, workingDir)
 	config.FilePath = filePath
 	if err != nil {
 		return Config{}, errors.WithStack(err)
@@ -75,13 +71,12 @@ func LoadConfig(filePath string, edwardVersion string, logger common.Logger) (Co
 	}
 	err = config.initMaps()
 
-	config.printf("Config loaded with: %d groups and %d services\n", len(config.GroupMap), len(config.ServiceMap))
+	log.Printf("Config loaded with: %d groups and %d services\n", len(config.GroupMap), len(config.ServiceMap))
 	return config, errors.WithStack(err)
 }
 
 // Reader from os.Open
-func loadConfigContents(reader io.Reader, workingDir string, logger common.Logger) (Config, error) {
-	log := common.MaskLogger(logger)
+func loadConfigContents(reader io.Reader, workingDir string) (Config, error) {
 	log.Printf("Loading config with working dir %v.\n", workingDir)
 
 	buf := new(bytes.Buffer)
@@ -109,14 +104,12 @@ func loadConfigContents(reader io.Reader, workingDir string, logger common.Logge
 		return Config{}, errors.WithStack(err)
 	}
 
-	config.Logger = log
-
 	return config, nil
 }
 
 // Save saves config to an io.Writer
 func (c Config) Save(writer io.Writer) error {
-	c.printf("Saving config")
+	log.Printf("Saving config")
 	content, err := json.MarshalIndent(c, "", "    ")
 	if err != nil {
 		return errors.WithStack(err)
@@ -126,9 +119,7 @@ func (c Config) Save(writer io.Writer) error {
 }
 
 // NewConfig creates a Config from slices of services and groups
-func NewConfig(newServices []services.ServiceConfig, newGroups []services.ServiceGroupConfig, logger common.Logger) Config {
-
-	log := common.MaskLogger(logger)
+func NewConfig(newServices []services.ServiceConfig, newGroups []services.ServiceGroupConfig) Config {
 	log.Printf("Creating new config with %d services and %d groups.\n", len(newServices), len(newGroups))
 
 	// Find Env settings common to all services
@@ -149,7 +140,6 @@ func NewConfig(newServices []services.ServiceConfig, newGroups []services.Servic
 		Env:      env,
 		Services: svcs,
 		Groups:   []GroupDef{},
-		Logger:   log,
 	}
 
 	cfg.AddGroups(newGroups)
@@ -160,14 +150,11 @@ func NewConfig(newServices []services.ServiceConfig, newGroups []services.Servic
 }
 
 // EmptyConfig creates a Config with no services or groups
-func EmptyConfig(workingDir string, logger common.Logger) Config {
-
-	log := common.MaskLogger(logger)
+func EmptyConfig(workingDir string) Config {
 	log.Printf("Creating empty config\n")
 
 	cfg := Config{
 		workingDir: workingDir,
-		Logger:     log,
 	}
 
 	cfg.ServiceMap = make(map[string]*services.ServiceConfig)
@@ -179,7 +166,7 @@ func EmptyConfig(workingDir string, logger common.Logger) Config {
 // NormalizeServicePaths will modify the Paths for each of the provided services
 // to be relative to the working directory of this config file
 func (c *Config) NormalizeServicePaths(searchPath string, newServices []*services.ServiceConfig) ([]*services.ServiceConfig, error) {
-	c.printf("Normalizing paths for %d services.\n", len(newServices))
+	log.Printf("Normalizing paths for %d services.\n", len(newServices))
 	var outServices []*services.ServiceConfig
 	for _, s := range newServices {
 		curService := *s
@@ -196,7 +183,7 @@ func (c *Config) NormalizeServicePaths(searchPath string, newServices []*service
 
 // AppendServices adds services to an existing config without replacing existing services
 func (c *Config) AppendServices(newServices []*services.ServiceConfig) error {
-	c.printf("Appending %d services.\n", len(newServices))
+	log.Printf("Appending %d services.\n", len(newServices))
 	if c.ServiceMap == nil {
 		c.ServiceMap = make(map[string]*services.ServiceConfig)
 	}
@@ -236,7 +223,7 @@ func (c *Config) RemoveGroup(name string) error {
 
 // AddGroups adds a slice of groups to the Config
 func (c *Config) AddGroups(groups []services.ServiceGroupConfig) error {
-	c.printf("Adding %d groups.\n", len(groups))
+	log.Printf("Adding %d groups.\n", len(groups))
 	for _, group := range groups {
 		grp := GroupDef{
 			Name:        group.Name,
@@ -261,7 +248,7 @@ func (c *Config) AddGroups(groups []services.ServiceGroupConfig) error {
 }
 
 func (c *Config) loadImports() error {
-	c.printf("Loading imports\n")
+	log.Printf("Loading imports\n")
 	for _, i := range c.Imports {
 		var cPath string
 		if filepath.IsAbs(i) {
@@ -270,13 +257,13 @@ func (c *Config) loadImports() error {
 			cPath = filepath.Join(c.workingDir, i)
 		}
 
-		c.printf("Loading: %v\n", cPath)
+		log.Printf("Loading: %v\n", cPath)
 
 		r, err := os.Open(cPath)
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		cfg, err := loadConfigContents(r, filepath.Dir(cPath), c.Logger)
+		cfg, err := loadConfigContents(r, filepath.Dir(cPath))
 		if err != nil {
 			return errors.WithMessage(err, i)
 		}
@@ -333,7 +320,6 @@ func (c *Config) initMaps() error {
 
 	for _, s := range append(c.Services, c.ImportedServices...) {
 		sc := s
-		sc.Logger = c.Logger
 		sc.Env = append(sc.Env, c.Env...)
 		sc.ConfigFile, err = filepath.Abs(c.FilePath)
 		if err != nil {
@@ -378,7 +364,6 @@ func (c *Config) initMaps() error {
 			Services:    childServices,
 			Groups:      []*services.ServiceGroupConfig{},
 			Env:         g.Env,
-			Logger:      c.Logger,
 			ChildOrder:  g.Children,
 		}
 		addToMap(namesInUse, append(g.Aliases, g.Name)...)
@@ -423,13 +408,6 @@ func hasChildCycle(parent *services.ServiceGroupConfig, children []*services.Ser
 		}
 	}
 	return false
-}
-
-func (c *Config) printf(format string, v ...interface{}) {
-	if c.Logger == nil {
-		return
-	}
-	c.Logger.Printf(format, v...)
 }
 
 func stringSliceIntersect(slices [][]string) []string {

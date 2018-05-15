@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -39,8 +40,6 @@ type Instance struct {
 	// Identifier for this instance of the service
 	InstanceId string
 
-	Logger common.Logger `json:"-"`
-
 	dirConfig *home.EdwardConfiguration
 }
 
@@ -53,7 +52,6 @@ func Load(dirConfig *home.EdwardConfiguration, service *services.ServiceConfig, 
 	}
 	defer func() {
 		command.Service = service
-		command.Logger = service.Logger
 		command.EdwardVersion = common.EdwardVersion
 		command.Overrides = command.Overrides.Merge(overrides)
 		command.dirConfig = dirConfig
@@ -114,7 +112,7 @@ func (c *Instance) checkPid() error {
 		return errors.WithStack(err)
 	}
 	if !exists {
-		c.printf("Process for %v was not found.\n", c.Service.Name)
+		log.Printf("Process for %v was not found.\n", c.Service.Name)
 		c.Pid = 0
 		return nil
 	}
@@ -128,7 +126,7 @@ func (c *Instance) checkPid() error {
 		return errors.WithStack(err)
 	}
 	if !strings.Contains(cmdline, c.Service.Name) {
-		c.printf("Process for %v was not as expected (found %v).\n", c.Service.Name, cmdline)
+		log.Printf("Process for %v was not as expected (found %v).\n", c.Service.Name, cmdline)
 		c.Pid = 0
 	}
 	return nil
@@ -142,13 +140,6 @@ func (c *Instance) save() error {
 		return errors.WithStack(err)
 	}
 	return nil
-}
-
-func (c *Instance) printf(format string, v ...interface{}) {
-	if c.Logger == nil {
-		return
-	}
-	c.Logger.Printf(format, v...)
 }
 
 func (c *Instance) createScript(content string, scriptType string) (*os.File, error) {
@@ -200,7 +191,7 @@ func (c *Instance) getLaunchCommand(cfg services.OperationConfig) (*exec.Cmd, er
 
 	cmdArgs = append(cmdArgs, "--edward_home", c.dirConfig.Dir)
 
-	c.printf("Launching runner with args: %v", cmdArgs)
+	log.Printf("Launching runner with args: %v", cmdArgs)
 	cmd := exec.Command(command, cmdArgs...)
 	cmd.Dir = commandline.BuildAbsPath(cfg.WorkingDir, c.Service.Path)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -293,8 +284,6 @@ func logToStringSlice(path string) ([]string, error) {
 
 // StopSync stops this service in a synchronous manner
 func (c *Instance) StopSync(cfg services.OperationConfig, overrides services.ContextOverride, task tracker.Task) error {
-	logger := c.Service.Logger
-
 	if cfg.IsExcluded(c.Service) {
 		return nil
 	}
@@ -313,16 +302,16 @@ func (c *Instance) StopSync(cfg services.OperationConfig, overrides services.Con
 		return nil
 	}
 
-	logger.Printf("Interrupting process for %v\n", c.Service.Name)
+	log.Printf("Interrupting process for %v\n", c.Service.Name)
 	stopped, err := c.interruptProcess(cfg)
 	if err != nil {
 		job.SetState(tracker.TaskStateFailed, err.Error())
 		return nil
 	}
-	logger.Printf("Interrupt succeeded, was process stopped? %v\n", stopped)
+	log.Printf("Interrupt succeeded, was process stopped? %v\n", stopped)
 
 	if !stopped {
-		logger.Printf("SIGINT failed to stop service, waiting for 5s before sending SIGKILL\n")
+		log.Printf("SIGINT failed to stop service, waiting for 5s before sending SIGKILL\n")
 		stopped, err := c.waitForTerm(time.Second * 5)
 		if err != nil {
 			job.SetState(tracker.TaskStateFailed, "Waiting for termination failed", err.Error())
@@ -343,7 +332,7 @@ func (c *Instance) StopSync(cfg services.OperationConfig, overrides services.Con
 		}
 	}
 
-	logger.Printf("Cleaning up state after shutdown")
+	log.Printf("Cleaning up state after shutdown")
 	job.SetState(tracker.TaskStateSuccess)
 	return nil
 }

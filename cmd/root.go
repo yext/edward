@@ -27,8 +27,6 @@ var cfgFile string
 
 var edwardClient *edward.Client
 
-var logger *log.Logger
-
 var checkUpdateChan chan interface{}
 
 // RootCmd represents the base command when called without any subcommands
@@ -45,35 +43,44 @@ Build, start and manage service instances with a single command.`,
 			return errors.WithStack(err)
 		}
 
-		if redirectLogs {
-			logger = log.New(os.Stdout, fmt.Sprintf("%v >", os.Args), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
-		}
-
 		prefix := "edward"
 		if len(args) > 0 {
 			prefix = fmt.Sprintf("%s %s", cmd.Use, args[0])
 		}
-		logger = log.New(&lumberjack.Logger{
+
+		if redirectLogs {
+			log.SetOutput(os.Stdout)
+			log.SetPrefix(fmt.Sprintf("%v >", prefix))
+			log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
+		} else {
+			log.SetOutput(&lumberjack.Logger{
+				Filename:   path.Join(dirConfig.EdwardLogDir, "edward.log"),
+				MaxSize:    50, // megabytes
+				MaxBackups: 30,
+				MaxAge:     1, //days
+			})
+			log.SetPrefix(fmt.Sprintf("%s > ", prefix))
+			log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
+		}
+
+		log.SetOutput(&lumberjack.Logger{
 			Filename:   path.Join(dirConfig.EdwardLogDir, "edward.log"),
 			MaxSize:    50, // megabytes
 			MaxBackups: 30,
 			MaxAge:     1, //days
-		}, fmt.Sprintf("%s > ", prefix), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+		})
+		log.SetPrefix(fmt.Sprintf("%s > ", prefix))
+		log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
 
 		// Begin logging
-		logger.Printf("=== Edward v%v ===\n", common.EdwardVersion)
-		logger.Printf("Args: %v\n", os.Args)
+		log.Printf("=== Edward v%v ===\n", common.EdwardVersion)
+		log.Printf("Args: %v\n", os.Args)
 		// Recover from any panic and log appropriately
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Println("Recovered from panic:", r)
-				if logger != nil {
-					logger.Printf("Recovered from panic: %v", r)
-				}
+				log.Println("Recovered from panic:", r)
 			}
-			if logger != nil {
-				logger.Printf("=== Exiting ===\n")
-			}
+			log.Printf("=== Exiting ===\n")
 		}()
 
 		// Set the default config path
@@ -93,7 +100,7 @@ Build, start and manage service instances with a single command.`,
 		command := cmd.Use
 
 		if command != "generate" {
-			edwardClient, err = edward.NewClientWithConfig(configPath, common.EdwardVersion, logger)
+			edwardClient, err = edward.NewClientWithConfig(configPath, common.EdwardVersion)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -118,7 +125,6 @@ Build, start and manage service instances with a single command.`,
 		edwardClient.ServiceChecks = func(sgs []services.ServiceOrGroup) error {
 			return errors.WithStack(sudoIfNeeded(sgs))
 		}
-		edwardClient.Logger = logger
 		// Populate the Edward executable with this binary
 		edwardClient.EdwardExecutable = os.Args[0]
 
@@ -186,22 +192,24 @@ func Execute() {
 		logPrefix = fmt.Sprintf("edward %v >", os.Args[1:])
 	}
 
-	logger = log.New(&lumberjack.Logger{
+	log.SetOutput(&lumberjack.Logger{
 		Filename:   filepath.Join(defaultHome.EdwardLogDir, "edward.log"),
 		MaxSize:    50, // megabytes
 		MaxBackups: 30,
 		MaxAge:     1, //days
-	}, logPrefix, log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+	})
+	log.SetPrefix(logPrefix)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
 
 	for _, arg := range os.Args {
 		if arg == "--generate-bash-completion" {
-			autocompleteServicesAndGroups(defaultHome.Dir, logger)
+			autocompleteServicesAndGroups(defaultHome.Dir)
 			return
 		}
 	}
 
 	if err := RootCmd.Execute(); err != nil {
-		logger.Printf("Error: %v\n", err)
+		log.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -262,9 +270,9 @@ func initConfig() {
 
 func checkUpdateAvailable(homeDir string, checkUpdateChan chan interface{}) {
 	defer close(checkUpdateChan)
-	updateAvailable, latestVersion, err := updates.UpdateAvailable("yext", "edward", common.EdwardVersion, filepath.Join(homeDir, ".cache/version"), logger)
+	updateAvailable, latestVersion, err := updates.UpdateAvailable("yext", "edward", common.EdwardVersion, filepath.Join(homeDir, ".cache/version"))
 	if err != nil {
-		logger.Println("Error checking for updates:", err)
+		log.Println("Error checking for updates:", err)
 		return
 	}
 

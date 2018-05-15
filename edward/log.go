@@ -1,6 +1,7 @@
 package edward
 
 import (
+	"log"
 	"sort"
 	"time"
 
@@ -52,7 +53,7 @@ func (c *Client) Log(names []string, cancelChannel <-chan struct{}) error {
 			case _ = <-statusTicker.C:
 				running, err := checkAllRunning(c.DirConfig, sgs)
 				if err != nil {
-					c.Logger.Printf("Error checking service state for tailing: %v", err)
+					log.Printf("Error checking service state for tailing: %v", err)
 					continue
 				}
 				// All services stopped, notify the log process

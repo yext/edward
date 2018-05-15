@@ -9,21 +9,21 @@ import (
 	"github.com/yext/edward/config"
 )
 
-func autocompleteServicesAndGroups(homeDir string, logger *log.Logger) {
+func autocompleteServicesAndGroups(homeDir string) {
 	printCommandChildren(RootCmd)
 
 	configPath, err := config.GetConfigPathFromWorkingDirectory(homeDir)
 	if err != nil {
-		logger.Println("Autocomplete> Error getting config path:", err)
+		log.Println("Autocomplete> Error getting config path:", err)
 		return
 	}
 	if configPath == "" {
-		logger.Println("Autocomplete> Config file not found")
+		log.Println("Autocomplete> Config file not found")
 		return
 	}
-	cfg, err := config.LoadConfig(configPath, common.EdwardVersion, logger)
+	cfg, err := config.LoadConfig(configPath, common.EdwardVersion)
 	if err != nil {
-		logger.Println("Autocomplete> Error loading config:", err)
+		log.Println("Autocomplete> Error loading config:", err)
 		return
 	}
 

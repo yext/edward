@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -20,8 +19,6 @@ import (
 )
 
 type Client struct {
-	Logger *log.Logger
-
 	Input  io.Reader
 	Output io.Writer
 
@@ -72,7 +69,6 @@ func NewClient() (*Client, error) {
 		Input:      os.Stdin,
 		Output:     os.Stdout,
 		Follower:   output.NewFollower(),
-		Logger:     log.New(ioutil.Discard, "", 0), // Default to a logger that discards output
 		WorkingDir: wd,
 		groupMap:   make(map[string]*services.ServiceGroupConfig),
 		serviceMap: make(map[string]*services.ServiceConfig),
@@ -81,7 +77,7 @@ func NewClient() (*Client, error) {
 }
 
 // NewClientWithConfig creates an Edward client and loads the config from the given path
-func NewClientWithConfig(configPath, version string, logger *log.Logger) (*Client, error) {
+func NewClientWithConfig(configPath, version string) (*Client, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -96,7 +92,6 @@ func NewClientWithConfig(configPath, version string, logger *log.Logger) (*Clien
 		Input:      os.Stdin,
 		Output:     os.Stdout,
 		Follower:   output.NewFollower(),
-		Logger:     logger,
 		WorkingDir: wd,
 		Config:     configPath,
 		groupMap:   make(map[string]*services.ServiceGroupConfig),
@@ -139,7 +134,7 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, no
 	var err error
 	err = services.DoForServices(sgs, task, func(s *services.ServiceConfig, overrides services.ContextOverride, task tracker.Task) error {
 		if skipBuild {
-			c.Logger.Println("skipping build phase")
+			log.Println("skipping build phase")
 			err = instance.Launch(c.DirConfig, s, cfg, overrides, task, p)
 			if err != nil {
 				return errors.WithMessage(err, "Error launching "+s.GetName())
@@ -148,13 +143,13 @@ func (c *Client) startAndTrack(sgs []services.ServiceOrGroup, skipBuild bool, no
 			if cfg.IsExcluded(s) {
 				return nil
 			}
-			c.Logger.Printf("Building: %s", s.Name)
+			log.Printf("Building: %s", s.Name)
 			b := builder.New(cfg, overrides)
 			err := b.Build(c.DirConfig, task, s)
 			if err != nil {
 				return errors.WithMessage(err, "Error starting "+s.GetName()+": build")
 			}
-			c.Logger.Printf("Launching: %s", s.Name)
+			log.Printf("Launching: %s", s.Name)
 			err = instance.Launch(c.DirConfig, s, cfg, overrides, task, p)
 			return errors.WithMessage(err, "Error starting "+s.GetName()+": launch")
 		}

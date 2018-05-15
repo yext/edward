@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -171,10 +170,4 @@ func showLogsIfFailed(t *testing.T, name string, wd string, client *edward.Clien
 	if err != nil {
 		t.Fatal(err)
 	}
-	logFile := filepath.Join(dirConfig.EdwardLogDir, "edward.log")
-	b, err := ioutil.ReadFile(logFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("=== Log (%s) <%s> ===\n%s=== /Log ===\n", name, logFile, string(b))
 }

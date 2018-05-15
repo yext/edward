@@ -7,14 +7,12 @@ import (
 	"log"
 	"os"
 	"path"
-	"path/filepath"
 	"time"
 
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
 
 	"github.com/yext/edward/edward"
-	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 func createClient(configFile, testName, testPath string) (*edward.Client, string, func(), error) {
@@ -33,12 +31,6 @@ func createClient(configFile, testName, testPath string) (*edward.Client, string
 	client, err := edward.NewClientWithConfig(
 		path.Join(wd, configFile),
 		common.EdwardVersion,
-		log.New(&lumberjack.Logger{
-			Filename:   filepath.Join(dirConfig.EdwardLogDir, "edward.log"),
-			MaxSize:    50, // megabytes
-			MaxBackups: 30,
-			MaxAge:     1, //days
-		}, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile),
 	)
 	if err != nil {
 		return nil, "", func() {}, err

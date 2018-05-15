@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/user"
 	"strings"
@@ -34,13 +35,13 @@ func ensureSudoAble() error {
 	buffer.WriteString(strings.Join(os.Args, " "))
 	buffer.WriteString("\n")
 
-	logger.Printf("Writing sudoAbility script\n")
+	log.Printf("Writing sudoAbility script\n")
 	file, err := createScriptFile("sudoAbility", buffer.String())
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	logger.Printf("Launching sudoAbility script: %v\n", file.Name())
+	log.Printf("Launching sudoAbility script: %v\n", file.Name())
 	err = syscall.Exec(file.Name(), []string{file.Name()}, os.Environ())
 	if err != nil {
 		return errors.WithStack(err)
@@ -58,18 +59,18 @@ func prepareForSudo() error {
 	if isChild == "" {
 		return errors.WithStack(ensureSudoAble())
 	}
-	logger.Println("Child process, sudo should be available")
+	log.Println("Child process, sudo should be available")
 	return nil
 }
 
 func sudoIfNeeded(sgs []services.ServiceOrGroup) error {
 	for _, sg := range sgs {
 		if sg.IsSudo(services.OperationConfig{}) {
-			logger.Printf("sudo required for %v\n", sg.GetName())
+			log.Printf("sudo required for %v\n", sg.GetName())
 			return errors.WithStack(prepareForSudo())
 		}
 	}
-	logger.Printf("sudo not required for any services/groups\n")
+	log.Printf("sudo not required for any services/groups\n")
 	return nil
 }
 

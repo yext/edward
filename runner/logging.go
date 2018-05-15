@@ -10,11 +10,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Logger provides a simple interface for logging
-type Logger interface {
-	Printf(format string, a ...interface{})
-}
-
 // LogLine represents a line in an Edward service log
 type LogLine struct {
 	Name    string

@@ -2,6 +2,7 @@ package instance
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/pkg/errors"
@@ -73,7 +74,7 @@ func (c *Instance) StartAsync(cfg services.OperationConfig, task tracker.Task) e
 
 	c.Pid = cmd.Process.Pid
 
-	c.printf("%v has PID: %d.\n", c.Service.Name, c.Pid)
+	log.Printf("%v has PID: %d.\n", c.Service.Name, c.Pid)
 
 	err = c.save()
 	if err != nil {
@@ -87,7 +88,7 @@ func (c *Instance) StartAsync(cfg services.OperationConfig, task tracker.Task) e
 		warmup.Run(c.Service.Name, c.Service.Warmup, task)
 		return nil
 	}
-	c.printf("%v failed to start: %s", c.Service.Name, err)
+	log.Printf("%v failed to start: %s", c.Service.Name, err)
 
 	log, readingErr := logToStringSlice(c.Service.GetRunLog(c.dirConfig.LogDir))
 	if readingErr != nil {

@@ -13,7 +13,7 @@ import (
 func (c *Client) LoadConfig(edwardVersion string) error {
 	if c.Config != "" {
 		c.basePath = filepath.Dir(c.Config)
-		cfg, err := config.LoadConfig(c.Config, edwardVersion, c.Logger)
+		cfg, err := config.LoadConfig(c.Config, edwardVersion)
 		if err != nil {
 			return errors.WithMessage(err, c.Config)
 		}
