@@ -9,11 +9,14 @@ import (
 )
 
 func (c *Client) Stop(names []string, force bool, exclude []string, all bool) error {
-	sgs, err := c.getServiceList(names, all)
-
 	// Prompt user to confirm as needed
 	if len(names) == 0 && !force && !c.askForConfirmation("Are you sure you want to stop all services?") {
 		return nil
+	}
+
+	sgs, err := c.getServiceList(names, all || len(names) == 0)
+	if err != nil {
+		return errors.WithStack(err)
 	}
 
 	// Perform required checks and actions for services
