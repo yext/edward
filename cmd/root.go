@@ -203,7 +203,7 @@ func Execute() {
 
 	for _, arg := range os.Args {
 		if arg == "--generate-bash-completion" {
-			autocompleteServicesAndGroups(defaultHome.Dir)
+			autocompleteServicesAndGroups(defaultHome.Dir, os.Args[1])
 			return
 		}
 	}

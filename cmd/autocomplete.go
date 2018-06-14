@@ -9,8 +9,11 @@ import (
 	"github.com/yext/edward/config"
 )
 
-func autocompleteServicesAndGroups(homeDir string) {
-	printCommandChildren(RootCmd)
+func autocompleteServicesAndGroups(homeDir string, arg string) {
+	if arg == "--generate-bash-completion" {
+		printCommandChildren(RootCmd)
+		return
+	}
 
 	configPath, err := config.GetConfigPathFromWorkingDirectory(homeDir)
 	if err != nil {
