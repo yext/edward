@@ -48,39 +48,40 @@ func (c *Client) Status(names []string, all bool) (string, error) {
 
 	services := services.Services(sgs)
 	for _, s := range services {
-		statuses, err := c.getStates(s)
+		status, err := c.getState(s)
 		if err != nil {
 			return "", errors.WithStack(err)
 		}
-		for _, status := range statuses {
-			if status.status.MemoryInfo == nil {
-				status.status.MemoryInfo = &process.MemoryInfoStat{}
-			}
-			row := []string{
-				strconv.Itoa(status.command.Pid),
-				status.command.Service.Name,
-				string(status.status.State),
-				strings.Join(status.status.Ports, ","),
-				strconv.Itoa(status.status.StdoutLines) + " lines",
-				strconv.Itoa(status.status.StderrLines) + " lines",
-				humanize.Bytes(status.status.MemoryInfo.RSS),
-				humanize.Bytes(status.status.MemoryInfo.VMS),
-				humanize.Bytes(status.status.MemoryInfo.Swap),
-				status.status.StartTime.Format("2006-01-02 15:04:05"),
-			}
-			if all {
-				configPath := status.command.Service.ConfigFile
-				wd, err := os.Getwd()
-				if err == nil {
-					relativePath, err := filepath.Rel(wd, configPath)
-					if err == nil && len(configPath) > len(relativePath) {
-						configPath = relativePath
-					}
-				}
-				row = append(row, configPath)
-			}
-			table.Append(row)
+		if status == nil {
+			continue
 		}
+		if status.status.MemoryInfo == nil {
+			status.status.MemoryInfo = &process.MemoryInfoStat{}
+		}
+		row := []string{
+			strconv.Itoa(status.command.Pid),
+			status.command.Service.Name,
+			string(status.status.State),
+			strings.Join(status.status.Ports, ","),
+			strconv.Itoa(status.status.StdoutLines) + " lines",
+			strconv.Itoa(status.status.StderrLines) + " lines",
+			humanize.Bytes(status.status.MemoryInfo.RSS),
+			humanize.Bytes(status.status.MemoryInfo.VMS),
+			humanize.Bytes(status.status.MemoryInfo.Swap),
+			status.status.StartTime.Format("2006-01-02 15:04:05"),
+		}
+		if all {
+			configPath := status.command.Service.ConfigFile
+			wd, err := os.Getwd()
+			if err == nil {
+				relativePath, err := filepath.Rel(wd, configPath)
+				if err == nil && len(configPath) > len(relativePath) {
+					configPath = relativePath
+				}
+			}
+			row = append(row, configPath)
+		}
+		table.Append(row)
 	}
 	table.Render()
 	return buf.String(), nil
@@ -91,18 +92,16 @@ type statusCommandTuple struct {
 	command *instance.Instance
 }
 
-func (c *Client) getStates(service *services.ServiceConfig) ([]statusCommandTuple, error) {
+func (c *Client) getState(service *services.ServiceConfig) (*statusCommandTuple, error) {
 	command, err := instance.Load(c.DirConfig, service, services.ContextOverride{})
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not get service command")
 	}
 	statuses, _ := instance.LoadStatusForService(service, c.DirConfig.StateDir)
 	if status, ok := statuses[command.InstanceId]; ok {
-		return []statusCommandTuple{
-			statusCommandTuple{
-				status:  status,
-				command: command,
-			},
+		return &statusCommandTuple{
+			status:  status,
+			command: command,
 		}, nil
 	}
 	return nil, nil
