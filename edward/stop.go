@@ -48,8 +48,8 @@ func (c *Client) Stop(names []string, force bool, exclude []string, all bool) er
 	}()
 
 	err = services.DoForServices(sgs, task, func(s *services.ServiceConfig, overrides services.ContextOverride, task tracker.Task) error {
-		states, err := c.getStates(s)
-		if len(states) != 0 && err == nil {
+		state, err := c.getState(s)
+		if state != nil && err == nil {
 			_ = instance.Stop(c.DirConfig, s, cfg, overrides, task, p)
 		}
 		return nil
