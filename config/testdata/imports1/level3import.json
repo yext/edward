@@ -1,0 +1,19 @@
+{
+	"services": [
+		{
+			"name": "service2",
+			"path": "service2/path",
+			"commands": {
+				"build": "buildCmd2",
+				"launch": "launchCmd2",
+				"stop": "stopCmd2"
+			}
+		}
+	],
+	"groups": [
+		{
+			"name": "group2",
+			"children": ["service2"]
+		}
+	]
+}

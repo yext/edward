@@ -1,0 +1,21 @@
+{
+    "imports": [
+        "level3import.json"
+    ],
+	"services": [
+		{
+			"name": "service1",
+			"description": "My Service 1 is magic",
+			"path": ".",
+			"requiresSudo": true,
+			"commands": {
+				"build": "buildCmd",
+				"launch": "launchCmd",
+				"stop": "stopCmd"
+			},
+			"log_properties": {
+				"started": "startedProperty"
+			}
+		}
+	]
+}

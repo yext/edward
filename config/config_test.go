@@ -156,6 +156,18 @@ var fileBasedTests = []struct {
 		outErr: nil,
 	},
 	{
+		name:   "Config with imports with imports",
+		inFile: "recursiveimport.json",
+		outServiceMap: map[string]*services.ServiceConfig{
+			"service1": &service1,
+			"service2": &service2,
+		},
+		outGroupMap: map[string]*services.ServiceGroupConfig{
+			"group2": &group2,
+		},
+		outErr: nil,
+	},
+	{
 		name:   "Config missing imports",
 		inFile: "test2.json",
 		outErr: errors.New("open imports2/import2.json: no such file or directory"),
