@@ -277,10 +277,10 @@ func (c *Config) loadImports() error {
 }
 
 func (c *Config) importConfig(second Config) error {
-	for _, service := range second.Services {
+	for _, service := range append(second.Services, second.ImportedServices...) {
 		c.ImportedServices = append(c.ImportedServices, service)
 	}
-	for _, group := range second.Groups {
+	for _, group := range append(second.Groups, second.ImportedGroups...) {
 		c.ImportedGroups = append(c.ImportedGroups, group)
 	}
 	return nil

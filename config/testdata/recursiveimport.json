@@ -1,0 +1,5 @@
+{
+	"imports": [
+		"imports1/level1import.json"
+	]
+}
