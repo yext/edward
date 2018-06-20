@@ -96,6 +96,11 @@ publishDir = "../docs"
 	url    = "license/"
 	weight = 80
 
+[[menu.main]]
+	name   = "Troubleshooting"
+	url    = "troubleshooting/"
+	weight = 80
+
 
 [blackfriday]
 	smartypants	= true

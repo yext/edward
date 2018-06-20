@@ -6,7 +6,6 @@
     <description>Recent content in About Edward on Edward Docs</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <copyright>Released under the MIT license</copyright>
     <lastBuildDate>Tue, 08 Mar 2016 21:07:13 +0100</lastBuildDate>
     
 	<atom:link href="http://engblog.yext.com/edward/index.xml" rel="self" type="application/rss+xml" />
@@ -112,6 +111,17 @@ PROG=edward source FILE  Alternatively, name the file edward and place it in you
       <guid>http://engblog.yext.com/edward/sudo/</guid>
       <description>Edward will not run if you try to launch it with sudo, but it may ask you to provide your password so that certain services can be run with elevated priviledges. The password request is triggered through a bash script that calls a command with sudo, to ensure that your bash session can make further sudo calls without prompting.
 This has only been tested in one bash environment, so your mileage may vary.</description>
+    </item>
+    
+    <item>
+      <title>Troubleshooting</title>
+      <link>http://engblog.yext.com/edward/troubleshooting/</link>
+      <pubDate>Sun, 15 Jan 2017 22:16:39 -0500</pubDate>
+      
+      <guid>http://engblog.yext.com/edward/troubleshooting/</guid>
+      <description>Services can&amp;rsquo;t be started or stopped after upgrading After upgrading Edward, if you experience problems stopping or starting services, or you appear to have &amp;ldquo;orphaned&amp;rdquo; services running in the background, this may be a result of corrupted state files.
+Steps to reset state: 1. Restart your computer 1. Ensure there are no services running under Edward 1. Delete the Edward home directory: rm ~/.edward
+This will completely reset Edward to a clean state.</description>
     </item>
     
   </channel>

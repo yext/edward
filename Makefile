@@ -22,4 +22,7 @@ checkdocs:
 docs:
 	cd docs_src && hugo
 
+servedocs:
+	cd docs_src && hugo serve
+
 .PHONY: build docs

@@ -1,7 +1,7 @@
 language: go
 
 before_script:
-  - wget https://github.com/spf13/hugo/releases/download/v0.32.3/hugo_0.32.3_Linux-64bit.tar.gz -O /tmp/hugo.tar.gz
+  - wget https://github.com/spf13/hugo/releases/download/v0.42.1/hugo_0.42.1_Linux-64bit.tar.gz -O /tmp/hugo.tar.gz
   - mkdir /tmp/hugo
   - tar -xvf /tmp/hugo.tar.gz -C /tmp/hugo
   - export PATH=$PATH:/tmp/hugo/
