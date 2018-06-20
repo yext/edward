@@ -99,8 +99,7 @@ You can override this behavior with the --config or -c flag:</description>
       
       <guid>http://engblog.yext.com/edward/autocompletion/</guid>
       <description>To enable bash autocompletion, create a file with the following:
-#! /bin/bash : ${PROG:=$(basename ${BASH_SOURCE})} _cli_bash_autocomplete() { local cur opts base COMPREPLY=() cur=&amp;quot;${COMP_WORDS[COMP_CWORD]}&amp;quot; opts=$( ${COMP_WORDS[@]:0:$COMP_CWORD} --generate-bash-completion ) COMPREPLY=( $(compgen -W &amp;quot;${opts}&amp;quot; -- ${cur}) ) return 0 } complete -F _cli_bash_autocomplete $PROG  Then source it from your bash profile
-PROG=edward source FILE  Alternatively, name the file edward and place it in your system appropriate bash_completion.d/ directory.</description>
+#! /bin/bash : ${PROG:=$(basename ${BASH_SOURCE})} _cli_bash_autocomplete() { local cur opts base COMPREPLY=() cur=&amp;quot;${COMP_WORDS[COMP_CWORD]}&amp;quot; opts=$( ${COMP_WORDS[@]:0:$COMP_CWORD} --generate-bash-completion ) local w matches=() local nocasematchWasOff=0 shopt nocasematch &amp;gt;/dev/null || nocasematchWasOff=1 (( nocasematchWasOff )) &amp;amp;&amp;amp; shopt -s nocasematch for w in $opts; do if [[ &amp;quot;$w&amp;quot; == &amp;quot;$cur&amp;quot;* ]]; then matches+=(&amp;quot;$w&amp;quot;); fi done (( nocasematchWasOff )) &amp;amp;&amp;amp; shopt -u nocasematch COMPREPLY=(&amp;quot;${matches[@]}&amp;quot;) return 0 } complete -F _cli_bash_autocomplete $PROG  Then source it from your bash profile</description>
     </item>
     
     <item>
@@ -120,8 +119,8 @@ This has only been tested in one bash environment, so your mileage may vary.</de
       
       <guid>http://engblog.yext.com/edward/troubleshooting/</guid>
       <description>Services can&amp;rsquo;t be started or stopped after upgrading After upgrading Edward, if you experience problems stopping or starting services, or you appear to have &amp;ldquo;orphaned&amp;rdquo; services running in the background, this may be a result of corrupted state files.
-Steps to reset state: 1. Restart your computer 1. Ensure there are no services running under Edward 1. Delete the Edward home directory: rm ~/.edward
-This will completely reset Edward to a clean state.</description>
+Steps to reset state:
+ Restart your computer Ensure there are no services running under Edward Delete the Edward home directory: rm ~/.edward  This will completely reset Edward to a clean state.</description>
     </item>
     
   </channel>
