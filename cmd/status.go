@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -12,10 +10,7 @@ var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Display service status",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		output, err := edwardClient.Status(args, *statusFlags.all)
-		if err == nil {
-			fmt.Print(output)
-		}
+		err := edwardClient.Status(args, *statusFlags.all)
 		return errors.WithStack(err)
 	},
 }

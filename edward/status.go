@@ -1,95 +1,56 @@
 package edward
 
 import (
-	"bytes"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
-
-	humanize "github.com/dustin/go-humanize"
-	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
-	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/instance"
 	"github.com/yext/edward/services"
+	"github.com/yext/edward/ui"
 )
 
-func (c *Client) Status(names []string, all bool) (string, error) {
+func (c *Client) Status(names []string, all bool) error {
 	sgs, err := c.getServiceList(names, all)
 	if err != nil {
-		return "", errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
 	if len(sgs) == 0 {
-		return "No services found\n", nil
+		return errors.New("no services found")
 	}
 
-	buf := new(bytes.Buffer)
-
-	table := tablewriter.NewWriter(buf)
-	headings := []string{
-		"PID",
-		"Name",
-		"Status",
-		"Ports",
-		"Stdout",
-		"Stderr",
-		"RSS",
-		"VMS",
-		"Swap",
-		"Start Time",
-	}
-	if all {
-		headings = append(headings, "Config")
-	}
-	table.SetHeader(headings)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	var serviceStatus []ui.ServiceStatus
 
 	services := services.Services(sgs)
 	for _, s := range services {
 		status, err := c.getState(s)
 		if err != nil {
-			return "", errors.WithStack(err)
+			return errors.WithStack(err)
 		}
 		if status == nil {
 			continue
 		}
-		if status.status.MemoryInfo == nil {
-			status.status.MemoryInfo = &process.MemoryInfoStat{}
-		}
-		row := []string{
-			strconv.Itoa(status.command.Pid),
-			status.command.Service.Name,
-			string(status.status.State),
-			strings.Join(status.status.Ports, ","),
-			strconv.Itoa(status.status.StdoutLines) + " lines",
-			strconv.Itoa(status.status.StderrLines) + " lines",
-			humanize.Bytes(status.status.MemoryInfo.RSS),
-			humanize.Bytes(status.status.MemoryInfo.VMS),
-			humanize.Bytes(status.status.MemoryInfo.Swap),
-			status.status.StartTime.Format("2006-01-02 15:04:05"),
-		}
-		if all {
-			configPath := status.command.Service.ConfigFile
-			wd, err := os.Getwd()
-			if err == nil {
-				relativePath, err := filepath.Rel(wd, configPath)
-				if err == nil && len(configPath) > len(relativePath) {
-					configPath = relativePath
-				}
-			}
-			row = append(row, configPath)
-		}
-		table.Append(row)
+		serviceStatus = append(serviceStatus, status)
 	}
-	table.Render()
-	return buf.String(), nil
+
+	c.UI.Status(serviceStatus)
+
+	return nil
 }
 
 type statusCommandTuple struct {
 	status  instance.Status
 	command *instance.Instance
+}
+
+func (s statusCommandTuple) Service() *services.ServiceConfig {
+	return s.command.Service
+}
+
+func (s statusCommandTuple) Status() instance.Status {
+	return s.status
+}
+
+func (s statusCommandTuple) Pid() int {
+	return s.command.Pid
 }
 
 func (c *Client) getState(service *services.ServiceConfig) (*statusCommandTuple, error) {
