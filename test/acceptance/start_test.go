@@ -144,7 +144,7 @@ func TestDied(t *testing.T) {
 	workingDir, cleanup, err := createWorkingDir("testStart", "testdata/single")
 	defer cleanup()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("Creating working dir:", err)
 	}
 
 	executeCommand(t, workingDir, edwardExecutable, "start", "service")
@@ -155,7 +155,7 @@ func TestDied(t *testing.T) {
 	}
 	_, err = http.Get("http://127.0.0.1:51234/")
 	if err != nil {
-		t.Error(err)
+		t.Error("failed opening port: ", err)
 	}
 	// Test died state
 	for strings.Contains(status, "RUNNING") {

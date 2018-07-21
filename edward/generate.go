@@ -52,7 +52,7 @@ func (c *Client) Generate(names []string, force bool, group string, targets []st
 	if len(foundServices) == 0 &&
 		len(foundGroups) == 0 &&
 		len(foundImports) == 0 {
-		fmt.Fprintln(c.Output, "No services, groups or imports found")
+		c.UI.Errorf("No services, groups or imports found")
 		return nil
 	}
 
@@ -68,7 +68,7 @@ func (c *Client) Generate(names []string, force bool, group string, targets []st
 	if len(filteredServices) == 0 &&
 		len(filteredGroups) == 0 &&
 		len(filteredImports) == 0 {
-		fmt.Fprintln(c.Output, "No new services, groups or imports found")
+		c.UI.Errorf("No new services, groups or imports found")
 		return nil
 	}
 
@@ -140,7 +140,7 @@ func (c *Client) Generate(names []string, force bool, group string, targets []st
 		return errors.WithStack(err)
 	}
 
-	fmt.Fprintln(c.Output, "Wrote to:", configPath)
+	c.UI.Infof("Wrote to: %v", configPath)
 
 	return nil
 }
@@ -197,24 +197,24 @@ func (c *Client) confirmList(cfg *config.Config,
 	filteredGroups []string,
 	filteredImports []string) (bool, error) {
 
-	fmt.Fprintln(c.Output, "The following will be generated:")
+	c.UI.Infof("The following will be generated:")
 	if len(filteredServices) > 0 {
-		fmt.Fprintln(c.Output, "Services:")
+		c.UI.Infof("Services:")
 	}
 	for _, service := range filteredServices {
-		fmt.Fprintf(c.Output, "\t%v\n", service)
+		c.UI.Infof("\t%v", service)
 	}
 	if len(filteredGroups) > 0 {
-		fmt.Fprintln(c.Output, "Groups:")
+		c.UI.Infof("Groups:")
 	}
 	for _, group := range filteredGroups {
-		fmt.Fprintf(c.Output, "\t%v\n", group)
+		c.UI.Infof("\t%v", group)
 	}
 	if len(filteredImports) > 0 {
-		fmt.Fprintln(c.Output, "Imports:")
+		c.UI.Infof("Imports:")
 	}
 	for _, i := range filteredImports {
-		fmt.Fprintf(c.Output, "\t%v\n", i)
+		c.UI.Infof("\t%v", i)
 	}
 
 	if !c.askForConfirmation("Do you wish to continue?") {

@@ -1,12 +1,8 @@
 package edward
 
 import (
-	"bufio"
-	"fmt"
-	"io"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/yext/edward/builder"
@@ -15,12 +11,13 @@ import (
 	"github.com/yext/edward/output"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
+	"github.com/yext/edward/ui"
+	"github.com/yext/edward/ui/terminal"
 	"github.com/yext/edward/worker"
 )
 
 type Client struct {
-	Input  io.Reader
-	Output io.Writer
+	UI ui.Provider
 
 	Config string
 
@@ -66,8 +63,7 @@ func NewClient() (*Client, error) {
 	}
 
 	return &Client{
-		Input:      os.Stdin,
-		Output:     os.Stdout,
+		UI:         &terminal.Provider{},
 		Follower:   output.NewFollower(),
 		WorkingDir: wd,
 		groupMap:   make(map[string]*services.ServiceGroupConfig),
@@ -89,8 +85,7 @@ func NewClientWithConfig(configPath, version string) (*Client, error) {
 	}
 
 	client := &Client{
-		Input:      os.Stdin,
-		Output:     os.Stdout,
+		UI:         &terminal.Provider{},
 		Follower:   output.NewFollower(),
 		WorkingDir: wd,
 		Config:     configPath,
@@ -172,21 +167,5 @@ func (c *Client) askForConfirmation(question string) bool {
 		return true
 	}
 
-	reader := bufio.NewReader(c.Input)
-	for {
-		fmt.Fprintf(c.Output, "%s [y/n]? ", question)
-
-		response, err := reader.ReadString('\n')
-		if err != nil {
-			return false
-		}
-
-		response = strings.ToLower(strings.TrimSpace(response))
-
-		if response == "y" || response == "yes" {
-			return true
-		} else if response == "n" || response == "no" {
-			return false
-		}
-	}
+	return c.UI.Confirm(question)
 }
