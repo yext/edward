@@ -2,6 +2,7 @@ package ui
 
 import (
 	"github.com/yext/edward/instance"
+	"github.com/yext/edward/runner"
 	"github.com/yext/edward/services"
 )
 
@@ -14,6 +15,8 @@ type Provider interface {
 	List(services []services.ServiceOrGroup, groups []services.ServiceOrGroup)
 
 	Status([]ServiceStatus)
+
+	ShowLog(<-chan runner.LogLine, bool)
 }
 
 type ServiceStatus interface {

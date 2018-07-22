@@ -2,11 +2,8 @@ package edward
 
 import (
 	"bufio"
-	"fmt"
 	"os"
-	"strings"
 
-	"github.com/fatih/color"
 	"github.com/hpcloud/tail"
 	"github.com/pkg/errors"
 	"github.com/yext/edward/runner"
@@ -18,36 +15,6 @@ type byTime []runner.LogLine
 func (a byTime) Len() int           { return len(a) }
 func (a byTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byTime) Less(i, j int) bool { return a[i].Time.Before(a[j].Time) }
-
-func printMessage(logMessage runner.LogLine, multiple bool) {
-
-	message := strings.TrimSpace(logMessage.Message)
-
-	if len(message) == 0 {
-		return
-	}
-
-	if multiple {
-		print("[")
-		color.Set(color.FgHiYellow)
-		print(logMessage.Name)
-		if logMessage.Stream == "messages" {
-			print(" (edward)")
-		}
-		color.Unset()
-		print("]: ")
-	}
-
-	if logMessage.Stream == "stderr" {
-		color.Set(color.FgRed)
-	}
-	if logMessage.Stream == "messages" {
-		color.Set(color.FgYellow)
-	}
-
-	fmt.Printf("%v\n", strings.TrimSpace(message))
-	color.Unset()
-}
 
 func followGroupLog(logDir string, group *services.ServiceGroupConfig, logChannel chan runner.LogLine) ([]runner.LogLine, error) {
 	var lines []runner.LogLine

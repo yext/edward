@@ -26,18 +26,18 @@ func (c *Client) Log(names []string, cancelChannel <-chan struct{}) error {
 		return errors.WithStack(err)
 	}
 
-	var logChannel = make(chan runner.LogLine)
+	var tailChannel = make(chan runner.LogLine)
 	var lines []runner.LogLine
 	for _, sg := range sgs {
 		switch v := sg.(type) {
 		case *services.ServiceConfig:
-			newLines, err := followServiceLog(c.DirConfig.LogDir, v, logChannel)
+			newLines, err := followServiceLog(c.DirConfig.LogDir, v, tailChannel)
 			if err != nil {
 				return err
 			}
 			lines = append(lines, newLines...)
 		case *services.ServiceGroupConfig:
-			newLines, err := followGroupLog(c.DirConfig.LogDir, v, logChannel)
+			newLines, err := followGroupLog(c.DirConfig.LogDir, v, tailChannel)
 			if err != nil {
 				return err
 			}
@@ -69,17 +69,20 @@ func (c *Client) Log(names []string, cancelChannel <-chan struct{}) error {
 		}
 	}()
 
+	var logChannel = make(chan runner.LogLine)
+	c.UI.ShowLog(logChannel, services.CountServices(sgs) > 1)
+
 	// Sort initial lines
 	sort.Sort(byTime(lines))
 	for _, line := range lines {
-		printMessage(line, services.CountServices(sgs) > 1)
+		logChannel <- line
 	}
 
 	var running = true
 	for running {
 		select {
-		case logMessage := <-logChannel:
-			printMessage(logMessage, services.CountServices(sgs) > 1)
+		case logMessage := <-tailChannel:
+			logChannel <- logMessage
 		case <-stopChannel:
 			running = false
 		}
