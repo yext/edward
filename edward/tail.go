@@ -2,6 +2,7 @@ package edward
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -13,6 +14,15 @@ import (
 	"github.com/yext/edward/services"
 )
 
+const (
+	displayLine    = iota
+	displaySummary = iota
+	displayPretty  = iota
+)
+
+//var displayMode = displayLine
+var displayMode = displayPretty
+
 type byTime []runner.LogLine
 
 func (a byTime) Len() int           { return len(a) }
@@ -21,6 +31,7 @@ func (a byTime) Less(i, j int) bool { return a[i].Time.Before(a[j].Time) }
 
 func printMessage(logMessage runner.LogLine, multiple bool) {
 
+	colored := false
 	message := strings.TrimSpace(logMessage.Message)
 
 	if len(message) == 0 {
@@ -39,12 +50,52 @@ func printMessage(logMessage runner.LogLine, multiple bool) {
 	}
 
 	if logMessage.Stream == "stderr" {
-		color.Set(color.FgRed)
+		//color.Set(color.FgRed)
+		color.Set(color.FgWhite)
 	}
 	if logMessage.Stream == "messages" {
 		color.Set(color.FgYellow)
 	}
 
+	if strings.Contains(message, `"level":"error"`) {
+		color.Set(color.FgRed)
+		colored = true
+	}
+
+	// if message is json, then purty print it
+	switch displayMode {
+	case displayLine: // nothing spesh
+	case displaySummary: // just the handler
+		if strings.HasPrefix(message, "{") && strings.HasSuffix(message, "}") {
+			if i := strings.Index(message, `"handler":"`); i != -1 {
+				if i2 := strings.Index(message[i+11:], `"`); i2 != -i {
+					message = message[i+11 : i+11+i2-1]
+				}
+			}
+		}
+	case displayPretty: // purdy print the json
+		if strings.HasPrefix(message, "{") && strings.HasSuffix(message, "}") {
+			var data map[string]interface{}
+			json.Unmarshal([]byte(message), &data)
+			p, err := json.MarshalIndent(data, "", "  ")
+			if err == nil {
+				if len(data) > 0 {
+					message = string(p)
+				} else {
+					color.Set(color.FgHiMagenta)
+					fmt.Println() // put the purple stuff on its own line
+					colored = true
+				}
+			}
+		} else {
+			color.Set(color.FgGreen)
+			colored = true
+		}
+	}
+
+	if !colored && strings.Index(message, `"handler":`) == -1 {
+		color.Set(color.FgCyan)
+	}
 	fmt.Printf("%v\n", strings.TrimSpace(message))
 	color.Unset()
 }
