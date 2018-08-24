@@ -14,7 +14,7 @@ func (c *Client) Stop(names []string, force bool, exclude []string, all bool) er
 		return nil
 	}
 
-	sgs, err := c.getServiceList(names, all || len(names) == 0)
+	sgs, err := c.getServiceList(names, all)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -51,10 +51,7 @@ func (c *Client) Stop(names []string, force bool, exclude []string, all bool) er
 	}()
 
 	err = services.DoForServices(sgs, task, func(s *services.ServiceConfig, overrides services.ContextOverride, task tracker.Task) error {
-		state, err := c.getState(s)
-		if state != nil && err == nil {
-			_ = instance.Stop(c.DirConfig, s, cfg, overrides, task, p)
-		}
+		_ = instance.Stop(c.DirConfig, s, cfg, overrides, task, p)
 		return nil
 	})
 	if err != nil {

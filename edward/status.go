@@ -30,6 +30,10 @@ func (c *Client) Status(names []string, all bool) error {
 		}
 		serviceStatus = append(serviceStatus, status)
 	}
+	if len(serviceStatus) == 0 {
+		c.UI.Infof("No services running")
+		return nil
+	}
 
 	c.UI.Status(serviceStatus)
 

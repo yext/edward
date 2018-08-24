@@ -28,16 +28,7 @@ func LoadRunningServices(stateDir string) ([]services.ServiceOrGroup, error) {
 		}
 		json.Unmarshal(raw, command)
 		command.Service.ConfigFile = command.ConfigFile
-
-		// Check this service is actually running
-		valid, err := command.validateState()
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-
-		if valid {
-			services = append(services, command.Service)
-		}
+		services = append(services, command.Service)
 	}
 	return services, nil
 }

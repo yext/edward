@@ -14,6 +14,10 @@ func Stop(dirConfig *home.EdwardConfiguration, c *services.ServiceConfig, cfg se
 	if err != nil {
 		return errors.WithStack(err)
 	}
+	if instance.Pid == 0 {
+		instance.clearState()
+		return nil
+	}
 	err = pool.Enqueue(func() error {
 		return errors.WithStack(instance.StopSync(cfg, overrides, task))
 	})
