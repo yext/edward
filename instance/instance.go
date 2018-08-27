@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -192,32 +191,6 @@ func (c *Instance) clearState() {
 	c.clearPid()
 }
 
-// InterruptGroup sends an interrupt signal to a process group.
-// Will use sudo if required by this service.
-func InterruptGroup(cfg services.OperationConfig, pgid int, service *services.ServiceConfig) error {
-	return errors.WithStack(signalGroup(cfg, pgid, service, "-2"))
-}
-
-// KillGroup sends a kill signal to a process group.
-// Will use sudo priviledges if required by this service.
-func KillGroup(cfg services.OperationConfig, pgid int, service *services.ServiceConfig) error {
-	return errors.WithStack(signalGroup(cfg, pgid, service, "-9"))
-}
-
-func signalGroup(cfg services.OperationConfig, pgid int, service *services.ServiceConfig, flag string) error {
-	cmdName := "kill"
-	cmdArgs := []string{}
-	if service.IsSudo(cfg) {
-		cmdName = "sudo"
-		cmdArgs = append(cmdArgs, "kill")
-	}
-	cmdArgs = append(cmdArgs, flag, fmt.Sprintf("-%v", pgid))
-	cmd := exec.Command(cmdName, cmdArgs...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	err := cmd.Run()
-	return errors.WithMessage(err, "signalGroup:")
-}
-
 type logLine struct {
 	Stream  string
 	Message string
@@ -307,17 +280,11 @@ func (c *Instance) StopSync(cfg services.OperationConfig, overrides services.Con
 }
 
 func (c *Instance) killProcess(cfg services.OperationConfig) (success bool, err error) {
-	pgid, err := syscall.Getpgid(c.Pid)
+	err = c.processes.KillGroup(c.Pid, c.Service.IsSudo(cfg))
 	if err != nil {
-		return false, errors.WithMessage(err, fmt.Sprintf("Could not kill pid %v", c.Pid))
+		return false, errors.WithStack(err)
 	}
-
-	if pgid == 0 || pgid == 1 {
-		return false, errors.WithStack(errors.New("suspect pgid: " + strconv.Itoa(pgid)))
-	}
-
-	err = KillGroup(cfg, pgid, c.Service)
-	return true, errors.WithStack(err)
+	return true, nil
 }
 
 func (c *Instance) interruptProcess(cfg services.OperationConfig) (success bool, err error) {

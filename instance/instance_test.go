@@ -108,6 +108,10 @@ func (p *fakeProcesses) SendSignal(pid int, signal syscall.Signal) error {
 	return nil
 }
 
+func (p *fakeProcesses) KillGroup(pid int, sudo bool) error {
+	return nil
+}
+
 func (p *fakeProcesses) PidExists(pid int) (bool, error) {
 	return p.exists, nil
 }

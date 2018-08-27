@@ -14,4 +14,9 @@ type Processes interface {
 	// SendSignal issues the specified signal to the process running with the provided PID.
 	// If the PID does not exist, no error will be returned.
 	SendSignal(pid int, signal syscall.Signal) error
+
+	// KillGroup sends a kill signal to the group containing the provided PID.
+	// If sudo is true, the group will be killed with superuser priviledges,
+	// it will be assumed that these priviledges have been given to this process on launch.
+	KillGroup(pid int, sudo bool) error
 }
