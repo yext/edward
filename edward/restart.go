@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/yext/edward/builder"
 	"github.com/yext/edward/instance"
+	"github.com/yext/edward/instance/processes"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/worker"
@@ -39,7 +40,7 @@ func (c *Client) restartAll(skipBuild bool, noWatch bool, exclude []string) erro
 			return errors.WithStack(err)
 		}
 		if running {
-			i, err := instance.Load(c.DirConfig, service, services.ContextOverride{})
+			i, err := instance.Load(c.DirConfig, &processes.Processes{}, service, services.ContextOverride{})
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -97,7 +98,7 @@ func (c *Client) restartOneOrMoreServices(serviceNames []string, skipBuild bool,
 	}()
 	err = services.DoForServices(sgs, task, func(service *services.ServiceConfig, overrides services.ContextOverride, task tracker.Task) error {
 		var err error
-		i, err := instance.Load(c.DirConfig, service, overrides)
+		i, err := instance.Load(c.DirConfig, &processes.Processes{}, service, overrides)
 		if err != nil {
 			return errors.WithStack(err)
 		}

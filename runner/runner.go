@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/instance"
+	"github.com/yext/edward/instance/processes"
 	"github.com/yext/edward/services"
 )
 
@@ -83,7 +84,7 @@ func (r *Runner) Run(args []string) error {
 	log.Printf("Service config: %s", pretty.Sprint(r.Service))
 
 	// Set the instance id
-	command, err := instance.Load(r.DirConfig, r.Service, services.ContextOverride{})
+	command, err := instance.Load(r.DirConfig, &processes.Processes{}, r.Service, services.ContextOverride{})
 	if err != nil {
 		log.Printf("Could not get service command: %v\n", err)
 	}

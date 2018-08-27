@@ -3,6 +3,7 @@ package edward
 import (
 	"github.com/pkg/errors"
 	"github.com/yext/edward/instance"
+	"github.com/yext/edward/instance/processes"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/ui"
 )
@@ -58,7 +59,7 @@ func (s statusCommandTuple) Pid() int {
 }
 
 func (c *Client) getState(service *services.ServiceConfig) (*statusCommandTuple, error) {
-	command, err := instance.Load(c.DirConfig, service, services.ContextOverride{})
+	command, err := instance.Load(c.DirConfig, &processes.Processes{}, service, services.ContextOverride{})
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not get service command")
 	}

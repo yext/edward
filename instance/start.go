@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/yext/edward/home"
+	"github.com/yext/edward/instance/processes"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/warmup"
@@ -19,7 +20,7 @@ func Launch(dirConfig *home.EdwardConfiguration, c *services.ServiceConfig, cfg 
 		return nil
 	}
 
-	instance, err := Load(dirConfig, c, overrides)
+	instance, err := Load(dirConfig, &processes.Processes{}, c, overrides)
 	if err != nil {
 		return errors.WithStack(err)
 	}

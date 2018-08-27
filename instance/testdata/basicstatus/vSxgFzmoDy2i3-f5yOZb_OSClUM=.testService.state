@@ -1,0 +1,23 @@
+{
+    "service": {
+        "name": "testService",
+		"configFile": "/path/to/service",
+        "backends":[  
+            {  
+                "commands":{  
+                    "build":"go install",
+                    "launch":"auth 12305"
+                    },
+                    "name":"",
+                    "type":"fake"
+            }
+        ]
+    },
+    "pid": 102,
+    "configFile": "/path/to/service",
+    "edwardVersion": "1.2.3",
+    "overrides": {  
+      "Env": null
+    },
+    "InstanceId": "abc"
+}

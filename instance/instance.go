@@ -17,7 +17,6 @@ import (
 
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
-	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/commandline"
 	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
@@ -41,10 +40,17 @@ type Instance struct {
 	InstanceId string
 
 	dirConfig *home.EdwardConfiguration
+
+	processes Processes
 }
 
 // Load loads an instance to control the specified service
-func Load(dirConfig *home.EdwardConfiguration, service *services.ServiceConfig, overrides services.ContextOverride) (command *Instance, err error) {
+func Load(
+	dirConfig *home.EdwardConfiguration,
+	processes Processes,
+	service *services.ServiceConfig,
+	overrides services.ContextOverride,
+) (command *Instance, err error) {
 	command = &Instance{
 		Service:    service,
 		ConfigFile: service.ConfigFile,
@@ -55,9 +61,13 @@ func Load(dirConfig *home.EdwardConfiguration, service *services.ServiceConfig, 
 		command.EdwardVersion = common.EdwardVersion
 		command.Overrides = command.Overrides.Merge(overrides)
 		command.dirConfig = dirConfig
-		pidCheckErr := command.checkPid()
-		if err == nil {
-			err = pidCheckErr
+		command.processes = processes
+		pidExists, err := processes.PidCommandMatches(command.Pid, command.Service.Name)
+		if err != nil {
+			err = errors.WithStack(err)
+		}
+		if !pidExists {
+			command.Pid = 0
 		}
 	}()
 
@@ -76,7 +86,10 @@ func Load(dirConfig *home.EdwardConfiguration, service *services.ServiceConfig, 
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-		json.Unmarshal(raw, command)
+		err = json.Unmarshal(raw, command)
+		if err != nil {
+			return command, errors.WithStack(err)
+		}
 	}
 
 	return command, nil
@@ -101,35 +114,6 @@ func (c *Instance) Getenv(key string) string {
 		}
 	}
 	return os.Getenv(key)
-}
-
-func (c *Instance) checkPid() error {
-	if c == nil || c.Pid == 0 {
-		return nil
-	}
-	exists, err := process.PidExists(int32(c.Pid))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	if !exists {
-		log.Printf("Process for %v was not found.\n", c.Service.Name)
-		c.Pid = 0
-		return nil
-	}
-
-	proc, err := process.NewProcess(int32(c.Pid))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	cmdline, err := proc.Cmdline()
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	if !strings.Contains(cmdline, c.Service.Name) {
-		log.Printf("Process for %v was not as expected (found %v).\n", c.Service.Name, cmdline)
-		c.Pid = 0
-	}
-	return nil
 }
 
 // save will store the current state of this command to a state file
@@ -206,21 +190,6 @@ func (c *Instance) clearPid() {
 
 func (c *Instance) clearState() {
 	c.clearPid()
-}
-
-func (c *Instance) validateState() (bool, error) {
-	if c.Pid == 0 {
-		return false, nil
-	}
-	exists, err := process.PidExists(int32(c.Pid))
-	if err != nil {
-		return false, errors.WithStack(err)
-	}
-	if !exists {
-		c.Pid = 0
-		return false, nil
-	}
-	return true, nil
 }
 
 // InterruptGroup sends an interrupt signal to a process group.
@@ -352,17 +321,13 @@ func (c *Instance) killProcess(cfg services.OperationConfig) (success bool, err 
 }
 
 func (c *Instance) interruptProcess(cfg services.OperationConfig) (success bool, err error) {
-	p, err := process.NewProcess(int32(c.Pid))
-	if err != nil {
-		return false, errors.WithStack(err)
-	}
-	err = p.SendSignal(syscall.SIGINT)
+	err = c.processes.SendSignal(c.Pid, syscall.SIGINT)
 	if err != nil {
 		return false, errors.WithStack(err)
 	}
 
 	// Check to see if the process is still running
-	exists, err := process.PidExists(int32(c.Pid))
+	exists, err := c.processes.PidExists(c.Pid)
 	if err != nil {
 		return false, errors.WithStack(err)
 	}
@@ -371,7 +336,7 @@ func (c *Instance) interruptProcess(cfg services.OperationConfig) (success bool,
 
 func (c *Instance) waitForTerm(timeout time.Duration) (bool, error) {
 	for elapsed := time.Duration(0); elapsed <= timeout; elapsed += time.Millisecond * 100 {
-		exists, err := process.PidExists(int32(c.Pid))
+		exists, err := c.processes.PidExists(c.Pid)
 		if err != nil {
 			return false, errors.WithStack(err)
 		}

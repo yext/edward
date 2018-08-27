@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/instance"
+	"github.com/yext/edward/instance/processes"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
 )
@@ -45,7 +46,7 @@ func (b *builder) BuildWithTracker(dirConfig *home.EdwardConfiguration, task tra
 	job := task.Child("Build")
 	job.SetState(tracker.TaskStateInProgress)
 
-	c, err := instance.Load(dirConfig, service, b.Overrides)
+	c, err := instance.Load(dirConfig, &processes.Processes{}, service, b.Overrides)
 	if err != nil {
 		return errors.WithStack(err)
 	}

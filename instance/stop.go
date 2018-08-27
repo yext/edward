@@ -3,6 +3,7 @@ package instance
 import (
 	"github.com/pkg/errors"
 	"github.com/yext/edward/home"
+	"github.com/yext/edward/instance/processes"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/worker"
@@ -10,7 +11,7 @@ import (
 
 // Stop stops this service
 func Stop(dirConfig *home.EdwardConfiguration, c *services.ServiceConfig, cfg services.OperationConfig, overrides services.ContextOverride, task tracker.Task, pool *worker.Pool) error {
-	instance, err := Load(dirConfig, c, overrides)
+	instance, err := Load(dirConfig, &processes.Processes{}, c, overrides)
 	if err != nil {
 		return errors.WithStack(err)
 	}
