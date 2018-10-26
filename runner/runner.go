@@ -247,10 +247,14 @@ func (r *Runner) stopService() error {
 	var scriptErr error
 	var scriptOutput []byte
 
-	// TODO: Get the right env function from the client
-	scriptOutput, scriptErr = r.backendRunner.Stop(wd, nil)
+	c, err := instance.Load(r.DirConfig, &processes.Processes{}, r.Service, services.ContextOverride{})
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	scriptOutput, scriptErr = r.backendRunner.Stop(wd, c.Getenv)
 	if scriptErr != nil {
-		log.Printf("Stop failed:\n%v\n", string(scriptOutput))
+		log.Printf("Stop failed:%v\n%v\n", scriptErr, string(scriptOutput))
 		return errors.WithStack(err)
 	}
 	return nil
