@@ -18,7 +18,7 @@ publishDir = "../docs"
 	provider = "GitHub"
 	repo_url = "https://github.com/yext/edward"
 
-	version = "1.8.11"
+	version = "1.8.12"
 	#logo = "images/logo.png"
 	favicon = ""
 

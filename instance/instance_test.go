@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/theothertomelliott/must"
+	"github.com/yext/edward/common"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/services/backends/fake"
@@ -33,7 +34,7 @@ func TestLoad(t *testing.T) {
 			},
 			expected: &Instance{
 				ConfigFile:    "/path/to/service",
-				EdwardVersion: "1.8.11",
+				EdwardVersion: common.EdwardVersion,
 			},
 		},
 		{
@@ -50,7 +51,7 @@ func TestLoad(t *testing.T) {
 			expected: &Instance{
 				Pid:           102,
 				ConfigFile:    "/path/to/service",
-				EdwardVersion: "1.8.11",
+				EdwardVersion: common.EdwardVersion,
 			},
 		},
 		{
@@ -67,7 +68,7 @@ func TestLoad(t *testing.T) {
 			expected: &Instance{
 				Pid:           0,
 				ConfigFile:    "/path/to/service",
-				EdwardVersion: "1.8.11",
+				EdwardVersion: common.EdwardVersion,
 			},
 		},
 		{
@@ -80,7 +81,7 @@ func TestLoad(t *testing.T) {
 				Name: "testService",
 			},
 			expected: &Instance{
-				EdwardVersion: "1.8.11",
+				EdwardVersion: common.EdwardVersion,
 				Pid:           101,
 			},
 		},
