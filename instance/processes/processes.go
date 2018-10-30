@@ -58,6 +58,9 @@ func (p *Processes) PidExists(pid int) (bool, error) {
 }
 
 func (p *Processes) PidCommandMatches(pid int, value string) (bool, error) {
+	if p == nil || pid == 0 {
+		return false, nil
+	}
 	if exists, err := process.PidExists(int32(pid)); !exists || err != nil {
 		return false, errors.WithStack(err)
 	}
