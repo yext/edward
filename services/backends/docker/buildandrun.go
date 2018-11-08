@@ -118,7 +118,7 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 
 		config.Image = imgID
 		container, err := b.client.ContainerCreate(
-			context.TODO(),
+			context.Background(),
 			&config,
 			&hostConfig,
 			&networkConfig,
@@ -135,12 +135,12 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 		return errors.New("already running")
 	}
 
-	err = b.client.ContainerStart(context.TODO(), b.containerID, types.ContainerStartOptions{})
+	err = b.client.ContainerStart(context.Background(), b.containerID, types.ContainerStartOptions{})
 	if err != nil {
 		return errors.WithMessage(err, "starting container")
 	}
 
-	response, err := b.client.ContainerAttach(context.TODO(), b.containerID, types.ContainerAttachOptions{
+	response, err := b.client.ContainerAttach(context.Background(), b.containerID, types.ContainerAttachOptions{
 		Stream: true,
 		Stdout: true,
 		Stderr: true,

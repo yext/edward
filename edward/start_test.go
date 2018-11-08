@@ -121,8 +121,10 @@ func TestStart(t *testing.T) {
 			defer showLogsIfFailed(t, test.name, wd, client)
 
 			err = client.Start(test.services, test.skipBuild, test.noWatch, test.exclude)
+			tf.mtx.Lock()
 			must.BeEqual(t, test.expectedStates, tf.states)
 			must.BeEqual(t, test.expectedMessages, tf.messages)
+			tf.mtx.Unlock()
 			must.BeEqualErrors(t, test.err, err)
 
 			// Verify that the process actually started

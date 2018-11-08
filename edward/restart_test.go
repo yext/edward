@@ -99,8 +99,10 @@ func TestRestart(t *testing.T) {
 
 			err = client.Restart(test.servicesRestart, true, test.skipBuild, test.noWatch, test.exclude)
 			must.BeEqualErrors(t, test.err, err)
+			tf.mtx.Lock()
 			must.BeEqual(t, test.expectedStates, tf.states)
 			must.BeEqual(t, test.expectedMessages, tf.messages)
+			tf.mtx.Unlock()
 
 			if err == nil {
 				for _, p := range childProcesses {
