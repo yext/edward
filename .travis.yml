@@ -1,11 +1,5 @@
 language: go
 
-before_script:
-  - wget https://github.com/spf13/hugo/releases/download/v0.49.2/hugo_0.49.2_Linux-64bit.tar.gz -O /tmp/hugo.tar.gz
-  - mkdir /tmp/hugo
-  - tar -xvf /tmp/hugo.tar.gz -C /tmp/hugo
-  - export PATH=$PATH:/tmp/hugo/
-
 before_install:
   - go get github.com/mitchellh/gox
 
