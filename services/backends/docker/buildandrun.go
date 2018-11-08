@@ -196,6 +196,10 @@ func (b *buildandrun) Status() (services.BackendStatus, error) {
 	if err != nil {
 		errors.WithMessage(err, "pulling image")
 	}
+	if !container.State.Running {
+		close(b.done)
+		return services.BackendStatus{}, errors.New("not running")
+	}
 
 	var ports []string
 	if container.HostConfig != nil {
