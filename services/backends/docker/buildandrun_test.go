@@ -1,6 +1,7 @@
 package docker_test
 
 import (
+	"bytes"
 	"flag"
 	"io/ioutil"
 	"log"
@@ -62,8 +63,9 @@ func TestBuild(t *testing.T) {
 		return
 	}
 
-	out, err := b.Build("", nil)
-	t.Log(string(out))
+	var buf bytes.Buffer
+	err = b.Build("", nil, &buf)
+	t.Log(buf.String())
 	if err != nil {
 		t.Error(err)
 		return
@@ -107,8 +109,9 @@ func TestBuildAltFile(t *testing.T) {
 		return
 	}
 
-	out, err := b.Build("", nil)
-	t.Log(string(out))
+	var buf bytes.Buffer
+	err = b.Build("", nil, &buf)
+	t.Log(buf.String())
 	if err != nil {
 		t.Error(err)
 		return
