@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
@@ -49,6 +50,8 @@ type testFollower struct {
 	states     map[string]string
 	stateOrder []string
 	messages   []string
+
+	mtx sync.Mutex
 }
 
 func newTestFollower() *testFollower {
@@ -58,6 +61,9 @@ func newTestFollower() *testFollower {
 }
 
 func (f *testFollower) Handle(update tracker.Task) {
+	f.mtx.Lock()
+	defer f.mtx.Unlock()
+
 	var names []string
 	for _, task := range update.Lineage() {
 		if task.Name() != "" {

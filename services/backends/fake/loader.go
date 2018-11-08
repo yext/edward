@@ -33,8 +33,8 @@ func (l *Loader) Runner(s *services.ServiceConfig, b services.Backend) (services
 type buildAndRun struct {
 }
 
-func (b *buildAndRun) Build(string, func(string) string) ([]byte, error) {
-	return nil, nil
+func (b *buildAndRun) Build(string, func(string) string, io.Writer) error {
+	return nil
 }
 
 func (b *buildAndRun) Start(standardLog io.Writer, errorLog io.Writer) error {
