@@ -8,25 +8,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/yext/edward/instance/servicelogs"
 )
-
-// LogLine represents a line in an Edward service log
-type LogLine struct {
-	Name    string
-	Time    time.Time
-	Stream  string
-	Message string
-}
-
-// ParseLogLine parses the JSON representation of a log line into a LogLine
-func ParseLogLine(line string) (LogLine, error) {
-	var lineData LogLine
-	err := json.Unmarshal([]byte(line), &lineData)
-	if err != nil {
-		return LogLine{}, errors.WithStack(err)
-	}
-	return lineData, nil
-}
 
 // Log provides the io.Writer interface to publish service logs to file
 type Log struct {
@@ -50,7 +33,7 @@ func (r *Log) Printf(format string, a ...interface{}) {
 func (r *Log) Write(p []byte) (int, error) {
 	r.lines++
 	fmt.Println(strings.TrimRight(string(p), "\n"))
-	lineData := LogLine{
+	lineData := servicelogs.LogLine{
 		Name:    r.name,
 		Time:    time.Now(),
 		Stream:  r.stream,

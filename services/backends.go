@@ -33,7 +33,7 @@ type BackendStatus struct {
 }
 
 type Builder interface {
-	Build(string, func(string) string) ([]byte, error)
+	Build(string, func(string) string, io.Writer) error
 }
 
 var defaultType string

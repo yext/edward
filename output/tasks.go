@@ -1,6 +1,8 @@
 package output
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 	"time"
 
@@ -38,8 +40,9 @@ func (f *Follower) Handle(update tracker.Task) {
 		renderer := NewCompletionRenderer(update)
 		renderer.Render(bp)
 	}
-
-	f.inProgress.Render(f.writer, update)
+	var buf = &bytes.Buffer{}
+	f.inProgress.Render(buf, update)
+	fmt.Fprint(f.writer, buf.String())
 	f.writer.Flush()
 }
 

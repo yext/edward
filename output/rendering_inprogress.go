@@ -37,7 +37,7 @@ func (r *InProgressRenderer) doRenderWithPrefix(prefix string, maxNameWidth int,
 		r.doRenderWithPrefix(extendPrefix(prefix, child), maxNameWidth, w, child)
 	}
 
-	if len(children) != 0 || task.State() != tracker.TaskStateInProgress {
+	if len(children) > 0 || task.State() != tracker.TaskStateInProgress {
 		return nil
 	}
 
@@ -73,6 +73,19 @@ func (r *InProgressRenderer) doRenderWithPrefix(prefix string, maxNameWidth int,
 	fmt.Fprint(w, "]")
 	fmt.Fprintln(w)
 
+	output := task.Output()
+	if len(output) > 4 {
+		output = output[len(output)-4:]
+	}
+
+	if len(output) > 0 {
+		for _, line := range output {
+			if len(line) > 80 {
+				line = line[:80]
+			}
+			fmt.Fprintln(w, line)
+		}
+	}
 	return nil
 }
 

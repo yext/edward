@@ -2,7 +2,7 @@ package ui
 
 import (
 	"github.com/yext/edward/instance"
-	"github.com/yext/edward/runner"
+	"github.com/yext/edward/instance/servicelogs"
 	"github.com/yext/edward/services"
 )
 
@@ -16,7 +16,7 @@ type Provider interface {
 
 	Status([]ServiceStatus)
 
-	ShowLog(<-chan runner.LogLine, bool)
+	ShowLog(<-chan servicelogs.LogLine, bool)
 }
 
 type ServiceStatus interface {

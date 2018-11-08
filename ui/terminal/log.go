@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/yext/edward/runner"
+	"github.com/yext/edward/instance/servicelogs"
 )
 
-func (p *Provider) ShowLog(logs <-chan runner.LogLine, multiple bool) {
+func (p *Provider) ShowLog(logs <-chan servicelogs.LogLine, multiple bool) {
 	go func() {
 		for log := range logs {
 			printMessage(log, multiple)
@@ -16,7 +16,7 @@ func (p *Provider) ShowLog(logs <-chan runner.LogLine, multiple bool) {
 	}()
 }
 
-func printMessage(logMessage runner.LogLine, multiple bool) {
+func printMessage(logMessage servicelogs.LogLine, multiple bool) {
 
 	message := strings.TrimSpace(logMessage.Message)
 

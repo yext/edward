@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -40,7 +39,7 @@ type buildandrun struct {
 var _ services.Builder = &buildandrun{}
 var _ services.Runner = &buildandrun{}
 
-func (b *buildandrun) Build(workingDir string, getenv func(string) string) ([]byte, error) {
+func (b *buildandrun) Build(workingDir string, getenv func(string) string, output io.Writer) error {
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
 
@@ -63,7 +62,7 @@ func (b *buildandrun) Build(workingDir string, getenv func(string) string) ([]by
 		buildPath := path.Join(servicePath, relativeBuild)
 		fi, err := os.Stat(buildPath)
 		if err != nil {
-			return nil, errors.WithStack(err)
+			return errors.WithStack(err)
 		}
 		if fi.IsDir() {
 			relativeBuild = path.Join(relativeBuild, "Dockerfile")
@@ -76,17 +75,16 @@ func (b *buildandrun) Build(workingDir string, getenv func(string) string) ([]by
 			Dockerfile: relativeBuild,
 		})
 		if err != nil {
-			return nil, errors.WithStack(err)
+			return errors.WithStack(err)
 		}
 
-		var buf bytes.Buffer
-		err = jsonmessage.DisplayJSONMessagesStream(response.Body, &buf, 0, false, nil)
+		err = jsonmessage.DisplayJSONMessagesStream(response.Body, output, 0, false, nil)
 		if err != nil {
-			return nil, errors.WithMessage(err, "reading messages")
+			return errors.WithMessage(err, "reading messages")
 		}
-		return buf.Bytes(), nil
+		return nil
 	}
-	return nil, nil
+	return nil
 }
 
 func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {

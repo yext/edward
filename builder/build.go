@@ -1,6 +1,10 @@
 package builder
 
 import (
+	"bufio"
+	"io"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/instance"
@@ -64,9 +68,20 @@ func (b *builder) BuildWithTracker(dirConfig *home.EdwardConfiguration, task tra
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	out, err := builder.Build(b.Cfg.WorkingDir, c.Getenv)
+
+	r, w := io.Pipe()
+	defer r.Close()
+	defer w.Close()
+	go func() {
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			job.AddOutput(scanner.Text())
+		}
+	}()
+	err = builder.Build(b.Cfg.WorkingDir, c.Getenv, w)
+
 	if err != nil {
-		job.SetState(tracker.TaskStateFailed, err.Error(), string(out))
+		job.SetState(tracker.TaskStateFailed, err.Error(), strings.Join(job.Output(), "\n"))
 		return errors.WithMessage(err, "running build command")
 	}
 	job.SetState(tracker.TaskStateSuccess)

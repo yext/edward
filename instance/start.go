@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/instance/processes"
+	"github.com/yext/edward/instance/servicelogs"
 	"github.com/yext/edward/services"
 	"github.com/yext/edward/tracker"
 	"github.com/yext/edward/warmup"
@@ -57,7 +59,9 @@ func (c *Instance) StartAsync(cfg services.OperationConfig, task tracker.Task) e
 		return errors.WithStack(err)
 	}
 
-	os.Remove(c.Service.GetRunLog(c.dirConfig.LogDir))
+	runLog := c.Service.GetRunLog(c.dirConfig.LogDir)
+
+	os.Remove(runLog)
 
 	cmd, err := c.getLaunchCommand(cfg)
 	if err != nil {
@@ -66,6 +70,16 @@ func (c *Instance) StartAsync(cfg services.OperationConfig, task tracker.Task) e
 	}
 	cmd.Env = append(os.Environ(), c.Overrides.Env...)
 	cmd.Env = append(cmd.Env, c.Service.Env...)
+
+	follower := servicelogs.NewLogFollower(runLog)
+	logs := follower.Start()
+	defer follower.Stop()
+	go func() {
+		time.Sleep(time.Second)
+		for log := range logs {
+			startTask.AddOutput(log.Message)
+		}
+	}()
 
 	err = cmd.Start()
 	if err != nil {

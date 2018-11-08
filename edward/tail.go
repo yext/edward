@@ -6,18 +6,18 @@ import (
 
 	"github.com/hpcloud/tail"
 	"github.com/pkg/errors"
-	"github.com/yext/edward/runner"
+	"github.com/yext/edward/instance/servicelogs"
 	"github.com/yext/edward/services"
 )
 
-type byTime []runner.LogLine
+type byTime []servicelogs.LogLine
 
 func (a byTime) Len() int           { return len(a) }
 func (a byTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byTime) Less(i, j int) bool { return a[i].Time.Before(a[j].Time) }
 
-func followGroupLog(logDir string, group *services.ServiceGroupConfig, logChannel chan runner.LogLine) ([]runner.LogLine, error) {
-	var lines []runner.LogLine
+func followGroupLog(logDir string, group *services.ServiceGroupConfig, logChannel chan servicelogs.LogLine) ([]servicelogs.LogLine, error) {
+	var lines []servicelogs.LogLine
 	for _, group := range group.Groups {
 		newLines, err := followGroupLog(logDir, group, logChannel)
 		lines = append(lines, newLines...)
@@ -35,7 +35,7 @@ func followGroupLog(logDir string, group *services.ServiceGroupConfig, logChanne
 	return lines, nil
 }
 
-func followServiceLog(logDir string, service *services.ServiceConfig, logChannel chan runner.LogLine) ([]runner.LogLine, error) {
+func followServiceLog(logDir string, service *services.ServiceConfig, logChannel chan servicelogs.LogLine) ([]servicelogs.LogLine, error) {
 	// Skip services that don't include a launch step
 	if !service.Backend().HasLaunchStep() {
 		return nil, nil
@@ -47,15 +47,15 @@ func followServiceLog(logDir string, service *services.ServiceConfig, logChannel
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	var initialLines []runner.LogLine
+	var initialLines []servicelogs.LogLine
 	// create a new scanner and read the file line by line
 	scanner := bufio.NewScanner(logFile)
 	var lineCount int
 	for scanner.Scan() {
 		text := scanner.Text()
 		lineCount++
-		var line runner.LogLine
-		line, err = runner.ParseLogLine(text)
+		var line servicelogs.LogLine
+		line, err = servicelogs.ParseLogLine(text)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -71,7 +71,7 @@ func followServiceLog(logDir string, service *services.ServiceConfig, logChannel
 	return initialLines, nil
 }
 
-func doFollowServiceLog(logDir string, service *services.ServiceConfig, skipLines int, logChannel chan runner.LogLine) error {
+func doFollowServiceLog(logDir string, service *services.ServiceConfig, skipLines int, logChannel chan servicelogs.LogLine) error {
 	runLog := service.GetRunLog(logDir)
 	t, err := tail.TailFile(runLog, tail.Config{
 		Follow: true,
@@ -86,7 +86,7 @@ func doFollowServiceLog(logDir string, service *services.ServiceConfig, skipLine
 			linesSkipped++
 			continue
 		}
-		lineData, err := runner.ParseLogLine(line.Text)
+		lineData, err := servicelogs.ParseLogLine(line.Text)
 		if err != nil {
 			return errors.WithStack(err)
 		}

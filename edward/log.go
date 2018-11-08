@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/yext/edward/home"
+	"github.com/yext/edward/instance/servicelogs"
 
 	"github.com/pkg/errors"
 	"github.com/yext/edward/instance"
-	"github.com/yext/edward/runner"
 	"github.com/yext/edward/services"
 )
 
@@ -26,8 +26,8 @@ func (c *Client) Log(names []string, cancelChannel <-chan struct{}) error {
 		return errors.WithStack(err)
 	}
 
-	var tailChannel = make(chan runner.LogLine)
-	var lines []runner.LogLine
+	var tailChannel = make(chan servicelogs.LogLine)
+	var lines []servicelogs.LogLine
 	for _, sg := range sgs {
 		switch v := sg.(type) {
 		case *services.ServiceConfig:
@@ -69,7 +69,7 @@ func (c *Client) Log(names []string, cancelChannel <-chan struct{}) error {
 		}
 	}()
 
-	var logChannel = make(chan runner.LogLine)
+	var logChannel = make(chan servicelogs.LogLine)
 	c.UI.ShowLog(logChannel, services.CountServices(sgs) > 1)
 
 	// Sort initial lines

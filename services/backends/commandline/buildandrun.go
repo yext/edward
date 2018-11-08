@@ -32,13 +32,15 @@ type buildandrun struct {
 var _ services.Builder = &buildandrun{}
 var _ services.Runner = &buildandrun{}
 
-func (b *buildandrun) Build(workingDir string, getenv func(string) string) ([]byte, error) {
+func (b *buildandrun) Build(workingDir string, getenv func(string) string, output io.Writer) error {
 	cmd, err := commandline.ConstructCommand(workingDir, b.Service.Path, b.Backend.Commands.Build, getenv)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
-	out, err := cmd.CombinedOutput()
-	return out, errors.WithStack(err)
+	cmd.Stdout = output
+	cmd.Stderr = output
+	err = cmd.Run()
+	return errors.WithStack(err)
 }
 
 func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {

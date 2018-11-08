@@ -16,6 +16,9 @@ type Task interface {
 
 	Messages() []string
 
+	Output() []string
+	AddOutput(...string)
+
 	Child(name string) Task
 	Children() []Task
 
@@ -63,6 +66,7 @@ var _ Task = &task{}
 type task struct {
 	name     string
 	messages []string
+	output   []string
 	state    TaskState
 
 	childNames []string
@@ -162,6 +166,21 @@ func (t *task) Messages() []string {
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
 	return t.messages
+}
+
+func (t *task) Output() []string {
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
+	return t.output
+}
+
+func (t *task) AddOutput(lines ...string) {
+	func() {
+		t.mtx.Lock()
+		defer t.mtx.Unlock()
+		t.output = append(t.output, lines...)
+	}()
+	t.handleUpdate(t)
 }
 
 func (t *task) Child(name string) Task {
