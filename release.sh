@@ -9,8 +9,8 @@ else
     git commit -m "Automated commit for release"
 fi
 git push
-echo git checkout master
-echo git pull
-echo git merge develop
-echo git tag v$(cat VERSION)
-echo git push origin v$(cat VERSION)
+git checkout master
+git pull
+git merge develop
+git tag v$(cat VERSION)
+git push origin v$(cat VERSION)
