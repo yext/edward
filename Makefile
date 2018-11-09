@@ -2,6 +2,9 @@ all: build test
 
 PKGS=`go list ./... | grep -v /vendor/ | grep -v /examples/`
 
+version:
+	./version.sh
+
 install:
 	go install
 
@@ -19,14 +22,10 @@ acceptance:
 docs:
 	cd docs_src && hugo
 
-release: docs
-	git checkout master
-	git pull
-	git merge develop
-	git tag v1.8.14
-	git push origin v1.8.14
+release: version docs
+	./release.sh
 
 servedocs:
 	cd docs_src && hugo serve
 
-.PHONY: build docs
+.PHONY: build docs version
