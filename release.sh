@@ -13,4 +13,5 @@ git checkout master
 git pull
 git merge develop
 git tag v$(cat VERSION)
+git push origin
 git push origin v$(cat VERSION)
