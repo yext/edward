@@ -507,3 +507,47 @@ func TestProcfileGenerator(t *testing.T) {
 		})
 	}
 }
+
+func TestMultipleMatches(t *testing.T) {
+	var goTests = []struct {
+		name        string
+		path        string
+		targets     []string
+		outServices []*services.ServiceConfig
+		outGroups   []*services.ServiceGroupConfig
+		outImports  []string
+		outErr      error
+	}{
+
+		{
+			name:   "Go Simple",
+			path:   "testdata/multiplematches/go+docker/",
+			outErr: errors.New("Path \"testdata/multiplematches/go+docker/gocode/src/yext/simple\" matched multiple generators (go, docker). Please re-run specifying the generator you would like to use."),
+		},
+	}
+	for _, test := range goTests {
+		t.Run(test.name, func(t *testing.T) {
+			gc := &GeneratorCollection{
+				Generators: []Generator{
+					&GoGenerator{},
+					&DockerGenerator{},
+					&ProcfileGenerator{},
+				},
+				Path:    test.path,
+				Targets: test.targets,
+			}
+			err := gc.Generate()
+			must.BeEqualErrors(t, test.outErr, err, "errors did not match.")
+			if err != nil {
+				return
+			}
+			services := gc.Services()
+			groups := gc.Groups()
+			imports := gc.Imports()
+			must.BeEqual(t, test.outServices, services, "services did not match.")
+			must.BeEqual(t, test.outGroups, groups, "groups did not match.")
+			must.BeEqual(t, test.outImports, imports, "imports did not match.")
+
+		})
+	}
+}

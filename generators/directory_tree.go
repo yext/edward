@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	ignore "github.com/sabhiram/go-git-ignore"
@@ -100,17 +101,26 @@ func (d *directory) Generate(generators []Generator) error {
 	}
 
 	var childGenerators []Generator
+	var matches []string
 	for _, generator := range generators {
-		_, err := generator.VisitDir(d.Path)
+		found, err := generator.VisitDir(d.Path)
 		if err == SkipAll {
 			return nil
 		}
 		if err != nil && err != filepath.SkipDir {
 			return errors.WithStack(err)
 		}
-		if err != filepath.SkipDir {
-			childGenerators = append(childGenerators, generator)
+		if err == filepath.SkipDir {
+			continue
 		}
+		if found {
+			matches = append(matches, generator.Name())
+		}
+		childGenerators = append(childGenerators, generator)
+	}
+
+	if len(matches) > 1 {
+		return errors.Errorf("Path %q matched multiple generators (%v). Please re-run specifying the generator you would like to use.", d.Path, strings.Join(matches, ", "))
 	}
 
 	for _, child := range d.children {
