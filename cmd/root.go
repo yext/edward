@@ -167,7 +167,7 @@ func buildBackendOverrides() (map[string]string, error) {
 	for _, backend := range backends {
 		separated := strings.Split(backend, ":")
 		if len(separated) != 2 {
-			return nil, errors.New("backend definition should be of the form '<service>:<backend>'")
+			return nil, errors.Errorf("backend definition should be of the form '<service>:<backend>' got: %v", backend)
 		}
 		if _, exists := overrides[separated[0]]; exists {
 			return nil, fmt.Errorf("multiple backend selections specified for service or group: %s", separated[0])

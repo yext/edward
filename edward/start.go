@@ -20,7 +20,7 @@ func (c *Client) Start(names []string, skipBuild bool, noWatch bool, exclude []s
 		return errors.WithStack(err)
 	}
 	if startingServicesOnly(sgs) && len(c.Backends) != 0 {
-		names = append(getServiceNamesFromBackends(c), names...)
+		names = append(getMissingServiceNamesFromBackends(c, names), names...)
 		sgs, err = c.getServicesOrGroups(names)
 		if err != nil {
 			return errors.WithStack(err)
@@ -44,9 +44,18 @@ func startingServicesOnly(sgs []services.ServiceOrGroup) bool {
 	return services.CountServices(sgs) == len(sgs)
 }
 
-func getServiceNamesFromBackends(c *Client) []string {
+func getMissingServiceNamesFromBackends(c *Client, existingNames []string) []string {
+	var existingNamesMap = make(map[string]struct{})
+	for _, ename := range existingNames {
+		existingNamesMap[ename] = struct{}{}
+	}
+
 	names := make([]string, 0, len(c.Backends))
 	for service := range c.Backends {
+		// Ensure we don't add duplicates
+		if _, exists := existingNamesMap[service]; exists {
+			continue
+		}
 		names = append(names, service)
 	}
 	return names
