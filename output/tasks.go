@@ -15,12 +15,15 @@ type Follower struct {
 	inProgress *InProgressRenderer
 	writer     *uilive.Writer
 
+	complete map[string]struct{}
+
 	mtx sync.Mutex
 }
 
 func NewFollower() *Follower {
 	f := &Follower{
 		inProgress: NewInProgressRenderer(),
+		complete:   make(map[string]struct{}),
 	}
 	f.Reset()
 	return f
@@ -42,7 +45,7 @@ func (f *Follower) Handle(update tracker.Task) {
 	f.mtx.Lock()
 	defer f.mtx.Unlock()
 
-	if f.writer == nil {
+	if _, exists := f.complete[update.Name()]; exists || f.writer == nil {
 		return
 	}
 
@@ -52,6 +55,7 @@ func (f *Follower) Handle(update tracker.Task) {
 		bp := f.writer.Bypass()
 		renderer := NewCompletionRenderer(update)
 		renderer.Render(bp)
+		f.complete[update.Name()] = struct{}{}
 	}
 	var buf = &bytes.Buffer{}
 	f.inProgress.Render(buf, update)

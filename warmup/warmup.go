@@ -23,6 +23,7 @@ func Run(service string, w *Warmup, tr tracker.Task) {
 	_, err := http.Get(w.URL)
 	if err != nil {
 		t.SetState(tracker.TaskStateWarning, err.Error())
+		return
 	}
 	t.SetState(tracker.TaskStateSuccess)
 }
