@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -45,7 +46,9 @@ func (f *Follower) Handle(update tracker.Task) {
 	f.mtx.Lock()
 	defer f.mtx.Unlock()
 
-	if _, exists := f.complete[update.Name()]; exists || f.writer == nil {
+	updateLineage := lineageAsString(update)
+
+	if _, exists := f.complete[updateLineage]; exists || f.writer == nil {
 		return
 	}
 
@@ -55,12 +58,20 @@ func (f *Follower) Handle(update tracker.Task) {
 		bp := f.writer.Bypass()
 		renderer := NewCompletionRenderer(update)
 		renderer.Render(bp)
-		f.complete[update.Name()] = struct{}{}
+		f.complete[updateLineage] = struct{}{}
 	}
 	var buf = &bytes.Buffer{}
 	f.inProgress.Render(buf, update)
 	fmt.Fprint(f.writer, buf.String())
 	f.writer.Flush()
+}
+
+func lineageAsString(update tracker.Task) string {
+	var names []string
+	for _, t := range update.Lineage() {
+		names = append(names, t.Name())
+	}
+	return strings.Join(names, "/")
 }
 
 func (f *Follower) Done() {
