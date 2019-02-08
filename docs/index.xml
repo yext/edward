@@ -118,9 +118,10 @@ This has only been tested in one bash environment, so your mileage may vary.</de
       <pubDate>Sun, 15 Jan 2017 22:16:39 -0500</pubDate>
       
       <guid>http://engblog.yext.com/edward/troubleshooting/</guid>
-      <description>Services can&amp;rsquo;t be started or stopped after upgrading After upgrading Edward, if you experience problems stopping or starting services, or you appear to have &amp;ldquo;orphaned&amp;rdquo; services running in the background, this may be a result of corrupted state files.
+      <description>Services can&amp;rsquo;t be started or stopped after upgrading After upgrading Edward, if you experience problems stopping or starting services, this may be a result of corrupted state files.
 Steps to reset state:
- Restart your computer Ensure there are no services running under Edward Delete the Edward home directory: rm ~/.edward  This will completely reset Edward to a clean state.</description>
+ Restart your computer Ensure there are no services running under Edward Delete the Edward home directory: rm ~/.edward  This will completely reset Edward to a clean state.
+Orphaned services running after upgrade or crash After an upgrade or if Edward exits unexpectedly while starting/stopping services, you may find that you have orphaned services running in the background.</description>
     </item>
     
   </channel>

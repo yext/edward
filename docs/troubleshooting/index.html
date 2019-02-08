@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=10" />
     <title>Troubleshooting - Edward Docs</title>
-    <meta name="generator" content="Hugo 0.49.2" />
+    <meta name="generator" content="Hugo 0.47.1" />
 
     
     <meta name="description" content="A command line tool for managing local instances of microservices.">
@@ -134,7 +134,7 @@
     <div class="banner">
       
       <div class="name">
-        <strong>Edward Docs <span class="version">1.8.17</span></strong>
+        <strong>Edward Docs <span class="version">1.8.18</span></strong>
         
           <br>
           yext/edward
@@ -412,7 +412,7 @@
 
 <h2 id="services-can-t-be-started-or-stopped-after-upgrading">Services can&rsquo;t be started or stopped after upgrading</h2>
 
-<p>After upgrading Edward, if you experience problems stopping or starting services, or you appear to have &ldquo;orphaned&rdquo; services running in the background, this may be a result of corrupted state files.</p>
+<p>After upgrading Edward, if you experience problems stopping or starting services, this may be a result of corrupted state files.</p>
 
 <p>Steps to reset state:</p>
 
@@ -424,10 +424,20 @@
 
 <p>This will completely reset Edward to a clean state.</p>
 
+<h2 id="orphaned-services-running-after-upgrade-or-crash">Orphaned services running after upgrade or crash</h2>
+
+<p>After an upgrade or if Edward exits unexpectedly while starting/stopping services, you may find that you have orphaned services running in the background.</p>
+
+<p>You can terminate all Edward related processes using pkill:</p>
+
+<p><code>$ pkill -f edward</code></p>
+
+<p>This will find and kill all services with &lsquo;edward&rsquo; in their command.</p>
+
 
 			<aside class="copyright" role="note">
 				
-				&copy; 2018 Released under the MIT license &ndash;
+				&copy; 2019 Released under the MIT license &ndash;
 				
 				Documentation built with
 				<a href="https://www.gohugo.io" target="_blank">Hugo</a>
