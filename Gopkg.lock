@@ -376,12 +376,6 @@
   version = "v0.3.0"
 
 [[projects]]
-  name = "gopkg.in/fsnotify.v1"
-  packages = ["."]
-  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
-  version = "v1.4.7"
-
-[[projects]]
   name = "gopkg.in/natefinch/lumberjack.v2"
   packages = ["."]
   revision = "a96e63847dc3c67d17befa69c303767e2f84e54f"
