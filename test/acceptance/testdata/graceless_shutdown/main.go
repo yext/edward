@@ -39,6 +39,6 @@ func main() {
 	fmt.Println("Waiting for signal")
 	<-done
 	fmt.Println("Pretending to do some cleanup")
-	time.Sleep(1 * time.Hour)
+	time.Sleep(1 * time.Minute)
 	fmt.Println("exiting")
 }

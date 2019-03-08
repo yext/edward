@@ -51,7 +51,7 @@ type ServiceConfig struct {
 
 	// Timeout for terminating a service runner. If termination has not completed after this amount
 	// of time, the runner will be killed.
-	TerminationTimeout *time.Duration `json:"terminationTimeout,omitempty"`
+	TerminationTimeout *Duration `json:"terminationTimeout,omitempty"`
 }
 
 // GetTerminationTimeout returns the timeout for termination, if no timeout is set, the
@@ -60,7 +60,7 @@ func (c *ServiceConfig) GetTerminationTimeout() time.Duration {
 	if c.TerminationTimeout == nil {
 		return 30 * time.Second
 	}
-	return *c.TerminationTimeout
+	return c.TerminationTimeout.Duration
 }
 
 // Backend returns the default backend for this service

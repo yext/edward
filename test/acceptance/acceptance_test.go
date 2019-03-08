@@ -100,7 +100,7 @@ func expectErrorFromURL(t *testing.T, url string) {
 
 	_, err := getFromURL(url)
 	if err == nil {
-		t.Error("expected an error when service stopped")
+		t.Error("expected an error loading URL when service stopped")
 	}
 }
 
