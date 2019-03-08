@@ -222,7 +222,7 @@ func (b *buildandrun) Stop(workingDir string, getenv func(string) string) ([]byt
 // InterruptGroup sends an interrupt signal to a process group.
 // Will use sudo if required by this service.
 func InterruptGroup(pgid int, service *services.ServiceConfig) error {
-	return errors.WithStack(signalGroup(pgid, service, "-2"))
+	return errors.WithStack(signalGroup(pgid, service, "-15"))
 }
 
 // KillGroup sends a kill signal to a process group.

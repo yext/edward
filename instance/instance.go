@@ -253,8 +253,9 @@ func (c *Instance) StopSync(cfg services.OperationConfig, overrides services.Con
 	log.Printf("Interrupt succeeded, was process stopped? %v\n", stopped)
 
 	if !stopped {
-		log.Printf("SIGINT failed to stop service, waiting for 5s before sending SIGKILL\n")
-		stopped, err := c.waitForTerm(time.Second * 5)
+		timeout := c.Service.GetTerminationTimeout()
+		log.Printf("SIGINT failed to stop service, waiting for %v before sending SIGKILL\n", timeout)
+		stopped, err := c.waitForTerm(timeout)
 		if err != nil {
 			job.SetState(tracker.TaskStateFailed, "Waiting for termination failed", err.Error())
 			return nil
