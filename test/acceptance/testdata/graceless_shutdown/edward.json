@@ -19,7 +19,7 @@
             "log_properties": {
                 "started": "Waiting for signal"
             },
-            "terminationTimeout": "5s"
+            "terminationTimeout": "1s"
         }
     ]
 }

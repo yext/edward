@@ -267,7 +267,7 @@ func (c *Instance) StopSync(cfg services.OperationConfig, overrides services.Con
 				return nil
 			}
 			if stopped {
-				job.SetState(tracker.TaskStateWarning, "Killed")
+				job.SetState(tracker.TaskStateWarning, fmt.Sprintf("Killed after %v", timeout))
 				return nil
 			}
 			job.SetState(tracker.TaskStateFailed, "Process was not killed")
@@ -309,9 +309,11 @@ func (c *Instance) waitForTerm(timeout time.Duration) (bool, error) {
 			return false, errors.WithStack(err)
 		}
 		if !exists {
+			log.Printf("Process no longer exists")
 			return true, nil
 		}
 		time.Sleep(time.Millisecond * 100)
+		log.Printf("Slept for %v", elapsed)
 	}
 	return false, nil
 }

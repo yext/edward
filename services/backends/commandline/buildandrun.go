@@ -158,13 +158,12 @@ func (b *buildandrun) Wait() {
 
 func (b *buildandrun) waitForCompletionWithTimeout(timeout time.Duration) bool {
 	var completed = make(chan struct{})
-	defer close(completed)
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 
 	go func() {
 		b.Wait()
-		completed <- struct{}{}
+		close(completed)
 	}()
 
 	select {
@@ -201,7 +200,9 @@ func (b *buildandrun) Stop(workingDir string, getenv func(string) string) ([]byt
 		return out, errors.WithStack(err)
 	}
 
-	if b.waitForCompletionWithTimeout(2 * time.Second) {
+	timeout := b.Service.GetTerminationTimeout()
+
+	if b.waitForCompletionWithTimeout(timeout) {
 		return out, nil
 	}
 
@@ -210,7 +211,7 @@ func (b *buildandrun) Stop(workingDir string, getenv func(string) string) ([]byt
 		return out, errors.WithMessage(err, "Kill failed")
 	}
 
-	if b.waitForCompletionWithTimeout(2 * time.Second) {
+	if b.waitForCompletionWithTimeout(time.Second) {
 		return out, nil
 	}
 	return nil, errors.New("kill did not stop service")
