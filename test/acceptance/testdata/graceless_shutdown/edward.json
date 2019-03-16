@@ -9,6 +9,17 @@
             "log_properties": {
                 "started": "Waiting for signal"
             }
+        },
+        {
+            "name": "gracelessWithTimeout",
+            "path": ".",
+            "commands": {
+                "launch": "go run main.go"
+            },
+            "log_properties": {
+                "started": "Waiting for signal"
+            },
+            "terminationTimeout": "1s"
         }
     ]
 }

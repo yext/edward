@@ -9,6 +9,7 @@ import (
 	"path"
 	"runtime"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/yext/edward/warmup"
@@ -47,6 +48,19 @@ type ServiceConfig struct {
 	ConfigFile string `json:"-"`
 
 	Backends []*BackendConfig `json:"backends"`
+
+	// Timeout for terminating a service runner. If termination has not completed after this amount
+	// of time, the runner will be killed.
+	TerminationTimeout *Duration `json:"terminationTimeout,omitempty"`
+}
+
+// GetTerminationTimeout returns the timeout for termination, if no timeout is set, the
+// default of 30s will be returned
+func (c *ServiceConfig) GetTerminationTimeout() time.Duration {
+	if c.TerminationTimeout == nil {
+		return 30 * time.Second
+	}
+	return c.TerminationTimeout.Duration
 }
 
 // Backend returns the default backend for this service

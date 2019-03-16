@@ -253,8 +253,9 @@ func (c *Instance) StopSync(cfg services.OperationConfig, overrides services.Con
 	log.Printf("Interrupt succeeded, was process stopped? %v\n", stopped)
 
 	if !stopped {
-		log.Printf("SIGINT failed to stop service, waiting for 5s before sending SIGKILL\n")
-		stopped, err := c.waitForTerm(time.Second * 5)
+		timeout := c.Service.GetTerminationTimeout()
+		log.Printf("SIGINT failed to stop service, waiting for %v before sending SIGKILL\n", timeout)
+		stopped, err := c.waitForTerm(timeout)
 		if err != nil {
 			job.SetState(tracker.TaskStateFailed, "Waiting for termination failed", err.Error())
 			return nil
@@ -266,7 +267,7 @@ func (c *Instance) StopSync(cfg services.OperationConfig, overrides services.Con
 				return nil
 			}
 			if stopped {
-				job.SetState(tracker.TaskStateWarning, "Killed")
+				job.SetState(tracker.TaskStateWarning, fmt.Sprintf("Killed after %v", timeout))
 				return nil
 			}
 			job.SetState(tracker.TaskStateFailed, "Process was not killed")
@@ -308,9 +309,11 @@ func (c *Instance) waitForTerm(timeout time.Duration) (bool, error) {
 			return false, errors.WithStack(err)
 		}
 		if !exists {
+			log.Printf("Process no longer exists")
 			return true, nil
 		}
 		time.Sleep(time.Millisecond * 100)
+		log.Printf("Slept for %v", elapsed)
 	}
 	return false, nil
 }

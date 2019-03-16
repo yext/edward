@@ -19,6 +19,15 @@ func TestStop(t *testing.T) {
 				"http://127.0.0.1:51234/": "Hello",
 			},
 		},
+		{
+			name:      "graceless shutdown with timeout",
+			dataDir:   "testdata/graceless_shutdown",
+			startArgs: []string{"start", "gracelessWithTimeout"},
+			stopArgs:  []string{"stop", "gracelessWithTimeout"},
+			expectedURLs: map[string]string{
+				"http://127.0.0.1:51234/": "Hello",
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
