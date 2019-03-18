@@ -50,6 +50,14 @@ func (p *Provider) Status(statuses []ui.ServiceStatus) {
 	table.SetHeader(headings)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 
+	outputInfo, _ := os.Stdout.Stat()
+	if (outputInfo.Mode() & os.ModeCharDevice) != os.ModeCharDevice {
+		table.SetBorder(false)
+		table.SetRowLine(false)
+		table.SetHeaderLine(false)
+		table.SetColumnSeparator("\t")
+	}
+
 	for index, serviceStatus := range statuses {
 		service := serviceStatus.Service()
 		status := serviceStatus.Status()
