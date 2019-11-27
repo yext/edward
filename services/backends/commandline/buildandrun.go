@@ -16,6 +16,7 @@ import (
 	"github.com/theothertomelliott/gopsutil-nocgo/process"
 	"github.com/yext/edward/commandline"
 	"github.com/yext/edward/services"
+	"github.com/ebuchman/go-shell-pipes"
 )
 
 type buildandrun struct {
@@ -180,19 +181,16 @@ func (b *buildandrun) Stop(workingDir string, getenv func(string) string) ([]byt
 
 	var out []byte
 	if b.Backend.Commands.Stop != "" {
-		cmd, err := commandline.ConstructCommand(workingDir, b.Service.Path, b.Backend.Commands.Stop, getenv)
+        cmdTokens := commandline.TokenizeCommand(b.Backend.Commands.Stop)
+        byteString, err := pipes.RunStrings(cmdTokens...)
+
 		if err != nil {
-			return nil, errors.WithStack(err)
+			return []byte(byteString), errors.WithStack(err)
 		}
 
-		out, err = cmd.CombinedOutput()
-		if err != nil {
-			return out, errors.WithStack(err)
-		}
-
-		if b.waitForCompletionWithTimeout(1 * time.Second) {
-			return out, nil
-		}
+        if b.waitForCompletionWithTimeout(1 * time.Second) {
+            return []byte(byteString), nil
+        }
 	}
 
 	err := InterruptGroup(b.cmd.Process.Pid, b.Service)

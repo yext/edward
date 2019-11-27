@@ -2,6 +2,7 @@ package commandline
 
 import (
 	"fmt"
+	"strings"
 )
 
 const quotes = "quotes"
@@ -69,4 +70,12 @@ func ParseCommand(cmd string) (string, []string, error) {
 	}
 
 	return args[0], args[1:], nil
+}
+
+func TokenizeCommand(cmd string) ([]string) {
+    return strings.FieldsFunc(cmd, isSpaceOrTab)
+}
+
+func isSpaceOrTab(r rune) bool {
+    return r == ' ' || r == '\t';
 }
