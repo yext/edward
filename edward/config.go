@@ -58,7 +58,7 @@ func (c *Client) getServiceOrGroup(name string) (services.ServiceOrGroup, error)
 			return service, nil
 		}
 	}
-	return nil, errors.New("Service or group not found")
+	return nil, errors.Errorf("Service or group not found: %s", name)
 }
 
 // getAllGroupsSorted returns a slice of all groups, sorted by name
