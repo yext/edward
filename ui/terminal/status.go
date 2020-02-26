@@ -30,7 +30,6 @@ func (p *Provider) Status(statuses []ui.ServiceStatus) {
 		configSet[configPath] = struct{}{}
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
 	headings := []string{
 		"PID",
 		"Name",
@@ -47,9 +46,17 @@ func (p *Provider) Status(statuses []ui.ServiceStatus) {
 		headings = append(headings, "Config File")
 	}
 
-	table.SetHeader(headings)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	outputInfo, _ := os.Stdout.Stat()
+	var table tablePrinter
+	if (outputInfo.Mode() & os.ModeCharDevice) == os.ModeCharDevice {
+		tableWriter := tablewriter.NewWriter(os.Stdout)
+		tableWriter.SetAlignment(tablewriter.ALIGN_LEFT)
+		table = tableWriter
+	} else {
+		table = NewPlainPrinter(os.Stdout)
+	}
 
+	table.SetHeader(headings)
 	for index, serviceStatus := range statuses {
 		service := serviceStatus.Service()
 		status := serviceStatus.Status()
