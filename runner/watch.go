@@ -92,7 +92,7 @@ func rebuildService(dirConfig *home.EdwardConfiguration, service *services.Servi
 	if err != nil {
 		return fmt.Errorf("build failed: %v", err)
 	}
-	log.Printf("Build suceeded\n")
+	log.Printf("Build succeeded\n")
 	err = restart()
 	if err != nil {
 		return errors.WithStack(err)
