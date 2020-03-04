@@ -104,7 +104,7 @@ If your service will output a known piece of text to the console when it has fin
 }
 ```
 
-In this case, once the text "Finished startup" appears in the console lot, Edward will deem the service to have started successfully.
+In this case, once the text "Finished startup" appears in the console log, Edward will deem the service to have started successfully.
 
 Alternatively, you can specify a set of ports:
 
