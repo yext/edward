@@ -59,7 +59,7 @@ $ edward start --no-watch mygroup
 ## Stop
 
 The `stop` command will stop one or more groups and/or services. It takes service
-and group names are arguments in the same manner as `start`.
+and group names as arguments in the same manner as `start`.
 
 For example, to stop *mygroup* and *myservice*:
 
