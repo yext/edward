@@ -20,7 +20,7 @@ func checkNotSudo() error {
 		return errors.WithStack(err)
 	}
 	if user.Uid == "0" {
-		return errors.New("edward should not be fun with sudo")
+		return errors.New("edward should not be run with sudo")
 	}
 	return nil
 }
