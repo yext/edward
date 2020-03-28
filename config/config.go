@@ -19,7 +19,9 @@ import (
 
 // Config defines the structure for the Edward project configuration file
 type Config struct {
-	workingDir       string
+	workingDir string
+
+	TelemetryScript  string                   `json:"telemetryScript,omitempty"`
 	MinEdwardVersion string                   `json:"edwardVersion,omitempty"`
 	Imports          []string                 `json:"imports,omitempty"`
 	ImportedGroups   []GroupDef               `json:"-"`

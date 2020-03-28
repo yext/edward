@@ -34,6 +34,8 @@ type Client struct {
 
 	WorkingDir string
 
+	telemetryScript string
+
 	basePath   string
 	groupMap   map[string]*services.ServiceGroupConfig
 	serviceMap map[string]*services.ServiceConfig

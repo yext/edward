@@ -15,6 +15,8 @@ func (c *Client) Start(names []string, skipBuild bool, noWatch bool, exclude []s
 		}
 	}
 
+	c.telemetryEvent(append([]string{"start"}, names...)...)
+
 	sgs, err := c.getServicesOrGroups(names)
 	if err != nil {
 		return errors.WithStack(err)

@@ -18,6 +18,7 @@ func (c *Client) LoadConfig(edwardVersion string) error {
 			return errors.WithMessage(err, c.Config)
 		}
 
+		c.telemetryScript = cfg.TelemetryScript
 		c.serviceMap = cfg.ServiceMap
 		c.groupMap = cfg.GroupMap
 		return nil

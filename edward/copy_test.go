@@ -120,5 +120,16 @@ func copy_file(source string, dest string) (err error) {
 	defer destfile.Close()
 
 	_, err = io.Copy(destfile, sourcefile)
+
+	// Copy permissions
+	si, err := os.Stat(source)
+	if err != nil {
+		return
+	}
+	err = os.Chmod(dest, si.Mode())
+	if err != nil {
+		return
+	}
+
 	return
 }

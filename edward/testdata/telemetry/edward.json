@@ -1,0 +1,13 @@
+{
+    "telemetryScript": "telemetry.sh",
+    "services": [
+        {
+            "name": "service",
+            "path": "edward-test-service",
+            "commands": {
+                "build": "go build",
+                "launch": "./edward-test-service"
+            }
+        }
+    ]
+}

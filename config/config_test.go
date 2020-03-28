@@ -134,11 +134,12 @@ var group3 = services.ServiceGroupConfig{
 }
 
 var fileBasedTests = []struct {
-	name          string
-	inFile        string
-	outServiceMap map[string]*services.ServiceConfig
-	outGroupMap   map[string]*services.ServiceGroupConfig
-	outErr        error
+	name            string
+	inFile          string
+	telemetryScript string
+	outServiceMap   map[string]*services.ServiceConfig
+	outGroupMap     map[string]*services.ServiceGroupConfig
+	outErr          error
 }{
 	{
 		name:   "Config with imports",
@@ -217,6 +218,14 @@ var fileBasedTests = []struct {
 		inFile: "bad.json",
 		outErr: errors.New("could not parse config file (line 7, char 9): invalid character ':' after array element"),
 	},
+	{
+		name:            "With telemetry",
+		inFile:          "telemetry.json",
+		telemetryScript: "telemetry.sh",
+		outServiceMap: map[string]*services.ServiceConfig{
+			"service1": &service1alias,
+		},
+	},
 }
 
 func TestLoadConfigWithImports(t *testing.T) {
@@ -227,16 +236,37 @@ func TestLoadConfigWithImports(t *testing.T) {
 	}
 	for _, test := range fileBasedTests {
 		cfg, err := LoadConfig(test.inFile, "")
-		validateTestResults(cfg, err, test.inFile, test.outServiceMap, test.outGroupMap, test.outErr, test.name, t)
+		validateTestResults(
+			cfg,
+			err,
+			test.inFile,
+			test.outServiceMap,
+			test.outGroupMap,
+			test.telemetryScript,
+			test.outErr,
+			test.name,
+			t,
+		)
 	}
 }
 
-func validateTestResults(cfg Config, err error, file string, expectedServices map[string]*services.ServiceConfig, expectedGroups map[string]*services.ServiceGroupConfig, expectedErr error, name string, t *testing.T) {
+func validateTestResults(
+	cfg Config,
+	err error,
+	file string,
+	expectedServices map[string]*services.ServiceConfig,
+	expectedGroups map[string]*services.ServiceGroupConfig,
+	telemetryScript string,
+	expectedErr error,
+	name string,
+	t *testing.T,
+) {
 	for _, s := range expectedServices {
 		s.ConfigFile, _ = filepath.Abs(file)
 	}
 	must.BeEqual(t, expectedServices, cfg.ServiceMap, name+": services did not match.")
 	must.BeEqual(t, expectedGroups, cfg.GroupMap, name+": groups did not match.")
+	must.BeEqual(t, telemetryScript, cfg.TelemetryScript, name+": telemetry script")
 
 	must.BeEqualErrors(t, expectedErr, err, name+": Errors did not match.")
 }
