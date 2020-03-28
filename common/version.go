@@ -1,3 +1,3 @@
 package common
 
-const EdwardVersion = "1.8.19"
+const EdwardVersion = "1.9.0"
