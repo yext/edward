@@ -87,6 +87,11 @@ publishDir = "../docs"
 	weight = 60
 
 [[menu.main]]
+	name   = "Telemetry"
+	url    = "telemetry/"
+	weight = 65
+
+[[menu.main]]
 	name   = "Roadmap"
 	url    = "roadmap/"
 	weight = 70

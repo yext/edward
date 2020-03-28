@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>About Edward on Edward Docs</title>
@@ -110,6 +110,18 @@ You can override this behavior with the --config or -c flag:</description>
       <guid>http://engblog.yext.com/edward/sudo/</guid>
       <description>Edward will not run if you try to launch it with sudo, but it may ask you to provide your password so that certain services can be run with elevated priviledges. The password request is triggered through a bash script that calls a command with sudo, to ensure that your bash session can make further sudo calls without prompting.
 This has only been tested in one bash environment, so your mileage may vary.</description>
+    </item>
+    
+    <item>
+      <title>Telemetry</title>
+      <link>http://engblog.yext.com/edward/telemetry/</link>
+      <pubDate>Sun, 15 Jan 2017 22:16:39 -0500</pubDate>
+      
+      <guid>http://engblog.yext.com/edward/telemetry/</guid>
+      <description>Edward allows you to specify a script to trigger telemetry events with the telemetry provider of your choice.
+Specify your script at the root of your edward.json file:
+{ &amp;quot;telemetryScript&amp;quot;: &amp;quot;myScript.sh&amp;quot;, &amp;quot;imports&amp;quot;: ..., &amp;quot;groups&amp;quot;: ..., &amp;quot;services&amp;quot;: ... }  Currently, this script is run in the background whenever edward start is run. The script will be run with parameters of the form &amp;lt;command&amp;gt; [services/groups].
+So if you run against the above edward.</description>
     </item>
     
     <item>
