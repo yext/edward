@@ -16,6 +16,7 @@ jobs:
           args: go test ./...
   build:
     name: 'Build'
+    if: startsWith(github.ref, "v") # Only run builds on versioned tags
     runs-on: ubuntu-latest
     strategy:
       matrix:
