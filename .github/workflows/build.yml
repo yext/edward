@@ -33,14 +33,15 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-      - run: zip edward edward-0.0.0-${{ matrix.goos }}-${{ matrix.goarch}}.zip
+      - run: zip edward-0.0.0-${{ matrix.goos }}-${{ matrix.goarch}}.zip edward
       - name: Archive build
         uses: actions/upload-artifact@v1
         with:
-          name: bbuild
+          name: build
           path: edward-0.0.0-${{ matrix.goos }}-${{ matrix.goarch}}.zip
   release:
     name: 'Release'
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Create Release
