@@ -64,6 +64,13 @@ jobs:
           release_name: ${{ steps.tagName.outputs.tag }}
           draft: false
           prerelease: false
+      - name: Output Release URL File
+        run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+      - name: Save Release URL File for publish
+        uses: actions/upload-artifact@v1
+        with:
+          name: release_url
+          path: release_url.txt
   upload:
     name: 'Upload'
     needs: release
@@ -79,17 +86,21 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: build
-      - name: Get Release
-        id: get_release
-        uses: bruceadams/get-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Load Release URL File from release job
+        uses: actions/download-artifact@v1
+        with:
+          name: release_url
+      - name: Get Release File Name & Upload URL
+        id: get_release_info
+        run: |
+          value=`cat release_url/release_url.txt`
+          echo ::set-output name=upload_url::$value
       - name: Upload Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          upload_url: ${{ steps.get_release_info.outputs.upload_url }} 
           asset_path: build/edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
           asset_name: edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
           asset_content_type: application/zip
