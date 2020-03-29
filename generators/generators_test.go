@@ -215,29 +215,6 @@ func TestGoGenerator(t *testing.T) {
 			},
 			outErr: nil,
 		},
-		{
-			name: "Go with symlink",
-			path: "testdata/symlinked/test/",
-			outServices: []*services.ServiceConfig{
-				{
-					Name: "simple",
-					Path: common.StringToStringPointer("project/simple"),
-					Env:  []string{},
-					Backends: []*services.BackendConfig{
-						{
-							Type: "commandline",
-							Config: &commandline.Backend{
-								Commands: commandline.ServiceConfigCommands{
-									Build:  "go install",
-									Launch: "simple",
-								},
-							},
-						},
-					},
-				},
-			},
-			outErr: nil,
-		},
 	}
 	for _, test := range goTests {
 		t.Run(test.name, func(t *testing.T) {

@@ -1,0 +1,37 @@
+name: 'Release'
+on:
+  push
+jobs:
+  test:
+    name: 'Test'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@master
+        with:
+          fetch-depth: 1
+      - name: run
+        uses: cedrickring/golang-action/go1.13@1.5.1
+        with:
+          args: go test ./...
+  build:
+    name: 'Build'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        goos: ["linux", "darwin"]
+        goarch: ["386", "amd64"]
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@master
+        with:
+          fetch-depth: 1
+      - name: Build
+        uses: cedrickring/golang-action/go1.13@1.5.1
+        with:
+          args: go build -o edward .
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
