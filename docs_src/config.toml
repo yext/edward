@@ -18,7 +18,7 @@ publishDir = "../docs"
 	provider = "GitHub"
 	repo_url = "https://github.com/yext/edward"
 
-	version = "1.9.0"
+	version = "1.9.1"
 	#logo = "images/logo.png"
 	favicon = ""
 
@@ -85,11 +85,6 @@ publishDir = "../docs"
 	name   = "Sudo"
 	url    = "sudo/"
 	weight = 60
-
-[[menu.main]]
-	name   = "Telemetry"
-	url    = "telemetry/"
-	weight = 65
 
 [[menu.main]]
 	name   = "Roadmap"
