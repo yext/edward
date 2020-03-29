@@ -3,9 +3,6 @@ on:
   create:
     tags:
       - v*
-  push:
-    branches:    
-      - master
 jobs:
   test:
     name: 'Test'
