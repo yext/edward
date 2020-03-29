@@ -1,0 +1,104 @@
+name: 'Release'
+on:
+  create:
+    tags:
+      - v*
+jobs:
+  test:
+    name: 'Test'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@master
+        with:
+          fetch-depth: 1
+      - name: run
+        uses: cedrickring/golang-action/go1.13@1.5.1
+        with:
+          args: go test ./...
+  build:
+    name: 'Build'
+    if: startsWith(github.ref, 'refs/tags/v') # Only run builds on versioned tags
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: ["linux", "darwin"]
+        goarch: ["386", "amd64"]
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@master
+        with:
+          fetch-depth: 1
+      - uses: olegtarasov/get-tag@v2
+        id: tagName
+      - run: mkdir edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}
+      - name: Build
+        uses: cedrickring/golang-action/go1.13@1.5.1
+        with:
+          args: go build -o edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}/edward .
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+      - run: zip -r edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}
+      - name: Add build asset
+        uses: actions/upload-artifact@v1
+        with:
+          name: build
+          path: edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+  release:
+    name: 'Release'
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: olegtarasov/get-tag@v2
+        id: tagName
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tagName.outputs.tag }}
+          release_name: ${{ steps.tagName.outputs.tag }}
+          draft: false
+          prerelease: false
+      - name: Output Release URL File
+        run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+      - name: Save Release URL File for publish
+        uses: actions/upload-artifact@v1
+        with:
+          name: release_url
+          path: release_url.txt
+  upload:
+    name: 'Upload'
+    needs: release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: ["linux", "darwin"]
+        goarch: ["386", "amd64"]
+    steps:
+      - uses: olegtarasov/get-tag@v2
+        id: tagName
+      - name: Download build
+        uses: actions/download-artifact@v1
+        with:
+          name: build
+      - name: Load Release URL File from release job
+        uses: actions/download-artifact@v1
+        with:
+          name: release_url
+      - name: Get Release File Name & Upload URL
+        id: get_release_info
+        run: |
+          value=`cat release_url/release_url.txt`
+          echo ::set-output name=upload_url::$value
+      - name: Upload Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release_info.outputs.upload_url }} 
+          asset_path: build/edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+          asset_name: edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+          asset_content_type: application/zip
