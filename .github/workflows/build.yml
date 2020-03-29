@@ -33,3 +33,23 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
+      - run: zip edward edward-0.0.0-${{ matrix.goos }}-${{ matrix.goarch}}.zip
+      - name: Archive build
+        uses: actions/upload-artifact@v1
+        with:
+          name: bbuild
+          path: edward-0.0.0-${{ matrix.goos }}-${{ matrix.goarch}}.zip
+  release:
+    name: 'Release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
