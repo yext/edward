@@ -52,14 +52,16 @@ jobs:
     needs: [test, build]
     runs-on: ubuntu-latest
     steps:
+      - uses: olegtarasov/get-tag@v2
+        id: tagName
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: release-${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: release-${{ steps.tagName.outputs.tag }}
+          release_name: Release ${{ steps.tagName.outputs.tag }}
           draft: false
           prerelease: false
       - run: echo ${{ steps.create_release.outputs.upload_url }} > upload_url.txt
