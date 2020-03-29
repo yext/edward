@@ -1,6 +1,6 @@
 # Edward
 
-[![Build Status](https://travis-ci.org/yext/edward.svg?branch=master)](https://travis-ci.org/yext/edward)
+![Tests](https://github.com/yext/edward/workflows/Test/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/yext/edward)](https://goreportcard.com/report/github.com/yext/edward)
 [![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/yext-edward/Lobby)
 
