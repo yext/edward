@@ -39,7 +39,7 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-      - run: zip edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}
+      - run: zip -r edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}
       - name: Add build asset
         uses: actions/upload-artifact@v1
         with:
