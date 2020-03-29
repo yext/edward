@@ -86,11 +86,6 @@ jobs:
       - name: Get Version
         id: version
         run: echo "::set-output name=version::`cat VERSION`"
-      - name: Archive build
-        uses: actions/upload-artifact@v1
-        with:
-          name: build
-          path: edward_v${{ steps.version.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
       - name: Upload Asset
         uses: actions/upload-release-asset@v1
         env:
