@@ -39,12 +39,12 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-      - run: zip edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip build/edward
+      - run: cd build && zip edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip edward
       - name: Add build asset
         uses: actions/upload-artifact@v1
         with:
           name: build
-          path: edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+          path: build/edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
   release:
     name: 'Release'
     needs: [test, build]
@@ -99,6 +99,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.get_release_info.outputs.upload_url }} 
-          asset_path: build/edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+          asset_path: build/build/edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
           asset_name: edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
           asset_content_type: application/zip
