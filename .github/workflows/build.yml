@@ -21,7 +21,7 @@ jobs:
           args: go test ./...
   build:
     name: 'Build'
-    if: startsWith(github.ref, 'v') # Only run builds on versioned tags
+    if: startsWith(github.ref, 'refs/tags/v') # Only run builds on versioned tags
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -32,6 +32,8 @@ jobs:
         uses: actions/checkout@master
         with:
           fetch-depth: 1
+      - uses: olegtarasov/get-tag@v2
+        id: tagName
       - name: Build
         uses: cedrickring/golang-action/go1.13@1.5.1
         with:
@@ -39,12 +41,12 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-      - run: zip edward_${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip edward
+      - run: zip edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip edward
       - name: Add build asset
         uses: actions/upload-artifact@v1
         with:
           name: build
-          path: edward_$${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+          path: edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
   release:
     name: 'Release'
     needs: [test, build]
@@ -75,6 +77,8 @@ jobs:
         goos: ["linux", "darwin"]
         goarch: ["386", "amd64"]
     steps:
+      - uses: olegtarasov/get-tag@v2
+        id: tagName
       - name: Download build
         uses: actions/download-artifact@v1
         with:
@@ -92,6 +96,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.upload.outputs.url }}
-          asset_path: build/edward_${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
-          asset_name: edward_${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+          asset_path: build/edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+          asset_name: edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
           asset_content_type: application/zip
