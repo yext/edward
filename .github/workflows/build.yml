@@ -34,14 +34,15 @@ jobs:
           fetch-depth: 1
       - uses: olegtarasov/get-tag@v2
         id: tagName
+      - run: mkdir build
       - name: Build
         uses: cedrickring/golang-action/go1.13@1.5.1
         with:
-          args: go build -o edward .
+          args: go build -o build/edward .
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-      - run: zip edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip edward
+      - run: zip edward_${{ steps.tagName.outputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip build/edward
       - name: Add build asset
         uses: actions/upload-artifact@v1
         with:
