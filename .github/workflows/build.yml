@@ -33,12 +33,12 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-      - run: zip edward_v${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip edward
+      - run: zip edward_${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip edward
       - name: Add build asset
         uses: actions/upload-artifact@v1
         with:
           name: build
-          path: edward_v$${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+          path: edward_$${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
   release:
     name: 'Release'
     needs: [test, build]
@@ -86,6 +86,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.upload.outputs.url }}
-          asset_path: build/edward_v${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
-          asset_name: edward_v${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+          asset_path: build/edward_${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+          asset_name: edward_${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
           asset_content_type: application/zip
