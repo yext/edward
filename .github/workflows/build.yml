@@ -26,9 +26,6 @@ jobs:
         uses: actions/checkout@master
         with:
           fetch-depth: 1
-      - name: Get Version
-        id: version
-        run: echo "::set-output name=version::`cat VERSION`"
       - name: Build
         uses: cedrickring/golang-action/go1.13@1.5.1
         with:
@@ -36,12 +33,12 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-      - run: zip edward_v${{ steps.version.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip edward
+      - run: zip edward_v${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip edward
       - name: Add build asset
         uses: actions/upload-artifact@v1
         with:
           name: build
-          path: edward_v${{ steps.version.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+          path: edward_v$${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
   release:
     name: 'Release'
     needs: [test, build]
@@ -83,15 +80,12 @@ jobs:
       - name: Save upload_url
         id: upload
         run: echo "::set-output name=url::`cat upload_url/upload_url.txt`"
-      - name: Get Version
-        id: version
-        run: echo "::set-output name=version::`cat VERSION`"
       - name: Upload Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.upload.outputs.url }}
-          asset_path: build/edward_v${{ steps.version.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
-          asset_name: edward_v${{ steps.version.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+          asset_path: build/edward_v${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+          asset_name: edward_v${{ github.ref }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
           asset_content_type: application/zip
