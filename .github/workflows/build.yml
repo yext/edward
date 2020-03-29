@@ -37,7 +37,7 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
       - run: zip edward_v${{ steps.version.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip edward
-      - name: Archive build
+      - name: Add build asset
         uses: actions/upload-artifact@v1
         with:
           name: build
@@ -47,9 +47,6 @@ jobs:
     needs: [test, build]
     runs-on: ubuntu-latest
     steps:
-      - name: Get Version
-        id: version
-        run: echo "::set-output name=version::`cat VERSION`"
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -60,17 +57,45 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
+      - run: echo ${{ steps.create_release.outputs.upload_url }} > upload_url.txt
+      - name: Save upload URL
+        uses: actions/upload-artifact@v1
+        with:
+          name: upload_url
+          path: upload_url.txt
+  upload:
+    name: 'Upload'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: ["linux", "darwin"]
+        goarch: ["386", "amd64"]
+    steps:
       - name: Download build
         uses: actions/download-artifact@v1
         with:
           name: build
-      - run: ls
-      - name: Upload MacOS
+      - name: Get upload URL
+        uses: actions/download-artifact@v1
+        with:
+          name: upload_url
+      - name: Save upload_url
+        id: upload
+        run: echo "::set-output name=url::`cat upload_url/upload_url.txt`"
+      - name: Get Version
+        id: version
+        run: echo "::set-output name=version::`cat VERSION`"
+      - name: Archive build
+        uses: actions/upload-artifact@v1
+        with:
+          name: build
+          path: edward_v${{ steps.version.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+      - name: Upload Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: build/edward-0.0.0-darwin-amd64.zip
-          asset_name: edward-0.0.0-macOS-64bit.zip
+          upload_url: ${{ steps.upload.outputs.url }}
+          asset_path: build/edward_v${{ steps.version.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
+          asset_name: edward_v${{ steps.version.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch}}.zip
           asset_content_type: application/zip
