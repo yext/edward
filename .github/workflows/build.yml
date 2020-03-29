@@ -65,6 +65,7 @@ jobs:
           path: upload_url.txt
   upload:
     name: 'Upload'
+    needs: release
     runs-on: ubuntu-latest
     strategy:
       matrix:
