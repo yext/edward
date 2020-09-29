@@ -13,6 +13,7 @@ require (
 	github.com/docker/go-connections v0.3.0 // indirect
 	github.com/docker/go-units v0.3.2 // indirect
 	github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4
+	github.com/ebuchman/go-shell-pipes v0.0.0-20150412091402-83e132480862
 	github.com/fatih/color v1.6.0
 	github.com/go-ole/go-ole v1.2.1 // indirect
 	github.com/google/btree v0.0.0-20180124185431-e89373fe6b4a // indirect
@@ -58,3 +59,5 @@ require (
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0-20170531160350-a96e63847dc3
 )
+
+go 1.13

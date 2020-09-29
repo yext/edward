@@ -15,6 +15,8 @@ github.com/docker/go-units v0.3.2 h1:Kjm80apys7gTtfVmCvVY8gwu10uofaFSrmAKOVrtueE
 github.com/docker/go-units v0.3.2/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4 h1:qk/FSDDxo05wdJH28W+p5yivv7LuLYLRXPPD8KQCtZs=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
+github.com/ebuchman/go-shell-pipes v0.0.0-20150412091402-83e132480862 h1:UdoFAkqVuHxDOaAUR/7Fkq/NZbswHya30diyAKCq4z0=
+github.com/ebuchman/go-shell-pipes v0.0.0-20150412091402-83e132480862/go.mod h1:IwOyG/0EgKg/s4V9ToqEXvObxu7iIU+/d0M4mvAowJc=
 github.com/fatih/color v1.6.0 h1:66qjqZk8kalYAvDRtM1AdAJQI0tj4Wrue3Eq3B3pmFU=
 github.com/fatih/color v1.6.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV9I=
