@@ -32,8 +32,7 @@ require (
 	github.com/mitchellh/go-homedir v0.0.0-20161203194507-b8bc1bf76747
 	github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238 // indirect
 	github.com/olekukonko/tablewriter v0.0.0-20180130162743-b8a9be070da4
-	github.com/onsi/ginkgo v1.7.0 // indirect
-	github.com/onsi/gomega v1.4.3 // indirect
+	github.com/onsi/gomega v1.12.0 // indirect
 	github.com/pelletier/go-toml v1.1.0 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.8.0
@@ -48,7 +47,6 @@ require (
 	github.com/spf13/pflag v1.0.0 // indirect
 	github.com/spf13/viper v1.0.0
 	github.com/stevvooe/resumable v0.0.0-20180830230917-22b14a53ba50 // indirect
-	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/theothertomelliott/gopsutil-nocgo v0.0.0-20170405215031-e1dd81b10a4c
 	github.com/theothertomelliott/must v0.0.0-20161223163453-883760f0acf9
 	github.com/theothertomelliott/struct2struct v0.0.0-20180301035006-372ebe1f48e2
