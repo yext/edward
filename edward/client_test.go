@@ -11,7 +11,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/theothertomelliott/gopsutil-nocgo/process"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/yext/edward/edward"
 	"github.com/yext/edward/home"
 	"github.com/yext/edward/services"

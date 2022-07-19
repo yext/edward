@@ -11,7 +11,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/theothertomelliott/gopsutil-nocgo/internal/common"
+	"github.com/shirou/gopsutil/v3/internal/common"
 )
 
 // sys/sched.h

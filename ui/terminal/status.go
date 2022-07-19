@@ -8,7 +8,7 @@ import (
 
 	humanize "github.com/dustin/go-humanize"
 	"github.com/olekukonko/tablewriter"
-	"github.com/theothertomelliott/gopsutil-nocgo/process"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/yext/edward/ui"
 )
 

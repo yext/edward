@@ -2,7 +2,7 @@
 
 package mem
 
-import "github.com/theothertomelliott/gopsutil-nocgo/internal/common"
+import "github.com/shirou/gopsutil/v3/internal/common"
 
 func VirtualMemory() (*VirtualMemoryStat, error) {
 	return nil, common.ErrNotImplementedError

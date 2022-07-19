@@ -7,7 +7,6 @@ require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/Microsoft/go-winio v0.4.7 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
-	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
 	github.com/docker/distribution v2.7.0+incompatible // indirect
 	github.com/docker/docker v1.4.2-0.20200323100004-d8554bd58666
 	github.com/docker/go-connections v0.3.0 // indirect
@@ -16,7 +15,6 @@ require (
 	github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4
 	github.com/fatih/color v1.6.0
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/go-ole/go-ole v1.2.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/btree v0.0.0-20180124185431-e89373fe6b4a // indirect
 	github.com/google/go-github v15.0.0+incompatible
@@ -42,7 +40,7 @@ require (
 	github.com/pkg/errors v0.8.0
 	github.com/sabhiram/go-git-ignore v0.0.0-20171017070213-362f9845770f
 	github.com/satori/go.uuid v1.2.0
-	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
+	github.com/shirou/gopsutil/v3 v3.22.6
 	github.com/sirupsen/logrus v1.3.0 // indirect
 	github.com/spf13/afero v1.0.2 // indirect
 	github.com/spf13/cast v1.2.0 // indirect
@@ -50,8 +48,6 @@ require (
 	github.com/spf13/jwalterweatherman v0.0.0-20180109140146-7c0cea34c8ec // indirect
 	github.com/spf13/pflag v1.0.0 // indirect
 	github.com/spf13/viper v1.0.0
-	github.com/stretchr/testify v1.5.1 // indirect
-	github.com/theothertomelliott/gopsutil-nocgo v0.0.0-20170405215031-e1dd81b10a4c
 	github.com/theothertomelliott/must v0.0.0-20161223163453-883760f0acf9
 	github.com/theothertomelliott/struct2struct v0.0.0-20180301035006-372ebe1f48e2
 	github.com/theothertomelliott/uilive v0.0.0-20170420192653-e481c8e66f15

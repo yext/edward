@@ -13,9 +13,9 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/theothertomelliott/gopsutil-nocgo/cpu"
-	"github.com/theothertomelliott/gopsutil-nocgo/internal/common"
-	"github.com/theothertomelliott/gopsutil-nocgo/net"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/internal/common"
+	"github.com/shirou/gopsutil/v3/net"
 )
 
 // copied from sys/sysctl.h

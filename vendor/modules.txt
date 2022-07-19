@@ -117,13 +117,13 @@ github.com/spf13/jwalterweatherman
 github.com/spf13/pflag
 # github.com/spf13/viper v1.0.0
 github.com/spf13/viper
-# github.com/theothertomelliott/gopsutil-nocgo v0.0.0-20170405215031-e1dd81b10a4c
-github.com/theothertomelliott/gopsutil-nocgo/net
-github.com/theothertomelliott/gopsutil-nocgo/process
-github.com/theothertomelliott/gopsutil-nocgo/internal/common
-github.com/theothertomelliott/gopsutil-nocgo/cpu
-github.com/theothertomelliott/gopsutil-nocgo/host
-github.com/theothertomelliott/gopsutil-nocgo/mem
+# github.com/shirou/gopsutil v0.0.0-20170405215031-e1dd81b10a4c
+github.com/shirou/gopsutil/v3/net
+github.com/shirou/gopsutil/v3/process
+github.com/shirou/gopsutil/v3/internal/common
+github.com/shirou/gopsutil/v3/cpu
+github.com/shirou/gopsutil/v3/host
+github.com/shirou/gopsutil/v3/mem
 # github.com/theothertomelliott/must v0.0.0-20161223163453-883760f0acf9
 github.com/theothertomelliott/must
 # github.com/theothertomelliott/struct2struct v0.0.0-20180301035006-372ebe1f48e2

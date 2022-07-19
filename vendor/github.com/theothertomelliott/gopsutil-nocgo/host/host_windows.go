@@ -13,8 +13,8 @@ import (
 
 	"github.com/StackExchange/wmi"
 
-	"github.com/theothertomelliott/gopsutil-nocgo/internal/common"
-	process "github.com/theothertomelliott/gopsutil-nocgo/process"
+	"github.com/shirou/gopsutil/v3/internal/common"
+	process "github.com/shirou/gopsutil/v3/process"
 )
 
 var (
