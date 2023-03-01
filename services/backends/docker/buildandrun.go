@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/containerd/containerd/platforms"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -117,11 +118,20 @@ func (b *buildandrun) Start(standardLog io.Writer, errorLog io.Writer) error {
 		struct2struct.Marshal(&b.Backend.NetworkConfig, &networkConfig)
 
 		config.Image = imgID
+
+		platform := platforms.DefaultSpec()
+		if len(b.Service.Platform) > 0 {
+			if platform, err = platforms.Parse(b.Service.Platform); err != nil {
+				return errors.WithMessage(err, "parsing platform")
+			}
+		}
+
 		container, err := b.client.ContainerCreate(
 			context.Background(),
 			&config,
 			&hostConfig,
 			&networkConfig,
+			&platform,
 			b.containerName(),
 		)
 

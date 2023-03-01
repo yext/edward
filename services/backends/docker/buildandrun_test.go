@@ -34,6 +34,7 @@ func TestBuild(t *testing.T) {
 		Path: func(in string) *string {
 			return &in
 		}("testdata/simple"),
+		Platform: "linux/amd64",
 		Backends: []*services.BackendConfig{
 			{
 				Type: "docker",
@@ -80,6 +81,7 @@ func TestBuildAltFile(t *testing.T) {
 		Path: func(in string) *string {
 			return &in
 		}("testdata/alternate_filename"),
+		Platform: "linux/amd64",
 		Backends: []*services.BackendConfig{
 			{
 				Type: "docker",
@@ -122,7 +124,8 @@ func TestBuildAltFile(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	service := &services.ServiceConfig{
-		Name: "testservice",
+		Name:     "testservice",
+		Platform: "linux/amd64",
 		Backends: []*services.BackendConfig{
 			{
 				Type: "docker",
