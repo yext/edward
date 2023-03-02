@@ -19,10 +19,12 @@ package cobra
 import (
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 	"unicode"
 )
 
@@ -51,10 +53,16 @@ var EnableCommandSorting = true
 // if the CLI is started from explorer.exe.
 // To disable the mousetrap, just set this variable to blank string ("").
 // Works only on Microsoft Windows.
-var MousetrapHelpText string = `This is a command line tool.
+var MousetrapHelpText = `This is a command line tool.
 
 You need to open cmd.exe and run it from there.
 `
+
+// MousetrapDisplayDuration controls how long the MousetrapHelpText message is displayed on Windows
+// if the CLI is started from explorer.exe. Set to 0 to wait for the return key to be pressed.
+// To disable the mousetrap, just set MousetrapHelpText to blank string ("").
+// Works only on Microsoft Windows.
+var MousetrapDisplayDuration = 5 * time.Second
 
 // AddTemplateFunc adds a template function that's available to Usage and Help
 // template generation.
@@ -70,7 +78,8 @@ func AddTemplateFuncs(tmplFuncs template.FuncMap) {
 	}
 }
 
-// OnInitialize takes a series of func() arguments and appends them to a slice of func().
+// OnInitialize sets the passed functions to be run when each command's
+// Execute method is called.
 func OnInitialize(y ...func()) {
 	initializers = append(initializers, y...)
 }
@@ -187,4 +196,27 @@ func ld(s, t string, ignoreCase bool) int {
 
 	}
 	return d[len(s)][len(t)]
+}
+
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
+// CheckErr prints the msg with the prefix 'Error:' and exits with error code 1. If the msg is nil, it does nothing.
+func CheckErr(msg interface{}) {
+	if msg != nil {
+		fmt.Fprintln(os.Stderr, "Error:", msg)
+		os.Exit(1)
+	}
+}
+
+// WriteStringAndCheck writes a string into a buffer, and checks if the error is not nil.
+func WriteStringAndCheck(b io.StringWriter, s string) {
+	_, err := b.WriteString(s)
+	CheckErr(err)
 }
