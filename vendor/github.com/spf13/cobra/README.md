@@ -2,28 +2,15 @@
 
 Cobra is both a library for creating powerful modern CLI applications as well as a program to generate applications and command files.
 
-Many of the most widely used Go projects are built using Cobra including:
+Cobra is used in many Go projects such as [Kubernetes](http://kubernetes.io/),
+[Hugo](https://gohugo.io), and [Github CLI](https://github.com/cli/cli) to
+name a few. [This list](./projects_using_cobra.md) contains a more extensive list of projects using Cobra.
 
-* [Kubernetes](http://kubernetes.io/)
-* [Hugo](http://gohugo.io)
-* [rkt](https://github.com/coreos/rkt)
-* [etcd](https://github.com/coreos/etcd)
-* [Moby (former Docker)](https://github.com/moby/moby)
-* [Docker (distribution)](https://github.com/docker/distribution)
-* [OpenShift](https://www.openshift.com/)
-* [Delve](https://github.com/derekparker/delve)
-* [GopherJS](http://www.gopherjs.org/)
-* [CockroachDB](http://www.cockroachlabs.com/)
-* [Bleve](http://www.blevesearch.com/)
-* [ProjectAtomic (enterprise)](http://www.projectatomic.io/)
-* [GiantSwarm's swarm](https://github.com/giantswarm/cli)
-* [Nanobox](https://github.com/nanobox-io/nanobox)/[Nanopack](https://github.com/nanopack)
-* [rclone](http://rclone.org/)
-* [nehm](https://github.com/bogem/nehm)
-
+[![](https://img.shields.io/github/workflow/status/spf13/cobra/Test?longCache=tru&label=Test&logo=github%20actions&logoColor=fff)](https://github.com/spf13/cobra/actions?query=workflow%3ATest)
 [![Build Status](https://travis-ci.org/spf13/cobra.svg "Travis CI status")](https://travis-ci.org/spf13/cobra)
-[![CircleCI status](https://circleci.com/gh/spf13/cobra.png?circle-token=:circle-token "CircleCI status")](https://circleci.com/gh/spf13/cobra)
 [![GoDoc](https://godoc.org/github.com/spf13/cobra?status.svg)](https://godoc.org/github.com/spf13/cobra)
+[![Go Report Card](https://goreportcard.com/badge/github.com/spf13/cobra)](https://goreportcard.com/report/github.com/spf13/cobra)
+[![Slack](https://img.shields.io/badge/Slack-cobra-brightgreen)](https://gophers.slack.com/archives/CD3LP1199)
 
 # Table of Contents
 
@@ -43,8 +30,8 @@ Many of the most widely used Go projects are built using Cobra including:
   * [PreRun and PostRun Hooks](#prerun-and-postrun-hooks)
   * [Suggestions when "unknown command" happens](#suggestions-when-unknown-command-happens)
   * [Generating documentation for your command](#generating-documentation-for-your-command)
-  * [Generating bash completions](#generating-bash-completions)
-- [Contributing](#contributing)
+  * [Generating shell completions](#generating-shell-completions)
+- [Contributing](CONTRIBUTING.md)
 - [License](#license)
 
 # Overview
@@ -64,7 +51,7 @@ Cobra provides:
 * Intelligent suggestions (`app srver`... did you mean `app server`?)
 * Automatic help generation for commands and flags
 * Automatic help flag recognition of `-h`, `--help`, etc.
-* Automatically generated bash autocomplete for your application
+* Automatically generated shell autocomplete for your application (bash, zsh, fish, powershell)
 * Automatically generated man pages for your application
 * Command aliases so you can change things without breaking them
 * The flexibility to define your own help, usage, etc.
@@ -76,8 +63,8 @@ Cobra is built on a structure of commands, arguments & flags.
 
 **Commands** represent actions, **Args** are things and **Flags** are modifiers for those actions.
 
-The best applications will read like sentences when used. Users will know how
-to use the application because they will natively understand how to use it.
+The best applications read like sentences when used, and as a result, users
+intuitively know how to interact with them.
 
 The pattern to follow is
 `APPNAME VERB NOUN --ADJECTIVE.`
@@ -122,7 +109,7 @@ Using Cobra is easy. First, use `go get` to install the latest version
 of the library. This command will install the `cobra` generator executable
 along with the library and its dependencies:
 
-    go get -u github.com/spf13/cobra/cobra
+    go get -u github.com/spf13/cobra
 
 Next, include Cobra in your application:
 
@@ -151,17 +138,11 @@ In a Cobra app, typically the main.go file is very bare. It serves one purpose: 
 package main
 
 import (
-  "fmt"
-  "os"
-
   "{pathToYourApp}/cmd"
 )
 
 func main() {
-  if err := cmd.RootCmd.Execute(); err != nil {
-    fmt.Println(err)
-    os.Exit(1)
-  }
+  cmd.Execute()
 }
 ```
 
@@ -174,7 +155,7 @@ commands you want. It's the easiest way to incorporate Cobra into your applicati
 
 ## Using the Cobra Library
 
-To manually implement Cobra you need to create a bare main.go file and a RootCmd file.
+To manually implement Cobra you need to create a bare main.go file and a rootCmd file.
 You will optionally provide additional commands as you see fit.
 
 ### Create rootCmd
@@ -184,7 +165,7 @@ Cobra doesn't require any special constructors. Simply create your commands.
 Ideally you place this in app/cmd/root.go:
 
 ```go
-var RootCmd = &cobra.Command{
+var rootCmd = &cobra.Command{
   Use:   "hugo",
   Short: "Hugo is a very fast static site generator",
   Long: `A Fast and Flexible Static Site Generator built with
@@ -194,6 +175,13 @@ var RootCmd = &cobra.Command{
     // Do Stuff Here
   },
 }
+
+func Execute() {
+  if err := rootCmd.Execute(); err != nil {
+    fmt.Fprintln(os.Stderr, err)
+    os.Exit(1)
+  }
+}
 ```
 
 You will additionally define flags and handle configuration in your init() function.
@@ -201,55 +189,71 @@ You will additionally define flags and handle configuration in your init() funct
 For example cmd/root.go:
 
 ```go
-import (
-  "fmt"
-  "os"
+package cmd
 
-  homedir "github.com/mitchellh/go-homedir"
-  "github.com/spf13/cobra"
-  "github.com/spf13/viper"
+import (
+	"fmt"
+	"os"
+
+	homedir "github.com/mitchellh/go-homedir"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-func init() {
-  cobra.OnInitialize(initConfig)
-  RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.cobra.yaml)")
-  RootCmd.PersistentFlags().StringVarP(&projectBase, "projectbase", "b", "", "base project directory eg. github.com/spf13/")
-  RootCmd.PersistentFlags().StringP("author", "a", "YOUR NAME", "Author name for copyright attribution")
-  RootCmd.PersistentFlags().StringVarP(&userLicense, "license", "l", "", "Name of license for the project (can provide `licensetext` in config)")
-  RootCmd.PersistentFlags().Bool("viper", true, "Use Viper for configuration")
-  viper.BindPFlag("author", RootCmd.PersistentFlags().Lookup("author"))
-  viper.BindPFlag("projectbase", RootCmd.PersistentFlags().Lookup("projectbase"))
-  viper.BindPFlag("useViper", RootCmd.PersistentFlags().Lookup("viper"))
-  viper.SetDefault("author", "NAME HERE <EMAIL ADDRESS>")
-  viper.SetDefault("license", "apache")
+var (
+	// Used for flags.
+	cfgFile     string
+	userLicense string
+
+	rootCmd = &cobra.Command{
+		Use:   "cobra",
+		Short: "A generator for Cobra based Applications",
+		Long: `Cobra is a CLI library for Go that empowers applications.
+This application is a tool to generate the needed files
+to quickly create a Cobra application.`,
+	}
+)
+
+// Execute executes the root command.
+func Execute() error {
+	return rootCmd.Execute()
 }
 
-func Execute() {
-  RootCmd.Execute()
+func init() {
+	cobra.OnInitialize(initConfig)
+
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.cobra.yaml)")
+	rootCmd.PersistentFlags().StringP("author", "a", "YOUR NAME", "author name for copyright attribution")
+	rootCmd.PersistentFlags().StringVarP(&userLicense, "license", "l", "", "name of license for the project")
+	rootCmd.PersistentFlags().Bool("viper", true, "use Viper for configuration")
+	viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
+	viper.BindPFlag("useViper", rootCmd.PersistentFlags().Lookup("viper"))
+	viper.SetDefault("author", "NAME HERE <EMAIL ADDRESS>")
+	viper.SetDefault("license", "apache")
+
+	rootCmd.AddCommand(addCmd)
+	rootCmd.AddCommand(initCmd)
 }
 
 func initConfig() {
-  // Don't forget to read config either from cfgFile or from home directory!
-  if cfgFile != "" {
-    // Use config file from the flag.
-    viper.SetConfigFile(cfgFile)
-  } else {
-    // Find home directory.
-    home, err := homedir.Dir()
-    if err != nil {
-      fmt.Println(err)
-      os.Exit(1)
-    }
+	if cfgFile != "" {
+		// Use config file from the flag.
+		viper.SetConfigFile(cfgFile)
+	} else {
+		// Find home directory.
+		home, err := homedir.Dir()
+		cobra.CheckErr(err)
 
-    // Search config in home directory with name ".cobra" (without extension).
-    viper.AddConfigPath(home)
-    viper.SetConfigName(".cobra")
-  }
+		// Search config in home directory with name ".cobra" (without extension).
+		viper.AddConfigPath(home)
+		viper.SetConfigName(".cobra")
+	}
 
-  if err := viper.ReadInConfig(); err != nil {
-    fmt.Println("Can't read config:", err)
-    os.Exit(1)
-  }
+	viper.AutomaticEnv()
+
+	if err := viper.ReadInConfig(); err == nil {
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}
 }
 ```
 
@@ -258,23 +262,17 @@ func initConfig() {
 With the root command you need to have your main function execute it.
 Execute should be run on the root for clarity, though it can be called on any command.
 
-In a Cobra app, typically the main.go file is very bare. It serves, one purpose, to initialize Cobra.
+In a Cobra app, typically the main.go file is very bare. It serves one purpose: to initialize Cobra.
 
 ```go
 package main
 
 import (
-  "fmt"
-  "os"
-
   "{pathToYourApp}/cmd"
 )
 
 func main() {
-  if err := cmd.RootCmd.Execute(); err != nil {
-    fmt.Println(err)
-    os.Exit(1)
-  }
+  cmd.Execute()
 }
 ```
 
@@ -290,12 +288,13 @@ populate it with the following:
 package cmd
 
 import (
-  "github.com/spf13/cobra"
   "fmt"
+
+  "github.com/spf13/cobra"
 )
 
 func init() {
-  RootCmd.AddCommand(versionCmd)
+  rootCmd.AddCommand(versionCmd)
 }
 
 var versionCmd = &cobra.Command{
@@ -307,6 +306,37 @@ var versionCmd = &cobra.Command{
   },
 }
 ```
+
+### Returning and handling errors
+
+If you wish to return an error to the caller of a command, `RunE` can be used.
+
+```go
+package cmd
+
+import (
+  "fmt"
+
+  "github.com/spf13/cobra"
+)
+
+func init() {
+  rootCmd.AddCommand(tryCmd)
+}
+
+var tryCmd = &cobra.Command{
+  Use:   "try",
+  Short: "Try and possibly fail at something",
+  RunE: func(cmd *cobra.Command, args []string) error {
+    if err := someFunc(); err != nil {
+	return err
+    }
+    return nil
+  },
+}
+```
+
+The error can then be caught at the execute function call.
 
 ## Working with Flags
 
@@ -327,26 +357,26 @@ There are two different approaches to assign a flag.
 
 ### Persistent Flags
 
-A flag can be 'persistent' meaning that this flag will be available to the
+A flag can be 'persistent', meaning that this flag will be available to the
 command it's assigned to as well as every command under that command. For
 global flags, assign a flag as a persistent flag on the root.
 
 ```go
-RootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
+rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
 ```
 
 ### Local Flags
 
-A flag can also be assigned locally which will only apply to that specific command.
+A flag can also be assigned locally, which will only apply to that specific command.
 
 ```go
-RootCmd.Flags().StringVarP(&Source, "source", "s", "", "Source directory to read from")
+localCmd.Flags().StringVarP(&Source, "source", "s", "", "Source directory to read from")
 ```
 
 ### Local Flag on Parent Commands
 
-By default Cobra only parses local flags on the target command, any local flags on 
-parent commands are ignored. By enabling `Command.TraverseChildren` Cobra will 
+By default, Cobra only parses local flags on the target command, and any local flags on
+parent commands are ignored. By enabling `Command.TraverseChildren`, Cobra will
 parse local flags on each command before executing the target command.
 
 ```go
@@ -363,16 +393,31 @@ You can also bind your flags with [viper](https://github.com/spf13/viper):
 var author string
 
 func init() {
-  RootCmd.PersistentFlags().StringVar(&author, "author", "YOUR NAME", "Author name for copyright attribution")
-  viper.BindPFlag("author", RootCmd.PersistentFlags().Lookup("author"))
+  rootCmd.PersistentFlags().StringVar(&author, "author", "YOUR NAME", "Author name for copyright attribution")
+  viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
 }
 ```
 
-In this example the persistent flag `author` is bound with `viper`.
-**Note**, that the variable `author` will not be set to the value from config,
+In this example, the persistent flag `author` is bound with `viper`.
+**Note**: the variable `author` will not be set to the value from config,
 when the `--author` flag is not provided by user.
 
 More in [viper documentation](https://github.com/spf13/viper#working-with-flags).
+
+### Required flags
+
+Flags are optional by default. If instead you wish your command to report an error
+when a flag has not been set, mark it as required:
+```go
+rootCmd.Flags().StringVarP(&Region, "region", "r", "", "AWS region (required)")
+rootCmd.MarkFlagRequired("region")
+```
+
+Or, for persistent flags:
+```go
+rootCmd.PersistentFlags().StringVarP(&Region, "region", "r", "", "AWS region (required)")
+rootCmd.MarkPersistentFlagRequired("region")
+```
 
 ## Positional and Custom Arguments
 
@@ -387,6 +432,7 @@ The following validators are built in:
 - `MinimumNArgs(int)` - the command will report an error if there are not at least N positional args.
 - `MaximumNArgs(int)` - the command will report an error if there are more than N positional args.
 - `ExactArgs(int)` - the command will report an error if there are not exactly N positional args.
+- `ExactValidArgs(int)` - the command will report an error if there are not exactly N positional args OR if there are any positional args that are not in the `ValidArgs` field of `Command`
 - `RangeArgs(min, max)` - the command will report an error if the number of args is not between the minimum and maximum number of expected args.
 
 An example of setting the custom validator:
@@ -396,7 +442,7 @@ var cmd = &cobra.Command{
   Short: "hello",
   Args: func(cmd *cobra.Command, args []string) error {
     if len(args) < 1 {
-      return errors.New("requires at least one arg")
+      return errors.New("requires a color argument")
     }
     if myapp.IsValidColor(args[0]) {
       return nil
@@ -413,7 +459,7 @@ var cmd = &cobra.Command{
 
 In the example below, we have defined three commands. Two are at the top level
 and one (cmdTimes) is a child of one of the top commands. In this case the root
-is not executable meaning that a subcommand is required. This is accomplished
+is not executable, meaning that a subcommand is required. This is accomplished
 by not providing a 'Run' for the 'rootCmd'.
 
 We have only defined one flag for a single command.
@@ -451,12 +497,12 @@ For many years people have printed back to the screen.`,
 Echo works a lot like print, except it has a child command.`,
     Args: cobra.MinimumNArgs(1),
     Run: func(cmd *cobra.Command, args []string) {
-      fmt.Println("Print: " + strings.Join(args, " "))
+      fmt.Println("Echo: " + strings.Join(args, " "))
     },
   }
 
   var cmdTimes = &cobra.Command{
-    Use:   "times [# times] [string to echo]",
+    Use:   "times [string to echo]",
     Short: "Echo anything to the screen more times",
     Long: `echo things multiple times back to the user by providing
 a count and a string.`,
@@ -522,7 +568,7 @@ around it. In fact, you can provide your own if you want.
 ### Defining your own help
 
 You can provide your own Help command or your own template for the default command to use
-with followind functions:
+with following functions:
 
 ```go
 cmd.SetHelpCommand(cmd *Command)
@@ -568,6 +614,13 @@ Like help, the function and template are overridable through public methods:
 cmd.SetUsageFunc(f func(*Command) error)
 cmd.SetUsageTemplate(s string)
 ```
+
+## Version Flag
+
+Cobra adds a top-level '--version' flag if the Version field is set on the root command.
+Running an application with the '--version' flag will print the version to stdout using
+the version template. The template can be customized using the
+`cmd.SetVersionTemplate(s string)` function.
 
 ## PreRun and PostRun Hooks
 
@@ -696,25 +749,11 @@ Run 'kubectl help' for usage.
 
 ## Generating documentation for your command
 
-Cobra can generate documentation based on subcommands, flags, etc. in the following formats:
+Cobra can generate documentation based on subcommands, flags, etc. Read more about it in the [docs generation documentation](doc/README.md).
 
-- [Markdown](doc/md_docs.md)
-- [ReStructured Text](doc/rest_docs.md)
-- [Man Page](doc/man_docs.md)
+## Generating shell completions
 
-## Generating bash completions
-
-Cobra can generate a bash-completion file. If you add more information to your command, these completions can be amazingly powerful and flexible.  Read more about it in [Bash Completions](bash_completions.md).
-
-# Contributing
-
-1. Fork it
-2. Download your fork to your PC (`git clone https://github.com/your_username/cobra && cd cobra`)
-3. Create your feature branch (`git checkout -b my-new-feature`)
-4. Make changes and add them (`git add .`)
-5. Commit your changes (`git commit -m 'Add some feature'`)
-6. Push to the branch (`git push origin my-new-feature`)
-7. Create new pull request
+Cobra can generate a shell-completion file for the following shells: bash, zsh, fish, PowerShell. If you add more information to your commands, these completions can be amazingly powerful and flexible.  Read more about it in [Shell Completions](shell_completions.md).
 
 # License
 
