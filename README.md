@@ -1,5 +1,7 @@
 # Edward
 
+*Edward is no longer being actively maintained*. We recommend using [Tilt](https://tilt.dev/) for this and similar use cases.
+
 ![Tests](https://github.com/yext/edward/workflows/Test/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/yext/edward)](https://goreportcard.com/report/github.com/yext/edward)
 [![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/yext-edward/Lobby)
